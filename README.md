@@ -6,7 +6,7 @@ A modern, opinionated starter template for building fast, accessible web applica
 
 ## Tech Stack
 
-- [Astro](https://astro.build/) v6 - Modern web framework with server-first rendering
+- [Astro](https://astro.build/) v7 - Modern web framework with server-first rendering
 - [React](https://react.dev/) v19 - UI library for interactive components
 - [TypeScript](https://www.typescriptlang.org/) v5 - Type-safe JavaScript
 - [Tailwind CSS](https://tailwindcss.com/) v4 - Utility-first CSS framework
@@ -168,7 +168,9 @@ Set `SUPABASE_URL` and `SUPABASE_KEY` as secrets in your Cloudflare dashboard or
 
 ## CI
 
-GitHub Actions runs lint + build on every push and PR to `master`. Configure `SUPABASE_URL` and `SUPABASE_KEY` as repository secrets in GitHub for the build step.
+GitHub Actions runs `astro sync` → lint → build on every push and PR to `main`. Every push to `main` also deploys to Cloudflare Workers via `cloudflare/wrangler-action` (PRs only build, never deploy).
+
+Configure these repository secrets in GitHub: `SUPABASE_URL` and `SUPABASE_KEY` (build step), `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (deploy step).
 
 ## License
 
