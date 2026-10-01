@@ -91,17 +91,36 @@ Po zatwierdzeniu zapisać ten plan jako `context/deployment/deploy-plan.md` (śc
 
 ### Sekrety
 - Runtime (Cloudflare): `SUPABASE_URL`, `SUPABASE_KEY` ustawione ręcznie przez `wrangler secret put`.
-- GitHub Actions: **nie ustawione**. Brakuje `SUPABASE_URL`, `SUPABASE_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+- GitHub Actions: ustawione później (zob. „Aktualizacja po pierwszym wdrożeniu"): `SUPABASE_URL`, `SUPABASE_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
 
 ### Napotkane problemy
 1. `wrangler login` (OAuth) kończył się `spawn UNKNOWN`, a potem timeoutem; `--browser=false` z ręcznym otwarciem linku zadziałało.
 2. Smoke: `Invalid path specified in request URL`. Sekret `SUPABASE_URL` miał zły kształt; po ponownym wpisaniu zgodnie z `.dev.vars` błąd zniknął.
 3. Smoke: `Email address ... is invalid`. Hostowany Supabase odrzuca domenę `example.com`; zmieniono domenę testową. W Supabase wyłączono „Confirm email".
-4. Ostrzeżenie builda: sitemap wymaga opcji `site` w `astro.config.mjs` (niezałatwione).
+4. Ostrzeżenie builda: sitemap wymaga opcji `site` w `astro.config.mjs` (załatwione, zob. niżej).
 
 ### Otwarte punkty
-- Sekrety GitHub dla CI (świadomie odłożone). Do tego czasu **nie pushować do `main`**: CI deployuje bez bramki.
-- Pomiar CPU (limit 10 ms na Free) i latencji Supabase pod ruchem: `npx wrangler tail`.
-- Decyzja o ręcznej bramce deployu w CI i o `preview_urls`.
-- Konta testowe `smoke-*@mailinator.com` w bazie produkcyjnej do okresowego czyszczenia.
+- Decyzja o ręcznej bramce deployu w CI i o `preview_urls`: **świadomie odłożona** (zob. niżej).
+- „Confirm email" w Supabase wyłączone: włączyć przed dopuszczeniem obcych użytkowników.
+- Konta testowe `smoke-*@mailinator.com`: każde `npm run smoke` na produkcji dodaje nowe, czyścić ręcznie (Supabase → Authentication → Users).
 - Rollback: `npx wrangler rollback` (tylko kod, nie schemat).
+
+---
+
+## Aktualizacja po pierwszym wdrożeniu (2026-10-01)
+
+| Punkt | Stan |
+|---|---|
+| Sekrety GitHub dla CI | **Zrobione.** Ustawione 4 sekrety. Token Cloudflare ograniczony do jednego konta (Workers Scripts: Edit, Workers KV Storage: Edit). |
+| Pierwszy deploy przez CI | **Zrobione.** Push na `main` uruchomił CI (install → `astro sync` → lint → build → deploy). Wersja `adc527be-823d-480c-91a7-91642f946482`. |
+| Smoke test po deployu z CI | **Zrobione.** 8/8 PASS na produkcji. |
+| Pomiar CPU i opóźnień (`wrangler tail`) | **Zrobione.** 7 żądań (home, signin, POST signin, dashboard, POST signout), wszystkie `Ok`, brak błędów CPU limit. Przy założeniu kilku użytkowników uznane za wystarczające. Dokładne czasy: panel Cloudflare → Metrics. |
+| Konta testowe w bazie produkcyjnej | **Zrobione.** Konta `smoke-*@mailinator.com` usunięte ręcznie. |
+| Opcja `site` w `astro.config.mjs` | **Zrobione.** `site: "https://kuchenny-zamiennik.rszymanski.workers.dev"`, build tworzy `sitemap-index.xml`. Po zakupie własnej domeny podmienić. |
+| Dokumenty `context/` i `AGENTS.md` | **Zrobione.** Zacommitowane. |
+
+### Decyzje odłożone (świadomie)
+- **Ręczna bramka deployu w CI** oraz **`preview_urls`** zostają bez zmian (auto-deploy z `main`, `preview_urls: false`). Uzasadnienie: jeden developer, kilku użytkowników, CI robi lint i build przed deployem, a wersję można cofnąć przez `wrangler rollback`.
+  **Wrócić do decyzji, gdy:** pojawi się drugi developer, realni użytkownicy poza testowymi albo potrzeba pokazywania zmian przed scaleniem.
+- **„Confirm email"** pozostaje wyłączone na potrzeby smoke testu. Włączyć przed dopuszczeniem obcych użytkowników (wtedy smoke test signup/signin wymaga zmiany).
+- **Wzrost zakresu aplikacji** (cięższe operacje po stronie serwera): ponownie sprawdzić CPU w Metrics.
