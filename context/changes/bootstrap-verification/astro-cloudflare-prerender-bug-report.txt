@@ -1,0 +1,72 @@
+Astro Info
+
+Astro                    v7.3.5
+Node                     v22.23.3
+System                   Windows (win32/x64)
+Package Manager          npm 10.9.9
+Output                   server
+Adapter                  @astrojs/cloudflare (14.3.3)
+Integrations             @astrojs/react, @astrojs/sitemap
+
+Describe the Bug
+
+`astro build` fails on a default `@astrojs/cloudflare` setup (`output: "server"`, adapter added with no options, so `prerenderEnvironment` defaults to `"workerd"`) with:
+
+Could not find the prerender entry point in the build output. This is likely a bug in Astro.
+  Location:
+    node_modules/astro/dist/core/build/static-build.js:205:9
+  Stack trace:
+    at getPrerenderEntryFileName (file:///.../node_modules/astro/dist/core/build/static-build.js:205:9)
+    at Object.buildApp (file:///.../node_modules/astro/dist/core/build/static-build.js:150:9)
+    at async buildEnvironments (file:///.../node_modules/astro/dist/core/build/static-build.js:191:3)
+    at async AstroBuilder.build (file:///.../node_modules/astro/dist/core/build/index.js:160:5)
+    at async build (file:///.../node_modules/astro/dist/core/build/index.js:50:3)
+
+The project has zero pages with `export const prerender = true` (pure on-demand `output: "server"`).
+
+Root cause (traced in source)
+
+- In @astrojs/cloudflare@14.3.3, `prerenderEnvironment` defaults to "workerd" (index.js:76). With this default, `astro:build:start` calls `setPrerenderer(createCloudflarePrerenderer(...))` (index.js:410-424) - a prerenderer that works by spinning up a Vite preview server and talking to it over HTTP (prerenderer.js), not by producing rollup/rolldown build output.
+- In astro@7.3.5's vite-build-config.js:118:
+    ...!legacyAdapter && settings.prerenderer ? {} : { input: "astro/entrypoints/prerender" },
+  Because the adapter is non-legacy (entrypointResolution: "auto") and settings.prerenderer is set, the default rolldownOptions.input for the "prerender" Vite environment is intentionally skipped - the comment says the adapter is expected to supply it itself.
+- However, static-build.js:148-150 unconditionally still runs `builder2.build(builder2.environments.prerender)` and then calls `extractPrerenderEntryFileName(internals, prerenderOutput)`, which throws if no chunk's fileName starts with "prerender-entry" (static-build.js:193-208).
+- Since no input was ever set for that environment (by design, per the adapter contract), the build produces zero chunks, and the extraction always throws for any project using the Cloudflare adapter's default "workerd" prerenderer.
+
+What I tried
+
+1. cloudflare({ prerenderEnvironment: "node" }) - avoids setPrerenderer being called (for a project with no build-time image service), so settings.prerenderer stays undefined and the default prerender entry input is set again. This gets past the above error, but then fails with a second, different error:
+
+   rollupOptions.input should not be an html file when building for SSR. Please specify a dedicated SSR entry.
+     at resolveRollupOptions (node_modules/vite/dist/node/chunks/config.js:33532:73)
+     at async viteBuild (node_modules/astro/dist/core/build/static-build.js:63:3)
+
+   Also reproduces with imageService: "passthrough" added, ruling out the image-service code path as the cause.
+
+2. Downgrading @astrojs/cloudflare to 14.2.6 (last version before 14.3.0, which withastro/astro#17913 reports introduced prerender worker regressions) while keeping astro@7.3.5 and the default adapter config - fails to even start the build:
+
+   "beginContentEntryCollection" is not exported by "node_modules/astro/dist/core/app/entrypoints/index.js",
+   imported by "node_modules/@astrojs/cloudflare/dist/utils/prerender.js"
+
+   i.e. astro@7.3.5 has already removed an internal export that @astrojs/cloudflare@14.2.6 still imports - so the two packages' currently-published latest-compatible versions (astro@^7.2.0 peer range, satisfied by 7.3.5, and @astrojs/cloudflare@14.3.3) do not actually interoperate for a default output: "server" project.
+
+What's the expected result?
+
+astro build should succeed for a stock output: "server" project using @astrojs/cloudflare with no adapter options (the documented default), the same way it did on astro@6.x + @astrojs/cloudflare@13.x.
+
+What's the actual result?
+
+Build fails at the prerender-entry extraction step (default config), or, with prerenderEnvironment: "node", fails later at SSR entry resolution with an unrelated "html file" rollup error.
+
+Reproduction
+
+npm create astro@latest -- --template 10x-astro-starter
+cd <project>
+npm install
+npm run build
+
+(astro.config.mjs uses output: "server", adapter: cloudflare() with no options - see https://github.com/przeprogramowani/10x-astro-starter)
+
+Participation
+
+[ ] I am willing to submit a pull request for this issue.
