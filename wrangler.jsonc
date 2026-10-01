@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "10x-astro-starter",
+	"name": "kuchenny-zamiennik",
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"compatibility_date": "2026-08-28",
 	"compatibility_flags": [
@@ -12,11 +12,11 @@
 		"not_found_handling": "404-page",
 	},
 	"observability": {
-		"enabled": false,
+		"enabled": true,
 		"logs": {
-			"enabled": false
+			"enabled": true
 		},
 	},
-	"workers_dev": false,
+	"workers_dev": true,
 	"preview_urls": false,
 }

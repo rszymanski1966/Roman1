@@ -2,7 +2,9 @@
 // Zero dependencies on purpose. Run against a live server: BASE_URL=http://localhost:4321 node scripts/smoke.mjs
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:4321";
-const email = `smoke-${Date.now()}@example.com`;
+// Hosted Supabase rejects reserved domains such as example.com, so the domain is overridable via SMOKE_EMAIL_DOMAIN.
+const emailDomain = process.env.SMOKE_EMAIL_DOMAIN ?? "mailinator.com";
+const email = `smoke-${Date.now()}@${emailDomain}`;
 const password = "Smoke-Test-Passw0rd!";
 const jar = new Map();
 
