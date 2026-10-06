@@ -275,13 +275,13 @@ Migracja stosuje się lokalnie przez `npx supabase db reset`. Dla hostowanego pr
 
 #### Automated
 
-- [x] 1.1 Migracja i seed stosują się bez błędów: `npx supabase db reset`
-- [x] 1.2 Typy i lint przechodzą: `npx astro sync && npm run lint`
+- [x] 1.1 Migracja i seed stosują się bez błędów: `npx supabase db reset` — 9e69587
+- [x] 1.2 Typy i lint przechodzą: `npx astro sync && npm run lint` — 9e69587
 
 #### Manual
 
-- [x] 1.3 W Studio (`http://localhost:54323`) wszystkie 4 tabele mają włączone RLS, a `categories` zawiera 3 wiersze seedu
-- [x] 1.4 W Studio widać polityki SELECT i INSERT dla `authenticated` na tabelach użytkownika i brak polityk dla `anon`
+- [x] 1.3 W Studio (`http://localhost:54323`) wszystkie 4 tabele mają włączone RLS, a `categories` zawiera 3 wiersze seedu — 9e69587
+- [x] 1.4 W Studio widać polityki SELECT i INSERT dla `authenticated` na tabelach użytkownika i brak polityk dla `anon` — 9e69587
 
 ### Phase 2: Adding flow
 
