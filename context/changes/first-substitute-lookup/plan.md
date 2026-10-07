@@ -287,13 +287,13 @@ Migracja stosuje się lokalnie przez `npx supabase db reset`. Dla hostowanego pr
 
 #### Automated
 
-- [ ] 2.1 Lint i build przechodzą: `npm run lint && npm run build`
+- [x] 2.1 Lint i build przechodzą: `npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 2.2 Po zalogowaniu formularz zapisuje składnik, parę i zamiennik (widoczne w Studio z właściwym `user_id`)
-- [ ] 2.3 Ponowne dodanie tego samego składnika (inna wielkość liter) w tej samej kategorii dopisuje zamiennik do istniejącego składnika, bez duplikatu w `ingredients`
-- [ ] 2.4 Puste pole wymagane i zbyt długa wartość wracają na formularz z czytelnym `?error=`
+- [x] 2.2 Po zalogowaniu formularz zapisuje składnik, parę i zamiennik (widoczne w Studio z właściwym `user_id`)
+- [x] 2.3 Ponowne dodanie tego samego składnika (inna wielkość liter) w tej samej kategorii dopisuje zamiennik do istniejącego składnika, bez duplikatu w `ingredients`
+- [x] 2.4 Puste pole wymagane i zbyt długa wartość wracają na formularz z czytelnym `?error=`
 
 ### Phase 3: Lookup list
 

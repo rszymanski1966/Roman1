@@ -1,0 +1,148 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { createClient } from "@/lib/supabase";
+import { listCategories, listIngredients } from "@/lib/services/substitutes";
+import type { Category } from "@/types";
+
+const error = Astro.url.searchParams.get("error");
+// Prefill from the list page's empty-state link: ?ingredient=<ingredient id>&category=<category id>.
+const prefillIngredientId = Astro.url.searchParams.get("ingredient");
+const prefillCategoryId = Astro.url.searchParams.get("category");
+
+let categories: Category[] = [];
+let loadError: string | null = null;
+let prefillIngredientName = "";
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+if (!supabase) {
+  loadError = "Baza danych nie jest skonfigurowana.";
+} else {
+  const categoriesResult = await listCategories(supabase);
+  if (categoriesResult.error !== null) {
+    loadError = categoriesResult.error;
+  } else {
+    categories = categoriesResult.data;
+  }
+
+  if (prefillIngredientId) {
+    // RLS limits this to the current user's ingredients; an unknown id simply means no prefill.
+    const ingredientsResult = await listIngredients(supabase);
+    if (ingredientsResult.error === null) {
+      prefillIngredientName = ingredientsResult.data.find((item) => item.id === prefillIngredientId)?.name ?? "";
+    }
+  }
+}
+
+const inputClass =
+  "w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/40 transition-colors focus:ring-2 focus:ring-purple-400 focus:outline-none";
+const labelClass = "mb-1 block text-sm text-blue-100/80";
+---
+
+<Layout title="Dodaj zamiennik">
+  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-2xl border border-white/10 bg-white/10 p-8 text-white backdrop-blur-xl">
+      <h1 class="mb-6 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-center text-2xl font-bold text-transparent">
+        Dodaj zamiennik
+      </h1>
+
+      {loadError ? (
+        <p class="rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-sm text-red-300">{loadError}</p>
+      ) : (
+        <form method="POST" action="/api/ingredients" class="space-y-4">
+          <div>
+            <label for="ingredient" class:list={labelClass}>
+              Składnik
+            </label>
+            <input
+              id="ingredient"
+              name="ingredient"
+              type="text"
+              required
+              maxlength={100}
+              value={prefillIngredientName}
+              placeholder="np. masło"
+              class:list={inputClass}
+            />
+          </div>
+
+          <div>
+            <label for="category_id" class:list={labelClass}>
+              Kategoria
+            </label>
+            <select id="category_id" name="category_id" required class:list={inputClass}>
+              <option value="" selected={!prefillCategoryId} class="text-black">
+                Wybierz kategorię
+              </option>
+              {categories.map((category) => (
+                <option value={category.id} selected={category.id === prefillCategoryId} class="text-black">
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label for="substitute" class:list={labelClass}>
+              Zamiennik
+            </label>
+            <input
+              id="substitute"
+              name="substitute"
+              type="text"
+              required
+              maxlength={100}
+              placeholder="np. olej kokosowy"
+              class:list={inputClass}
+            />
+          </div>
+
+          <div>
+            <label for="ratio" class:list={labelClass}>
+              Proporcja
+            </label>
+            <input
+              id="ratio"
+              name="ratio"
+              type="text"
+              required
+              maxlength={100}
+              placeholder="np. 1:1"
+              class:list={inputClass}
+            />
+          </div>
+
+          <div>
+            <label for="notes" class:list={labelClass}>
+              Uwagi (opcjonalnie)
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows={3}
+              maxlength={500}
+              placeholder="np. lekki posmak kokosa"
+              class:list={inputClass}
+            ></textarea>
+          </div>
+
+          {error && (
+            <p class="rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-sm text-red-300">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            class="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
+          >
+            Zapisz
+          </button>
+        </form>
+      )}
+
+      <p class="mt-4 text-center text-sm text-blue-100/60">
+        <a href="/dashboard" class="text-purple-300 hover:underline">
+          Wróć do panelu
+        </a>
+      </p>
+    </div>
+  </div>
+</Layout>
