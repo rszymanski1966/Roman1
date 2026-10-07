@@ -34,19 +34,17 @@ if (!supabase) {
 }
 
 const inputClass =
-  "w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/40 transition-colors focus:ring-2 focus:ring-purple-400 focus:outline-none";
-const labelClass = "mb-1 block text-sm text-blue-100/80";
+  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 placeholder-stone-400 transition-colors focus:ring-2 focus:ring-orange-400 focus:outline-none";
+const labelClass = "mb-1 block text-sm text-stone-700";
 ---
 
 <Layout title="Dodaj zamiennik">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="w-full max-w-md rounded-2xl border border-white/10 bg-white/10 p-8 text-white backdrop-blur-xl">
-      <h1 class="mb-6 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-center text-2xl font-bold text-transparent">
-        Dodaj zamiennik
-      </h1>
+  <div class="bg-kitchen flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-2xl border border-amber-900/10 bg-white/70 shadow-sm p-8 text-stone-900 backdrop-blur-xl">
+      <h1 class="mb-6 text-center text-2xl font-bold text-stone-900">Dodaj zamiennik</h1>
 
       {loadError ? (
-        <p class="rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-sm text-red-300">{loadError}</p>
+        <p class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{loadError}</p>
       ) : (
         <form method="POST" action="/api/ingredients" class="space-y-4">
           <div>
@@ -125,21 +123,19 @@ const labelClass = "mb-1 block text-sm text-blue-100/80";
             ></textarea>
           </div>
 
-          {error && (
-            <p class="rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-sm text-red-300">{error}</p>
-          )}
+          {error && <p class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
           <button
             type="submit"
-            class="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
+            class="w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-700"
           >
             Zapisz
           </button>
         </form>
       )}
 
-      <p class="mt-4 text-center text-sm text-blue-100/60">
-        <a href="/dashboard" class="text-purple-300 hover:underline">
+      <p class="mt-4 text-center text-sm text-stone-600">
+        <a href="/dashboard" class="text-orange-700 hover:underline">
           Wróć do panelu
         </a>
       </p>
