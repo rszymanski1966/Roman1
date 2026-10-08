@@ -301,13 +301,13 @@ Migracja stosuje się lokalnie przez `npx supabase db reset`. Dla hostowanego pr
 
 #### Automated
 
-- [ ] 3.1 Lint i build przechodzą: `npm run lint && npm run build`
+- [x] 3.1 Lint i build przechodzą: `npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 3.2 Po dodaniu zamiennika lista pokazuje go z proporcją i uwagami dla wybranej pary składnik + kategoria
-- [ ] 3.3 Wybór pary bez zamienników pokazuje czytelny stan pusty z linkiem do dodania, a nie pustą listę
-- [ ] 3.4 Wynik pojawia się odczuwalnie natychmiast (< 1 s)
+- [x] 3.2 Po dodaniu zamiennika lista pokazuje go z proporcją i uwagami dla wybranej pary składnik + kategoria
+- [x] 3.3 Wybór pary bez zamienników pokazuje czytelny stan pusty z linkiem do dodania, a nie pustą listę
+- [x] 3.4 Wynik pojawia się odczuwalnie natychmiast (< 1 s)
 
 ### Phase 4: Isolation & verification
 

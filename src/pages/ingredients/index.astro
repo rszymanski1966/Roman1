@@ -1,0 +1,146 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { createClient } from "@/lib/supabase";
+import { isUuid, listCategories, listIngredients, listSubstitutes } from "@/lib/services/substitutes";
+import type { Category, IngredientListItem, SubstituteListItem } from "@/types";
+
+// Selection from the GET form (or the redirect after adding): ?ingredient=<id>&category=<id>.
+const ingredientParam = Astro.url.searchParams.get("ingredient")?.trim() ?? "";
+const categoryParam = Astro.url.searchParams.get("category")?.trim() ?? "";
+const hasSelection = ingredientParam !== "" && categoryParam !== "";
+// Malformed ids are rejected before querying (Postgres would fail with 22P02); they yield the empty state.
+const validSelection = hasSelection && isUuid(ingredientParam) && isUuid(categoryParam);
+
+let categories: Category[] = [];
+let ingredients: IngredientListItem[] = [];
+let substitutes: SubstituteListItem[] = [];
+let loadError: string | null = null;
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+if (!supabase) {
+  loadError = "Baza danych nie jest skonfigurowana.";
+} else {
+  const [categoriesResult, ingredientsResult, substitutesResult] = await Promise.all([
+    listCategories(supabase),
+    listIngredients(supabase),
+    // Foreign ids return zero rows under RLS, so they also end up in the empty state.
+    validSelection ? listSubstitutes(supabase, ingredientParam, categoryParam) : null,
+  ]);
+
+  if (categoriesResult.error !== null) {
+    loadError = categoriesResult.error;
+  } else if (ingredientsResult.error !== null) {
+    loadError = ingredientsResult.error;
+  } else if (substitutesResult && substitutesResult.error !== null) {
+    loadError = substitutesResult.error;
+  } else {
+    categories = categoriesResult.data;
+    ingredients = ingredientsResult.data;
+    substitutes = substitutesResult?.data ?? [];
+  }
+}
+
+// Empty-state CTA prefills /ingredients/new (it expects the ingredient id and the category id).
+const addHref = validSelection
+  ? `/ingredients/new?${new URLSearchParams({ ingredient: ingredientParam, category: categoryParam }).toString()}`
+  : "/ingredients/new";
+
+const inputClass =
+  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 placeholder-stone-400 transition-colors focus:ring-2 focus:ring-orange-400 focus:outline-none";
+const labelClass = "mb-1 block text-sm text-stone-700";
+const ctaClass =
+  "inline-block rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-700";
+const infoClass = "rounded-lg border border-stone-200 bg-white/60 px-4 py-4 text-center text-sm text-stone-700";
+---
+
+<Layout title="Zamienniki">
+  <div class="bg-kitchen flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-2xl border border-amber-900/10 bg-white/70 shadow-sm p-8 text-stone-900 backdrop-blur-xl">
+      <h1 class="mb-6 text-center text-2xl font-bold text-stone-900">Zamienniki</h1>
+
+      {loadError ? (
+        <p class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{loadError}</p>
+      ) : ingredients.length === 0 ? (
+        <div class:list={infoClass}>
+          <p>Nie masz jeszcze żadnych składników.</p>
+          <p class="mt-1">Dodaj pierwszy składnik z zamiennikiem, aby móc go tu wyszukać.</p>
+          <a href="/ingredients/new" class:list={[ctaClass, "mt-4"]}>
+            Dodaj pierwszy składnik
+          </a>
+        </div>
+      ) : (
+        <div class="space-y-6">
+          <form method="GET" action="/ingredients" class="space-y-4">
+            <div>
+              <label for="ingredient" class:list={labelClass}>
+                Składnik
+              </label>
+              <select id="ingredient" name="ingredient" required class:list={inputClass}>
+                <option value="" selected={!ingredientParam} class="text-black">
+                  Wybierz składnik
+                </option>
+                {ingredients.map((ingredient) => (
+                  <option value={ingredient.id} selected={ingredient.id === ingredientParam} class="text-black">
+                    {ingredient.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label for="category" class:list={labelClass}>
+                Kategoria
+              </label>
+              <select id="category" name="category" required class:list={inputClass}>
+                <option value="" selected={!categoryParam} class="text-black">
+                  Wybierz kategorię
+                </option>
+                {categories.map((category) => (
+                  <option value={category.id} selected={category.id === categoryParam} class="text-black">
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-700"
+            >
+              Pokaż zamienniki
+            </button>
+          </form>
+
+          {!hasSelection ? (
+            <p class:list={infoClass}>Wybierz składnik i kategorię, aby zobaczyć zamienniki.</p>
+          ) : substitutes.length === 0 ? (
+            <div class:list={infoClass}>
+              <p>Brak zamienników dla tego składnika w wybranej kategorii.</p>
+              <a href={addHref} class:list={[ctaClass, "mt-4"]}>
+                Dodaj zamiennik
+              </a>
+            </div>
+          ) : (
+            <ul class="space-y-3">
+              {substitutes.map((substitute) => (
+                <li class="rounded-lg border border-stone-200 bg-white/80 px-4 py-3">
+                  <p class="font-semibold text-stone-900">{substitute.name}</p>
+                  <p class="text-sm text-stone-700">
+                    Proporcja: <span class="font-medium">{substitute.ratio}</span>
+                  </p>
+                  {substitute.notes !== null && <p class="mt-1 text-sm text-stone-600">{substitute.notes}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <p class="mt-4 text-center text-sm text-stone-600">
+        <a href="/dashboard" class="text-orange-700 hover:underline">
+          Wróć do panelu
+        </a>
+      </p>
+    </div>
+  </div>
+</Layout>

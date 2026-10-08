@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
-import { addSubstitute, normalizeName } from "@/lib/services/substitutes";
+import { addSubstitute, isUuid, normalizeName } from "@/lib/services/substitutes";
 
 const FORM_PAGE = "/ingredients/new";
 
@@ -8,8 +8,6 @@ const FORM_PAGE = "/ingredients/new";
 const MAX_NAME = 100;
 const MAX_RATIO = 100;
 const MAX_NOTES = 500;
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function field(form: FormData, name: string): string {
   const value = form.get(name);
@@ -47,7 +45,7 @@ export const POST: APIRoute = async (context) => {
     return context.redirect(errorRedirect(`Nazwa składnika może mieć najwyżej ${MAX_NAME} znaków.`));
   }
   if (!categoryId) return context.redirect(errorRedirect("Wybierz kategorię."));
-  if (!UUID_RE.test(categoryId)) return context.redirect(errorRedirect("Wybrana kategoria jest nieprawidłowa."));
+  if (!isUuid(categoryId)) return context.redirect(errorRedirect("Wybrana kategoria jest nieprawidłowa."));
   if (!substitute) return context.redirect(errorRedirect("Podaj nazwę zamiennika."));
   if (charLength(substitute) > MAX_NAME) {
     return context.redirect(errorRedirect(`Nazwa zamiennika może mieć najwyżej ${MAX_NAME} znaków.`));
