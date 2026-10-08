@@ -153,6 +153,8 @@ Formularz dodania składnika z zamiennikiem i endpoint zapisu.
 
 Strona wyboru składnika + kategorii i listy zamienników ze stanem pustym.
 
+> **Aneks (impl-review fazy 2, F1)**: po Fazie 2 poza planem zmieniono motyw aplikacji (commity 0485291, 978223f). Styl „cosmic” z Current State Analysis jest nieaktualny. Strony Fazy 3 mają naśladować `src/pages/ingredients/new.astro`: tło `bg-kitchen`, karta `bg-white/70` z paletą stone/orange, polskie teksty.
+
 ### Changes Required:
 
 #### 1. Strona listy
