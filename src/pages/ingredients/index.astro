@@ -15,6 +15,8 @@ let categories: Category[] = [];
 let ingredients: IngredientListItem[] = [];
 let substitutes: SubstituteListItem[] = [];
 let loadError: string | null = null;
+// Kept separate from loadError so a failed lookup still shows the selection form.
+let substitutesError: string | null = null;
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 if (!supabase) {
@@ -31,12 +33,14 @@ if (!supabase) {
     loadError = categoriesResult.error;
   } else if (ingredientsResult.error !== null) {
     loadError = ingredientsResult.error;
-  } else if (substitutesResult && substitutesResult.error !== null) {
-    loadError = substitutesResult.error;
   } else {
     categories = categoriesResult.data;
     ingredients = ingredientsResult.data;
-    substitutes = substitutesResult?.data ?? [];
+    if (substitutesResult && substitutesResult.error !== null) {
+      substitutesError = substitutesResult.error;
+    } else {
+      substitutes = substitutesResult?.data ?? [];
+    }
   }
 }
 
@@ -113,6 +117,8 @@ const infoClass = "rounded-lg border border-stone-200 bg-white/60 px-4 py-4 text
 
           {!hasSelection ? (
             <p class:list={infoClass}>Wybierz składnik i kategorię, aby zobaczyć zamienniki.</p>
+          ) : substitutesError ? (
+            <p class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{substitutesError}</p>
           ) : substitutes.length === 0 ? (
             <div class:list={infoClass}>
               <p>Brak zamienników dla tego składnika w wybranej kategorii.</p>

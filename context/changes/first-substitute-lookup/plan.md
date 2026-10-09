@@ -173,6 +173,8 @@ Strona wyboru składnika + kategorii i listy zamienników ze stanem pustym.
 
 **Contract**: Dwa linki w istniejącej karcie, bez zmiany reszty strony.
 
+> **Aneks (impl-review fazy 3, F2)**: w ramach fazy 3 (f7cc546) sprawdzenie UUID wydzielono z `src/pages/api/ingredients.ts` do `src/lib/services/substitutes.ts` jako `isUuid()`. Używają go endpoint dodawania i strona listy, a zachowanie endpointu się nie zmieniło.
+
 ### Success Criteria:
 
 #### Automated Verification:
