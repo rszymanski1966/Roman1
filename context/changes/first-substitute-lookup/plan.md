@@ -153,6 +153,8 @@ Formularz dodania składnika z zamiennikiem i endpoint zapisu.
 
 Strona wyboru składnika + kategorii i listy zamienników ze stanem pustym.
 
+> **Aneks (impl-review fazy 2, F1)**: po Fazie 2 poza planem zmieniono motyw aplikacji (commity 0485291, 978223f). Styl „cosmic” z Current State Analysis jest nieaktualny. Strony Fazy 3 mają naśladować `src/pages/ingredients/new.astro`: tło `bg-kitchen`, karta `bg-white/70` z paletą stone/orange, polskie teksty.
+
 ### Changes Required:
 
 #### 1. Strona listy
@@ -170,6 +172,8 @@ Strona wyboru składnika + kategorii i listy zamienników ze stanem pustym.
 **Intent**: Dodaje linki do `/ingredients` i `/ingredients/new`.
 
 **Contract**: Dwa linki w istniejącej karcie, bez zmiany reszty strony.
+
+> **Aneks (impl-review fazy 3, F2)**: w ramach fazy 3 (f7cc546) sprawdzenie UUID wydzielono z `src/pages/api/ingredients.ts` do `src/lib/services/substitutes.ts` jako `isUuid()`. Używają go endpoint dodawania i strona listy, a zachowanie endpointu się nie zmieniło.
 
 ### Success Criteria:
 
@@ -287,34 +291,34 @@ Migracja stosuje się lokalnie przez `npx supabase db reset`. Dla hostowanego pr
 
 #### Automated
 
-- [ ] 2.1 Lint i build przechodzą: `npm run lint && npm run build`
+- [x] 2.1 Lint i build przechodzą: `npm run lint && npm run build` — e009821
 
 #### Manual
 
-- [ ] 2.2 Po zalogowaniu formularz zapisuje składnik, parę i zamiennik (widoczne w Studio z właściwym `user_id`)
-- [ ] 2.3 Ponowne dodanie tego samego składnika (inna wielkość liter) w tej samej kategorii dopisuje zamiennik do istniejącego składnika, bez duplikatu w `ingredients`
-- [ ] 2.4 Puste pole wymagane i zbyt długa wartość wracają na formularz z czytelnym `?error=`
+- [x] 2.2 Po zalogowaniu formularz zapisuje składnik, parę i zamiennik (widoczne w Studio z właściwym `user_id`) — e009821
+- [x] 2.3 Ponowne dodanie tego samego składnika (inna wielkość liter) w tej samej kategorii dopisuje zamiennik do istniejącego składnika, bez duplikatu w `ingredients` — e009821
+- [x] 2.4 Puste pole wymagane i zbyt długa wartość wracają na formularz z czytelnym `?error=` — e009821
 
 ### Phase 3: Lookup list
 
 #### Automated
 
-- [ ] 3.1 Lint i build przechodzą: `npm run lint && npm run build`
+- [x] 3.1 Lint i build przechodzą: `npm run lint && npm run build` — f7cc546
 
 #### Manual
 
-- [ ] 3.2 Po dodaniu zamiennika lista pokazuje go z proporcją i uwagami dla wybranej pary składnik + kategoria
-- [ ] 3.3 Wybór pary bez zamienników pokazuje czytelny stan pusty z linkiem do dodania, a nie pustą listę
-- [ ] 3.4 Wynik pojawia się odczuwalnie natychmiast (< 1 s)
+- [x] 3.2 Po dodaniu zamiennika lista pokazuje go z proporcją i uwagami dla wybranej pary składnik + kategoria — f7cc546
+- [x] 3.3 Wybór pary bez zamienników pokazuje czytelny stan pusty z linkiem do dodania, a nie pustą listę — f7cc546
+- [x] 3.4 Wynik pojawia się odczuwalnie natychmiast (< 1 s) — f7cc546
 
 ### Phase 4: Isolation & verification
 
 #### Automated
 
-- [ ] 4.1 Smoke przechodzi wraz z nowymi krokami: `BASE_URL=http://localhost:4321 npm run smoke`
-- [ ] 4.2 Lint i build przechodzą: `npm run lint && npm run build`
-- [ ] 4.3 Test polityk RLS przechodzi: `npx supabase test db`
+- [x] 4.1 Smoke przechodzi wraz z nowymi krokami: `BASE_URL=http://localhost:4321 npm run smoke` — bc8ba3a
+- [x] 4.2 Lint i build przechodzą: `npm run lint && npm run build` — bc8ba3a
+- [x] 4.3 Test polityk RLS przechodzi: `npx supabase test db` — bc8ba3a
 
 #### Manual
 
-- [ ] 4.4 Dwa konta w dwóch przeglądarkach nie widzą nawzajem swoich składników i zamienników
+- [x] 4.4 Dwa konta w dwóch przeglądarkach nie widzą nawzajem swoich składników i zamienników — bc8ba3a

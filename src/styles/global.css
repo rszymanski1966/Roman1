@@ -110,8 +110,8 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-@utility bg-cosmic {
-  background-image: linear-gradient(to bottom, #0a0e1a, #0f1529, #0a0e1a);
+@utility bg-kitchen {
+  background-image: linear-gradient(to bottom, #fffbeb, #fff7ed, #fef3c7);
 }
 
 @layer base {

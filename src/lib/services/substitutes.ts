@@ -26,6 +26,13 @@ export function normalizeName(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Format check before using a value as a uuid filter (otherwise Postgres fails with 22P02). */
+export function isUuid(value: string): boolean {
+  return UUID_RE.test(value);
+}
+
 /** Case-insensitive comparison key for an already-normalized name. */
 export function toNameKey(normalizedName: string): string {
   return normalizedName.toLocaleLowerCase("pl");
