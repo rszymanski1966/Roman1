@@ -315,10 +315,10 @@ Migracja stosuje się lokalnie przez `npx supabase db reset`. Dla hostowanego pr
 
 #### Automated
 
-- [x] 4.1 Smoke przechodzi wraz z nowymi krokami: `BASE_URL=http://localhost:4321 npm run smoke`
-- [x] 4.2 Lint i build przechodzą: `npm run lint && npm run build`
-- [x] 4.3 Test polityk RLS przechodzi: `npx supabase test db`
+- [x] 4.1 Smoke przechodzi wraz z nowymi krokami: `BASE_URL=http://localhost:4321 npm run smoke` — bc8ba3a
+- [x] 4.2 Lint i build przechodzą: `npm run lint && npm run build` — bc8ba3a
+- [x] 4.3 Test polityk RLS przechodzi: `npx supabase test db` — bc8ba3a
 
 #### Manual
 
-- [x] 4.4 Dwa konta w dwóch przeglądarkach nie widzą nawzajem swoich składników i zamienników
+- [x] 4.4 Dwa konta w dwóch przeglądarkach nie widzą nawzajem swoich składników i zamienników — bc8ba3a
