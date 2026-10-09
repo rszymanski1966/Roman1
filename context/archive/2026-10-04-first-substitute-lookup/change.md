@@ -1,10 +1,10 @@
 ---
 change_id: first-substitute-lookup
 title: Pierwsze odnalezienie zamiennika (roadmap S-01)
-status: impl_reviewed
+status: archived
 created: 2026-10-04
 updated: 2026-10-09
-archived_at: null
+archived_at: 2026-10-09T12:09:32Z
 ---
 
 ## Notes

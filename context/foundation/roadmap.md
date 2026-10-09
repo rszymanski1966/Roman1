@@ -3,7 +3,7 @@ project: "Kuchenny Zamiennik"
 version: 1
 status: draft
 created: 2026-10-02
-updated: 2026-10-06
+updated: 2026-10-09
 prd_version: 1
 main_goal: low-complexity
 top_blocker: time
@@ -41,7 +41,7 @@ Osoba gotująca w domu (na start autor projektu) nie ma wygodnego miejsca ze spr
 
 | ID   | Change ID                  | Outcome (user can …)                                                                           | Prerequisites | PRD refs                 | Status   |
 | ---- | -------------------------- | ---------------------------------------------------------------------------------------------- | ------------- | ------------------------ | -------- |
-| S-01 | first-substitute-lookup    | dodać składnik z kategorią i zamiennik z proporcją/uwagami i zobaczyć go na liście dla składnika + kategorii | —             | FR-001, FR-002, US-01    | in-progress |
+| S-01 | first-substitute-lookup    | dodać składnik z kategorią i zamiennik z proporcją/uwagami i zobaczyć go na liście dla składnika + kategorii | —             | FR-001, FR-002, US-01    | done |
 | S-02 | best-substitute-highlight  | oznaczyć zamiennik jako „najlepszy" w kategorii i zobaczyć go wyróżnionego na liście           | S-01          | FR-003, US-01            | proposed |
 | S-03 | ingredient-name-search     | wyszukać zamienniki po nazwie składnika, opcjonalnie zawężając do kategorii                    | S-01          | FR-004, FR-005, US-01    | proposed |
 | S-04 | edit-entries               | edytować własny wpis składnika lub zamiennika                                                  | S-01          | FR-006                   | proposed |
@@ -76,7 +76,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 - **Unknowns:**
   - Jaka dokładnie jest predefiniowana lista kategorii (PRD podaje tylko przykłady: ciasta, dania mięsne, wegetariańskie)? — Owner: user. Block: no.
 - **Risk:** Wnosi całą nową warstwę danych razem z izolacją użytkowników; błąd w polityce izolacji łamie guardrail z PRD nawet gdy przepływ działa — dlatego izolację weryfikować w tej samej historyjce, nie odkładać.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-02: Wyróżniony najlepszy zamiennik
 
@@ -156,4 +156,4 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 
 ## Done
 
-(Pusta. `/10x-archive` dopisuje wpisy i flipuje `Status` na `done`.)
+- **S-01: user can dodać składnik z kategorią z predefiniowanej listy i zamiennik z proporcją i uwagami, a następnie wybrać składnik + kategorię i zobaczyć listę zamienników (z czytelnym stanem pustym).** — Archived 2026-10-09 → `context/archive/2026-10-04-first-substitute-lookup/`. Lesson: —.
