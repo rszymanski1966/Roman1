@@ -8,6 +8,11 @@ const error = Astro.url.searchParams.get("error");
 // Prefill from the list page's empty-state link: ?ingredient=<ingredient id>&category=<category id>.
 const prefillIngredientId = Astro.url.searchParams.get("ingredient");
 const prefillCategoryId = Astro.url.searchParams.get("category");
+// Values echoed back by /api/ingredients after a validation error, so the user does not retype them.
+const echoedIngredientName = Astro.url.searchParams.get("ingredient_name") ?? "";
+const echoedSubstitute = Astro.url.searchParams.get("substitute") ?? "";
+const echoedRatio = Astro.url.searchParams.get("ratio") ?? "";
+const echoedNotes = Astro.url.searchParams.get("notes") ?? "";
 
 let categories: Category[] = [];
 let loadError: string | null = null;
@@ -57,7 +62,7 @@ const labelClass = "mb-1 block text-sm text-stone-700";
               type="text"
               required
               maxlength={100}
-              value={prefillIngredientName}
+              value={echoedIngredientName || prefillIngredientName}
               placeholder="np. masło"
               class:list={inputClass}
             />
@@ -89,6 +94,7 @@ const labelClass = "mb-1 block text-sm text-stone-700";
               type="text"
               required
               maxlength={100}
+              value={echoedSubstitute}
               placeholder="np. olej kokosowy"
               class:list={inputClass}
             />
@@ -104,6 +110,7 @@ const labelClass = "mb-1 block text-sm text-stone-700";
               type="text"
               required
               maxlength={100}
+              value={echoedRatio}
               placeholder="np. 1:1"
               class:list={inputClass}
             />
@@ -120,7 +127,7 @@ const labelClass = "mb-1 block text-sm text-stone-700";
               maxlength={500}
               placeholder="np. lekki posmak kokosa"
               class:list={inputClass}
-            ></textarea>
+            >{echoedNotes}</textarea>
           </div>
 
           {error && <p class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}

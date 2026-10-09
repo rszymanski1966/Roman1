@@ -127,9 +127,25 @@ const steps = [
     { status: 302, location: "/" },
   ],
   [
+    // B needs its own ingredient, otherwise the list page short-circuits to "no ingredients" and never queries substitutes.
+    "account B adds its own ingredient",
+    () =>
+      request("/api/ingredients", {
+        method: "POST",
+        cookies: jarB,
+        form: {
+          ingredient: `smoke-ingredient-${runId}-b`,
+          category_id: categoryId,
+          substitute: `smoke-substitute-${runId}-b`,
+          ratio: "1:1",
+        },
+      }),
+    { status: 302, location: "/ingredients?ingredient=" },
+  ],
+  [
     "account B sees empty state on account A's URL",
     () => request(listPath, { cookies: jarB }),
-    { status: 200, bodyIncludes: "Nie masz jeszcze żadnych składników", bodyExcludes: substituteMarker },
+    { status: 200, bodyIncludes: "Brak zamienników", bodyExcludes: substituteMarker },
   ],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],

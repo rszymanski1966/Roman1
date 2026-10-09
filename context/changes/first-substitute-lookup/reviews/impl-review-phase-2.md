@@ -51,7 +51,7 @@ Manual 2.2–2.4 marked [x] at e009821; evidence lives in Studio / browser, cons
 - **Location**: src/pages/api/ingredients.ts:76
 - **Detail**: Redirect to `/ingredients?ingredient=…&category=…` as planned, but `src/pages/ingredients/index.astro` does not exist yet. Expected in a phased plan; do not merge/deploy the branch between phases.
 - **Fix**: None — Phase 3 creates the page.
-- **Decision**: PENDING
+- **Decision**: DISMISSED — nieaktualne; /ingredients istnieje od fazy 3
 
 ### F3 — Validation error clears the whole form
 
@@ -61,7 +61,7 @@ Manual 2.2–2.4 marked [x] at e009821; evidence lives in Studio / browser, cons
 - **Location**: src/pages/api/ingredients.ts:24-26
 - **Detail**: Redirect carries only `?error=`; the user retypes all fields (incl. up to 500 chars of notes). Not required by the plan.
 - **Fix**: Skip for S-01, or append `ingredient`/`category` (already supported prefill) to the error redirect.
-- **Decision**: PENDING
+- **Decision**: FIXED — w przeglądzie całego planu (impl-review.md, F3, Fix A)
 
 ### F4 — Non-form POST throws 500
 
@@ -71,4 +71,4 @@ Manual 2.2–2.4 marked [x] at e009821; evidence lives in Studio / browser, cons
 - **Location**: src/pages/api/ingredients.ts:38
 - **Detail**: `request.formData()` throws on a body that is not form-encoded, giving 500 instead of `?error=` redirect. Same as existing auth routes; only reachable by hand-crafted requests.
 - **Fix**: Wrap in try/catch and return `errorRedirect("Nieprawidłowe dane formularza.")`.
-- **Decision**: PENDING
+- **Decision**: FIXED — w przeglądzie całego planu (impl-review.md, F2)

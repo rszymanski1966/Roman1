@@ -1,0 +1,2 @@
+# Keep LF in the repo and in working copies (prettier enforces LF; core.autocrlf=true on Windows would otherwise check out CRLF).
+* text=auto eol=lf
