@@ -1,7 +1,7 @@
 ---
 change_id: unique-substitutes
 title: Unique substitutes
-status: impl_reviewed
+status: implemented
 created: 2026-10-10
 updated: 2026-10-10
 archived_at: null
