@@ -257,27 +257,27 @@ Indeks unikalny `(ingredient_category_id, name_key)` zastępuje dotychczasowy in
 
 #### Automated
 
-- [x] 1.1 Migracje stosują się od zera: `npx supabase db reset`
-- [x] 1.2 Testy bazy przechodzą (stary i nowy plik): `npx supabase test db`
-- [x] 1.3 Lint przechodzi: `npm run lint`
+- [x] 1.1 Migracje stosują się od zera: `npx supabase db reset` — f05b9da
+- [x] 1.2 Testy bazy przechodzą (stary i nowy plik): `npx supabase test db` — f05b9da
+- [x] 1.3 Lint przechodzi: `npm run lint` — f05b9da
 
 #### Manual
 
-- [x] 1.4 Na bazie z istniejącym duplikatem migracja przechodzi i zostaje tylko najstarszy wpis
+- [x] 1.4 Na bazie z istniejącym duplikatem migracja przechodzi i zostaje tylko najstarszy wpis — f05b9da
 
 ### Phase 2: Aplikacja — komunikat konfliktu, autocomplete, smoke
 
 #### Automated
 
-- [ ] 2.1 Lint przechodzi: `npm run lint`
-- [ ] 2.2 Build przechodzi: `npm run build`
-- [ ] 2.3 Smoke przechodzi z nowym krokiem duplikatu: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 2.1 Lint przechodzi: `npm run lint`
+- [x] 2.2 Build przechodzi: `npm run build`
+- [x] 2.3 Smoke przechodzi z nowym krokiem duplikatu: `BASE_URL=http://localhost:4321 npm run smoke`
 
 #### Manual
 
-- [ ] 2.4 Dodanie istniejącego zamiennika z inną wielkością liter pokazuje komunikat konfliktu, pola zachowane, brak drugiego wpisu
-- [ ] 2.5 Ta sama nazwa zamiennika w innej kategorii tego samego składnika zapisuje się poprawnie
-- [ ] 2.6 Pola składnik/zamiennik/proporcja/uwagi nie pokazują podpowiedzi przeglądarki
+- [x] 2.4 Dodanie istniejącego zamiennika z inną wielkością liter pokazuje komunikat konfliktu, pola zachowane, brak drugiego wpisu
+- [x] 2.5 Ta sama nazwa zamiennika w innej kategorii tego samego składnika zapisuje się poprawnie
+- [x] 2.6 Pola składnik/zamiennik/proporcja/uwagi nie pokazują podpowiedzi przeglądarki
 
 ### Phase 3: Wydanie — podgląd produkcji, db push, PR
 

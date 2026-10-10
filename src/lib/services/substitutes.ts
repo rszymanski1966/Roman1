@@ -57,6 +57,8 @@ export async function listIngredients(client: SupabaseClient): Promise<ServiceRe
  * Adds a substitute for (ingredient, category). Re-uses an existing ingredient (same name_key)
  * and an existing ingredient-category pair. Uses ON CONFLICT DO NOTHING + separate id reads,
  * because ON CONFLICT DO UPDATE would need an UPDATE RLS policy that does not exist.
+ * A substitute name already saved for the pair (case-insensitive) returns a "already saved" message
+ * instead of GENERIC_ERROR; any other database error stays generic.
  */
 export async function addSubstitute(
   client: SupabaseClient,
@@ -99,13 +101,20 @@ export async function addSubstitute(
   if (!pairRow.data) return fail();
   const ingredientCategoryId = pairRow.data.id;
 
+  const substituteName = normalizeName(input.substituteName);
   const substituteInsert = await client.from("substitutes").insert({
     ingredient_category_id: ingredientCategoryId,
-    name: normalizeName(input.substituteName),
+    name: substituteName,
     ratio: input.ratio.trim(),
     notes: input.notes?.trim() ? input.notes.trim() : null,
   });
-  if (substituteInsert.error) return fail();
+  if (substituteInsert.error) {
+    // 23505 = unique_violation on (ingredient_category_id, name_key): the same name is already saved for this pair.
+    if (substituteInsert.error.code === "23505") {
+      return fail(`Zamiennik „${substituteName}” jest już zapisany dla tego składnika w tej kategorii.`);
+    }
+    return fail();
+  }
 
   return ok({ ingredientId, categoryId: input.categoryId });
 }
