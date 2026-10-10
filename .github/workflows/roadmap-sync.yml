@@ -1,0 +1,36 @@
+name: Roadmap sync
+
+# One-way sync: context/foundation/roadmap.md ("At a glance" statuses) → GitHub issue labels / closing.
+# Runs only for main, so issues reflect merged work. Reads the repo; writes only to issues.
+on:
+  push:
+    branches: [main]
+    paths:
+      - context/foundation/roadmap.md
+      - scripts/roadmap-sync.mjs
+      - .github/workflows/roadmap-sync.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: roadmap-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: node scripts/roadmap-sync.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}

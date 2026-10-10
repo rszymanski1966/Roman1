@@ -185,6 +185,12 @@ GitHub Actions runs `astro sync` → lint → build on every push and PR to `mai
 
 Configure these repository secrets in GitHub: `SUPABASE_URL` and `SUPABASE_KEY` (build step), `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (deploy step).
 
+A second workflow, `roadmap-sync`, runs when `context/foundation/roadmap.md` changes on `main`. It is a one-way sync, from the roadmap to GitHub issues. For each `S-NN`/`F-NN` row in the roadmap's "At a glance" table, it sets the `status:<status>` label on the issue titled `[S-NN] …`, and closes that issue once the status is `done`. It never writes to the repo and never reopens issues. It needs no extra secrets (built-in `GITHUB_TOKEN`). Preview it locally without changing anything:
+
+```bash
+GITHUB_TOKEN=$(gh auth token) GITHUB_REPOSITORY=<owner>/<repo> DRY_RUN=1 node scripts/roadmap-sync.mjs
+```
+
 ## License
 
 MIT

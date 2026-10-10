@@ -1,5 +1,5 @@
-// Shared entity and DTO types. Hand-written to mirror
-// supabase/migrations/20261004120000_substitute_database.sql (no generated DB types).
+// Shared entity and DTO types. Hand-written to mirror the migrations in
+// supabase/migrations/ (no generated DB types).
 
 export interface Category {
   id: string;
@@ -29,6 +29,8 @@ export interface Substitute {
   user_id: string;
   ingredient_category_id: string;
   name: string;
+  // Generated: lower(name). Unique per ingredient_category_id.
+  name_key: string;
   ratio: string;
   notes: string | null;
   created_at: string;

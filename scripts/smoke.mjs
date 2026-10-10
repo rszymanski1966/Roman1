@@ -117,6 +117,25 @@ const steps = [
   ],
   ["account A sees its substitute", () => request(listPath), { status: 200, bodyIncludes: substituteMarker }],
   [
+    // Same ingredient and category, same name in a different case: the unique (pair, name_key) constraint rejects it.
+    "account A cannot add a duplicate substitute",
+    () =>
+      request("/api/ingredients", {
+        method: "POST",
+        form: {
+          ingredient: `smoke-ingredient-${runId}`,
+          category_id: categoryId,
+          substitute: substituteMarker.toUpperCase(),
+          ratio: "2:1",
+        },
+      }),
+    // Prefix up to the closing quote: proves the conflict message, not just any validation error.
+    {
+      status: 302,
+      location: `/ingredients/new?${new URLSearchParams({ error: `Zamiennik „${substituteMarker.toUpperCase()}”` })}`,
+    },
+  ],
+  [
     "signup creates account B",
     () => request("/api/auth/signup", { method: "POST", cookies: jarB, form: { email: emailB, password } }),
     { status: 302, location: "/auth/confirm-email" },
