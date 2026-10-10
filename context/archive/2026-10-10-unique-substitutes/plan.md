@@ -286,7 +286,7 @@ Indeks unikalny `(ingredient_category_id, name_key)` zastępuje dotychczasowy in
 
 #### Manual
 
-- [x] 3.1 Zapytanie podglądowe uruchomione na produkcji, wynik zaakceptowany przez użytkownika
-- [x] 3.2 `npx supabase db push` wykonany, `npx supabase migration list` pokazuje Local = Remote
-- [ ] 3.3 PR do `main` scalony, deploy CI zielony, PR #8 oznaczony jako scalony
-- [ ] 3.4 Na produkcji ponowne dodanie istniejącego zamiennika pokazuje komunikat konfliktu
+- [x] 3.1 Zapytanie podglądowe uruchomione na produkcji, wynik zaakceptowany przez użytkownika — a0e0d2c
+- [x] 3.2 `npx supabase db push` wykonany, `npx supabase migration list` pokazuje Local = Remote — a0e0d2c
+- [x] 3.3 PR do `main` scalony, deploy CI zielony, PR #8 oznaczony jako scalony — a0e0d2c
+- [x] 3.4 Na produkcji ponowne dodanie istniejącego zamiennika pokazuje komunikat konfliktu — a0e0d2c
