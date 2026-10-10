@@ -3,7 +3,7 @@ project: "Kuchenny Zamiennik"
 version: 1
 status: draft
 created: 2026-10-02
-updated: 2026-10-09
+updated: 2026-10-10
 prd_version: 1
 main_goal: low-complexity
 top_blocker: time
@@ -42,10 +42,10 @@ Osoba gotująca w domu (na start autor projektu) nie ma wygodnego miejsca ze spr
 | ID   | Change ID                  | Outcome (user can …)                                                                           | Prerequisites | PRD refs                 | Status   |
 | ---- | -------------------------- | ---------------------------------------------------------------------------------------------- | ------------- | ------------------------ | -------- |
 | S-01 | first-substitute-lookup    | dodać składnik z kategorią i zamiennik z proporcją/uwagami i zobaczyć go na liście dla składnika + kategorii | —             | FR-001, FR-002, US-01    | done |
-| S-02 | best-substitute-highlight  | oznaczyć zamiennik jako „najlepszy" w kategorii i zobaczyć go wyróżnionego na liście           | S-01          | FR-003, US-01            | proposed |
-| S-03 | ingredient-name-search     | wyszukać zamienniki po nazwie składnika, opcjonalnie zawężając do kategorii                    | S-01          | FR-004, FR-005, US-01    | proposed |
-| S-04 | edit-entries               | edytować własny wpis składnika lub zamiennika                                                  | S-01          | FR-006                   | proposed |
-| S-05 | delete-entries-confirmed   | usunąć własny wpis składnika lub zamiennika (kaskadowo, po potwierdzeniu)                      | S-01          | FR-007                   | proposed |
+| S-02 | best-substitute-highlight  | oznaczyć zamiennik jako „najlepszy" w kategorii i zobaczyć go wyróżnionego na liście           | S-01          | FR-003, US-01            | ready |
+| S-03 | ingredient-name-search     | wyszukać zamienniki po nazwie składnika, opcjonalnie zawężając do kategorii                    | S-01          | FR-004, FR-005, US-01    | ready |
+| S-04 | edit-entries               | edytować własny wpis składnika lub zamiennika                                                  | S-01          | FR-006                   | ready |
+| S-05 | delete-entries-confirmed   | usunąć własny wpis składnika lub zamiennika (kaskadowo, po potwierdzeniu)                      | S-01          | FR-007                   | ready |
 
 ## Baseline
 
@@ -88,7 +88,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** To reguła biznesowa odróżniająca narzędzie od płaskiej listy; sekwencjonowana zaraz po S-01, żeby kryterium Primary zostało domknięte jak najwcześniej. Jeden „najlepszy" na kategorię — kontekst przygotowania świadomie poza MVP.
-- **Status:** proposed
+- **Status:** ready
 
 ### S-03: Wyszukiwanie po nazwie składnika
 
@@ -100,7 +100,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Dwa wymagania (FR-004/FR-005) dublują się — planować jako jedno wyszukiwanie; tolerancja literówek jest poza MVP.
-- **Status:** proposed
+- **Status:** ready
 
 ### S-04: Edycja wpisów
 
@@ -112,7 +112,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Niskie; edycja bez dodatkowej logiki. Dotyka tych samych widoków co S-02, więc przy równoległej realizacji możliwe konflikty merge.
-- **Status:** proposed
+- **Status:** ready
 
 ### S-05: Usuwanie wpisów z potwierdzeniem
 
@@ -124,17 +124,17 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Utrata ręcznie zbudowanej bazy przy braku potwierdzenia — potwierdzenie jest częścią wymagania, nie ozdobą.
-- **Status:** proposed
+- **Status:** ready
 
 ## Backlog Handoff
 
 | Roadmap ID | Change ID                 | Suggested issue title                                                  | Ready for `/10x-plan` | Notes                                  |
 | ---------- | ------------------------- | ---------------------------------------------------------------------- | --------------------- | -------------------------------------- |
-| S-01       | first-substitute-lookup   | Dodawanie składnika i zamiennika oraz lista zamienników (z RLS)        | yes                   | Run `/10x-plan first-substitute-lookup` |
-| S-02       | best-substitute-highlight | Oznaczanie i wyróżnianie najlepszego zamiennika                        | no                    | Czeka na S-01                          |
-| S-03       | ingredient-name-search    | Wyszukiwanie zamienników po nazwie składnika (+ filtr kategorii)       | no                    | Czeka na S-01                          |
-| S-04       | edit-entries              | Edycja składników i zamienników                                        | no                    | Czeka na S-01                          |
-| S-05       | delete-entries-confirmed  | Usuwanie składników i zamienników z potwierdzeniem                     | no                    | Czeka na S-01                          |
+| S-01       | first-substitute-lookup   | Dodawanie składnika i zamiennika oraz lista zamienników (z RLS)        | —                     | Done (archived 2026-10-09)             |
+| S-02       | best-substitute-highlight | Oznaczanie i wyróżnianie najlepszego zamiennika                        | yes                   | Run `/10x-plan best-substitute-highlight` |
+| S-03       | ingredient-name-search    | Wyszukiwanie zamienników po nazwie składnika (+ filtr kategorii)       | yes                   | Run `/10x-plan ingredient-name-search` |
+| S-04       | edit-entries              | Edycja składników i zamienników                                        | yes                   | Run `/10x-plan edit-entries`; edycja nazwy musi respektować unikalność zamienników (23505, lessons.md) |
+| S-05       | delete-entries-confirmed  | Usuwanie składników i zamienników z potwierdzeniem                     | yes                   | Run `/10x-plan delete-entries-confirmed` |
 
 ## Open Roadmap Questions
 
