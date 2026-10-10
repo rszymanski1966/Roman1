@@ -137,6 +137,8 @@ Serwis rozpoznaje naruszenie unikalności i zwraca czytelny komunikat; formularz
 
 **Contract**: nowy krok `"account A cannot add a duplicate substitute"` → `{ status: 302, location: "/ingredients/new?error=" }`.
 
+_Adaptacja przy implementacji (impl-review F2):_ oczekiwany `location` zawężono do prefiksu z treścią komunikatu konfliktu (`/ingredients/new?error=Zamiennik „<MARKER>”`, kodowanie jak w `URLSearchParams`). Sam prefiks `?error=` przechodził też przy ogólnym `GENERIC_ERROR`, więc nie chronił mapowania `23505` (wykazał to deliberate-break check).
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -184,7 +186,7 @@ where s.rn > 1
 order by s.ingredient_category_id, lower(s.name), s.created_at;
 ```
 
-Wynik wyeksportować do CSV (eksport w SQL Editorze) i zachować poza repo przed `db push` — to jedyna kopia wierszy, które migracja usunie.
+Wynik wyeksportować do CSV (eksport w SQL Editorze) i zachować poza repo przed `db push` — to jedyna kopia wierszy, które migracja usunie. Podgląd uruchomić **tuż przed** `db push` (bez dodawania zamienników w międzyczasie) i zanotować liczbę wierszy.
 
 Sprawdzić też, czy `lower()` na produkcji obsługuje polskie znaki (oczekiwane `żółć`):
 
@@ -198,7 +200,7 @@ select lower('ŻÓŁĆ'), datcollate from pg_database where datname = current_da
 
 **Intent**: Po akceptacji wyniku podglądu: `npx supabase db push` (CI wdraża tylko Workera), potem PR `feat/unique-substitutes` → `main` z merge commitem; PR #8 zostanie oznaczony jako scalony.
 
-**Contract**: `npx supabase migration list` pokazuje nową migrację po obu stronach (Local = Remote) przed merge.
+**Contract**: `npx supabase migration list` pokazuje nową migrację po obu stronach (Local = Remote) przed merge. Liczba zamienników po push = liczba przed push − liczba wierszy w CSV (`select count(*) from public.substitutes` przed i po).
 
 ### Success Criteria:
 
@@ -236,6 +238,7 @@ Indeks unikalny `(ingredient_category_id, name_key)` zastępuje dotychczasowy in
 ## Migration Notes
 
 - Migracja nieodwracalnie usuwa nowsze duplikaty. Na produkcji wykonać ją dopiero po podglądzie i eksporcie CSV usuwanych wierszy (Faza 3.1). Nie zakładamy dostępności backupu Supabase.
+- Ręczny rollback (gdyby był potrzebny): `alter table public.substitutes drop constraint substitutes_ingredient_category_id_name_key_key;`, `create index substitutes_ingredient_category_id_idx on public.substitutes (ingredient_category_id);`, `alter table public.substitutes drop column name_key;`, a usunięte wiersze odtworzyć z CSV (insert jako `postgres` z zachowaniem `id`, `user_id`, `created_at`). Kod Fazy 2 działa też bez ograniczenia.
 - `db push` przed merge — kod Fazy 2 zakłada istnienie ograniczenia (bez niego duplikaty po prostu przejdą, więc kolejność odwrotna nie psuje aplikacji, tylko opóźnia blokadę).
 
 ## References
@@ -269,15 +272,15 @@ Indeks unikalny `(ingredient_category_id, name_key)` zastępuje dotychczasowy in
 
 #### Automated
 
-- [x] 2.1 Lint przechodzi: `npm run lint`
-- [x] 2.2 Build przechodzi: `npm run build`
-- [x] 2.3 Smoke przechodzi z nowym krokiem duplikatu: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 2.1 Lint przechodzi: `npm run lint` — b3ed517
+- [x] 2.2 Build przechodzi: `npm run build` — b3ed517
+- [x] 2.3 Smoke przechodzi z nowym krokiem duplikatu: `BASE_URL=http://localhost:4321 npm run smoke` — b3ed517
 
 #### Manual
 
-- [x] 2.4 Dodanie istniejącego zamiennika z inną wielkością liter pokazuje komunikat konfliktu, pola zachowane, brak drugiego wpisu
-- [x] 2.5 Ta sama nazwa zamiennika w innej kategorii tego samego składnika zapisuje się poprawnie
-- [x] 2.6 Pola składnik/zamiennik/proporcja/uwagi nie pokazują podpowiedzi przeglądarki
+- [x] 2.4 Dodanie istniejącego zamiennika z inną wielkością liter pokazuje komunikat konfliktu, pola zachowane, brak drugiego wpisu — b3ed517
+- [x] 2.5 Ta sama nazwa zamiennika w innej kategorii tego samego składnika zapisuje się poprawnie — b3ed517
+- [x] 2.6 Pola składnik/zamiennik/proporcja/uwagi nie pokazują podpowiedzi przeglądarki — b3ed517
 
 ### Phase 3: Wydanie — podgląd produkcji, db push, PR
 
