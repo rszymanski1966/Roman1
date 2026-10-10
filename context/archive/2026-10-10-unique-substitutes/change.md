@@ -1,10 +1,10 @@
 ---
 change_id: unique-substitutes
 title: Unique substitutes
-status: implemented
+status: archived
 created: 2026-10-10
 updated: 2026-10-10
-archived_at: null
+archived_at: 2026-10-10T11:45:41Z
 ---
 
 ## Notes
