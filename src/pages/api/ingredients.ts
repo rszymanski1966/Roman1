@@ -98,6 +98,7 @@ export const POST: APIRoute = async (context) => {
     substituteName: substitute,
     ratio,
     notes: notes || null,
+    isBest: false,
   });
   if (result.error !== null) {
     return context.redirect(errorRedirect(result.error, values));

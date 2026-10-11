@@ -33,10 +33,12 @@ export interface Substitute {
   name_key: string;
   ratio: string;
   notes: string | null;
+  // At most one true per ingredient_category_id (partial unique index).
+  is_best: boolean;
   created_at: string;
 }
 
-export type SubstituteListItem = Pick<Substitute, "id" | "name" | "ratio" | "notes">;
+export type SubstituteListItem = Pick<Substitute, "id" | "name" | "ratio" | "notes" | "is_best">;
 
 export type IngredientListItem = Pick<Ingredient, "id" | "name">;
 
@@ -46,9 +48,14 @@ export interface AddSubstituteInput {
   substituteName: string;
   ratio: string;
   notes: string | null;
+  isBest: boolean;
 }
 
 export interface AddSubstituteResult {
   ingredientId: string;
   categoryId: string;
+  // Name of the previous best substitute when isBest replaced it, otherwise null.
+  replacedName: string | null;
+  // User-safe message when the substitute was saved but marking it as best failed.
+  bestError: string | null;
 }

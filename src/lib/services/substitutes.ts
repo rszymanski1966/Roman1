@@ -116,7 +116,7 @@ export async function addSubstitute(
     return fail();
   }
 
-  return ok({ ingredientId, categoryId: input.categoryId });
+  return ok({ ingredientId, categoryId: input.categoryId, replacedName: null, bestError: null });
 }
 
 /** Substitutes for (ingredient, category), oldest first. Missing pair (or foreign ids) = empty list. */
@@ -137,7 +137,7 @@ export async function listSubstitutes(
 
   const { data, error } = await client
     .from("substitutes")
-    .select("id, name, ratio, notes")
+    .select("id, name, ratio, notes, is_best")
     .eq("ingredient_category_id", ingredientCategoryId)
     .order("created_at", { ascending: true });
   if (error) return fail();
