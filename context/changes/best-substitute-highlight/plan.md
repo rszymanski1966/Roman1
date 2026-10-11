@@ -321,28 +321,28 @@ Zmiana addytywna: istniejące zamienniki dostają `is_best = false`, więc żadn
 
 #### Automated
 
-- [x] 1.1 Nowa migracja stosuje się na istniejącej bazie bez kasowania danych: `npx supabase migration up` (nie używać `db reset`)
-- [x] 1.2 Testy bazy przechodzą (wszystkie pliki): `npx supabase test db`
-- [x] 1.3 Lint przechodzi: `npm run lint`
+- [x] 1.1 Nowa migracja stosuje się na istniejącej bazie bez kasowania danych: `npx supabase migration up` (nie używać `db reset`) — 3f8184f
+- [x] 1.2 Testy bazy przechodzą (wszystkie pliki): `npx supabase test db` — 3f8184f
+- [x] 1.3 Lint przechodzi: `npm run lint` — 3f8184f
 
 #### Manual
 
-- [x] 1.4 W Supabase Studio istniejące dane (konta, składniki, zamienniki) są nienaruszone po migracji, a zamienniki mają `is_best = false`
+- [x] 1.4 W Supabase Studio istniejące dane (konta, składniki, zamienniki) są nienaruszone po migracji, a zamienniki mają `is_best = false` — 3f8184f
 
 ### Phase 2: Lista — wyróżnienie, oznaczanie i zdejmowanie, komunikaty
 
 #### Automated
 
-- [ ] 2.1 Lint przechodzi: `npm run lint`
-- [ ] 2.2 Build przechodzi: `npm run build`
-- [ ] 2.3 Smoke przechodzi z nowymi krokami listy: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 2.1 Lint przechodzi: `npm run lint`
+- [x] 2.2 Build przechodzi: `npm run build`
+- [x] 2.3 Smoke przechodzi z nowymi krokami listy: `BASE_URL=http://localhost:4321 npm run smoke`
 
 #### Manual
 
-- [ ] 2.4 Oznaczenie zamiennika na liście przenosi go na górę z plakietką „Najlepszy" i pomarańczową ramką
-- [ ] 2.5 Oznaczenie innego zamiennika w tej samej parze pokazuje komunikat „Najlepszy zamiennik zmieniony: X → Y." i tylko jeden wyróżniony
-- [ ] 2.6 „Usuń wyróżnienie" zostawia listę bez wyróżnionej pozycji, w kolejności od najstarszego
-- [ ] 2.7 Najlepszy w innej kategorii tego samego składnika pozostaje bez zmian
+- [x] 2.4 Oznaczenie zamiennika na liście przenosi go na górę z plakietką „Najlepszy" i pomarańczową ramką
+- [x] 2.5 Oznaczenie innego zamiennika w tej samej parze pokazuje komunikat „Najlepszy zamiennik zmieniony: X → Y." i tylko jeden wyróżniony
+- [x] 2.6 „Usuń wyróżnienie" zostawia listę bez wyróżnionej pozycji, w kolejności od najstarszego
+- [x] 2.7 Najlepszy w innej kategorii tego samego składnika pozostaje bez zmian
 
 ### Phase 3: Formularz dodawania — checkbox „Najlepszy"
 

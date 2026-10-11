@@ -2,11 +2,15 @@
 import Layout from "@/layouts/Layout.astro";
 import { createClient } from "@/lib/supabase";
 import { isUuid, listCategories, listIngredients, listSubstitutes } from "@/lib/services/substitutes";
+import { cn } from "@/lib/utils";
 import type { Category, IngredientListItem, SubstituteListItem } from "@/types";
 
 // Selection from the GET form (or the redirect after adding): ?ingredient=<id>&category=<id>.
 const ingredientParam = Astro.url.searchParams.get("ingredient")?.trim() ?? "";
 const categoryParam = Astro.url.searchParams.get("category")?.trim() ?? "";
+// Messages from /api/substitutes/best: ?notice= after a best-substitute swap, ?error= when an action failed.
+const notice = Astro.url.searchParams.get("notice");
+const error = Astro.url.searchParams.get("error");
 const hasSelection = ingredientParam !== "" && categoryParam !== "";
 // Malformed ids are rejected before querying (Postgres would fail with 22P02); they yield the empty state.
 const validSelection = hasSelection && isUuid(ingredientParam) && isUuid(categoryParam);
@@ -55,6 +59,13 @@ const labelClass = "mb-1 block text-sm text-stone-700";
 const ctaClass =
   "inline-block rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-700";
 const infoClass = "rounded-lg border border-stone-200 bg-white/60 px-4 py-4 text-center text-sm text-stone-700";
+const errorClass = "rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700";
+const noticeClass = "rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800";
+const cardClass = "rounded-lg border border-stone-200 bg-white/80 px-4 py-3";
+// The best card overrides the base border and background, so the classes are merged with cn() (not class:list).
+const bestCardClass = "border-orange-400 bg-orange-50";
+const markButtonClass =
+  "mt-2 rounded-lg border border-orange-300 bg-white px-3 py-1 text-xs font-medium text-orange-700 transition-colors hover:bg-orange-100 focus:ring-2 focus:ring-orange-400 focus:outline-none";
 ---
 
 <Layout title="Zamienniki">
@@ -62,8 +73,19 @@ const infoClass = "rounded-lg border border-stone-200 bg-white/60 px-4 py-4 text
     <div class="w-full max-w-md rounded-2xl border border-amber-900/10 bg-white/70 shadow-sm p-8 text-stone-900 backdrop-blur-xl">
       <h1 class="mb-6 text-center text-2xl font-bold text-stone-900">Zamienniki</h1>
 
+      {notice && (
+        <p role="status" class:list={[noticeClass, "mb-4"]}>
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p role="alert" class:list={[errorClass, "mb-4"]}>
+          {error}
+        </p>
+      )}
+
       {loadError ? (
-        <p class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{loadError}</p>
+        <p class:list={errorClass}>{loadError}</p>
       ) : ingredients.length === 0 ? (
         <div class:list={infoClass}>
           <p>Nie masz jeszcze żadnych składników.</p>
@@ -118,7 +140,7 @@ const infoClass = "rounded-lg border border-stone-200 bg-white/60 px-4 py-4 text
           {!hasSelection ? (
             <p class:list={infoClass}>Wybierz składnik i kategorię, aby zobaczyć zamienniki.</p>
           ) : substitutesError ? (
-            <p class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{substitutesError}</p>
+            <p class:list={errorClass}>{substitutesError}</p>
           ) : substitutes.length === 0 ? (
             <div class:list={infoClass}>
               <p>Brak zamienników dla tego składnika w wybranej kategorii.</p>
@@ -129,12 +151,36 @@ const infoClass = "rounded-lg border border-stone-200 bg-white/60 px-4 py-4 text
           ) : (
             <ul class="space-y-3">
               {substitutes.map((substitute) => (
-                <li class="rounded-lg border border-stone-200 bg-white/80 px-4 py-3">
-                  <p class="font-semibold text-stone-900">{substitute.name}</p>
+                <li class:list={cn(cardClass, substitute.is_best && bestCardClass)}>
+                  <p class="flex flex-wrap items-center gap-2 font-semibold text-stone-900">
+                    <span>{substitute.name}</span>
+                    {substitute.is_best && (
+                      <span
+                        data-best-badge
+                        class="rounded-full bg-orange-600 px-2 py-0.5 text-xs font-medium text-white"
+                      >
+                        Najlepszy
+                      </span>
+                    )}
+                  </p>
                   <p class="text-sm text-stone-700">
                     Proporcja: <span class="font-medium">{substitute.ratio}</span>
                   </p>
                   {substitute.notes !== null && <p class="mt-1 text-sm text-stone-600">{substitute.notes}</p>}
+                  <form method="POST" action="/api/substitutes/best">
+                    <input type="hidden" name="substitute_id" value={substitute.id} />
+                    <input type="hidden" name="is_best" value={substitute.is_best ? "0" : "1"} />
+                    <input type="hidden" name="ingredient" value={ingredientParam} />
+                    <input type="hidden" name="category" value={categoryParam} />
+                    {/* aria-label starts with the visible text and names the substitute, since every card has this button. */}
+                    <button
+                      type="submit"
+                      class:list={markButtonClass}
+                      aria-label={`${substitute.is_best ? "Usuń wyróżnienie" : "Oznacz jako najlepszy"}: ${substitute.name}`}
+                    >
+                      {substitute.is_best ? "Usuń wyróżnienie" : "Oznacz jako najlepszy"}
+                    </button>
+                  </form>
                 </li>
               ))}
             </ul>

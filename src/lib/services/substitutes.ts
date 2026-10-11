@@ -119,7 +119,10 @@ export async function addSubstitute(
   return ok({ ingredientId, categoryId: input.categoryId, replacedName: null, bestError: null });
 }
 
-/** Substitutes for (ingredient, category), oldest first. Missing pair (or foreign ids) = empty list. */
+/**
+ * Substitutes for (ingredient, category): the best one first, then the rest oldest first.
+ * Missing pair (or foreign ids) = empty list.
+ */
 export async function listSubstitutes(
   client: SupabaseClient,
   ingredientId: string,
@@ -139,7 +142,39 @@ export async function listSubstitutes(
     .from("substitutes")
     .select("id, name, ratio, notes, is_best")
     .eq("ingredient_category_id", ingredientCategoryId)
+    .order("is_best", { ascending: false })
     .order("created_at", { ascending: true });
   if (error) return fail();
   return ok(data as SubstituteListItem[]);
+}
+
+/**
+ * Marks (isBest = true) or unmarks a substitute as the best one of its pair via the set_best_substitute
+ * function, which swaps the mark atomically. replacedName is the previous best that lost the mark,
+ * or null (no previous best, already the best, or unmark). A foreign or missing substitute is "not found".
+ */
+export async function setBestSubstitute(
+  client: SupabaseClient,
+  substituteId: string,
+  isBest: boolean,
+): Promise<ServiceResult<{ substituteName: string; replacedName: string | null }>> {
+  const result = await client.rpc("set_best_substitute", {
+    p_substitute_id: substituteId,
+    p_is_best: isBest,
+  });
+  const error = result.error;
+  // Returns a one-row table (substitute_name, replaced_name); no generated DB types, so the shape is asserted.
+  const data = result.data as { substitute_name: string; replaced_name: string | null }[] | null;
+  if (error) {
+    // P0002 = raised by the function when the substitute is missing or hidden by RLS (another account's row).
+    if (error.code === "P0002") return fail("Nie znaleziono zamiennika.");
+    // 23505 = partial unique index (one best per pair): a concurrent change, e.g. from another tab.
+    if (error.code === "23505") {
+      return fail("Najlepszy zamiennik właśnie się zmienił. Odśwież listę i spróbuj ponownie.");
+    }
+    return fail();
+  }
+  const row = data?.[0];
+  if (!row) return fail();
+  return ok({ substituteName: row.substitute_name, replacedName: row.replaced_name });
 }

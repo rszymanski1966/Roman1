@@ -17,9 +17,32 @@ const jar = new Map();
 const jarB = new Map();
 const anonJar = new Map();
 
+// Second substitute in the same pair (best-substitute steps). Not prefixed by substituteMarker, so lookups stay unambiguous.
+const secondSubstitute = `smoke-second-${runId}`;
+
 // Values captured by earlier steps and used by later ones.
 let categoryId = "";
 let listPath = "";
+let firstSubstituteId = "";
+let secondSubstituteId = "";
+
+// The substitute id from the mark-as-best form of the card whose name is exactly `name` (the name renders as >name<).
+function substituteIdFor(body, name) {
+  const start = body.indexOf(`>${name}<`);
+  if (start === -1) return "";
+  return /name="substitute_id" value="([0-9a-f-]{36})"/i.exec(body.slice(start))?.[1] ?? "";
+}
+
+// Form fields for /api/substitutes/best: the pair comes from the list URL, so the redirect returns to the same list.
+function bestForm(substituteId, isBest) {
+  const params = new URLSearchParams(listPath.split("?")[1] ?? "");
+  return {
+    substitute_id: substituteId,
+    is_best: isBest,
+    ingredient: params.get("ingredient") ?? "",
+    category: params.get("category") ?? "",
+  };
+}
 
 function cookieHeader(cookies) {
   return [...cookies.entries()].map(([k, v]) => `${k}=${v}`).join("; ");
@@ -117,6 +140,48 @@ const steps = [
   ],
   ["account A sees its substitute", () => request(listPath), { status: 200, bodyIncludes: substituteMarker }],
   [
+    "account A adds a second substitute in the same pair",
+    () =>
+      request("/api/ingredients", {
+        method: "POST",
+        form: {
+          ingredient: `smoke-ingredient-${runId}`,
+          category_id: categoryId,
+          substitute: secondSubstitute,
+          ratio: "2:1",
+        },
+      }),
+    { status: 302, location: "/ingredients?ingredient=" },
+  ],
+  [
+    "account A list shows both substitutes",
+    async () => {
+      const actual = await request(listPath);
+      firstSubstituteId = substituteIdFor(actual.body, substituteMarker);
+      secondSubstituteId = substituteIdFor(actual.body, secondSubstitute);
+      // Fail the step if either id could not be parsed, instead of posting empty ids later.
+      return firstSubstituteId && secondSubstituteId ? actual : { ...actual, status: 0 };
+    },
+    { status: 200, bodyIncludes: secondSubstitute },
+  ],
+  [
+    // No previous best: back to the same list without a notice.
+    "account A marks the first substitute as best",
+    () => request("/api/substitutes/best", { method: "POST", form: bestForm(firstSubstituteId, "1") }),
+    () => ({ status: 302, location: listPath, locationExcludes: "notice=" }),
+  ],
+  ["account A list shows the best badge", () => request(listPath), { status: 200, bodyIncludes: "data-best-badge" }],
+  [
+    // Replaces the first one: the notice names the previous best (URLSearchParams encodes spaces as '+').
+    "account A marks the second substitute as best",
+    () => request("/api/substitutes/best", { method: "POST", form: bestForm(secondSubstituteId, "1") }),
+    () => ({
+      status: 302,
+      location: listPath,
+      locationIncludes: `notice=Najlepszy+zamiennik+zmieniony%3A+${substituteMarker}+`,
+    }),
+  ],
+  [
     // Same ingredient and category, same name in a different case: the unique (pair, name_key) constraint rejects it.
     "account A cannot add a duplicate substitute",
     () =>
@@ -146,6 +211,12 @@ const steps = [
     { status: 302, location: "/" },
   ],
   [
+    // RLS hides A's row from B, so the function reports "not found" and nothing changes.
+    "account B cannot mark account A's substitute",
+    () => request("/api/substitutes/best", { method: "POST", cookies: jarB, form: bestForm(firstSubstituteId, "1") }),
+    () => ({ status: 302, location: listPath, locationIncludes: "error=" }),
+  ],
+  [
     // B needs its own ingredient, otherwise the list page short-circuits to "no ingredients" and never queries substitutes.
     "account B adds its own ingredient",
     () =>
@@ -171,17 +242,23 @@ const steps = [
 ];
 
 let failed = 0;
-for (const [name, run, expected] of steps) {
+for (const [name, run, expectation] of steps) {
   const actual = await run();
+  // A function expectation is resolved after the step runs, so it can use values captured by earlier steps (listPath).
+  const expected = typeof expectation === "function" ? expectation() : expectation;
   const ok =
     actual.status === expected.status &&
     (expected.location === undefined || actual.location.startsWith(expected.location)) &&
+    (expected.locationIncludes === undefined || actual.location.includes(expected.locationIncludes)) &&
+    (expected.locationExcludes === undefined || !actual.location.includes(expected.locationExcludes)) &&
     (expected.bodyIncludes === undefined || actual.body.includes(expected.bodyIncludes)) &&
     (expected.bodyExcludes === undefined || !actual.body.includes(expected.bodyExcludes));
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}`);
   if (!ok) {
     failed++;
     const body = [
+      expected.locationIncludes !== undefined ? `location includes "${expected.locationIncludes}"` : "",
+      expected.locationExcludes !== undefined ? `location excludes "${expected.locationExcludes}"` : "",
       expected.bodyIncludes !== undefined ? `body includes "${expected.bodyIncludes}"` : "",
       expected.bodyExcludes !== undefined ? `body excludes "${expected.bodyExcludes}"` : "",
     ]
