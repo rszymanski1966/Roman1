@@ -3,7 +3,7 @@ project: "Kuchenny Zamiennik"
 version: 1
 status: draft
 created: 2026-10-02
-updated: 2026-10-11
+updated: 2026-10-12
 prd_version: 1
 main_goal: low-complexity
 top_blocker: time
@@ -42,7 +42,7 @@ Osoba gotująca w domu (na start autor projektu) nie ma wygodnego miejsca ze spr
 | ID   | Change ID                  | Outcome (user can …)                                                                           | Prerequisites | PRD refs                 | Status   |
 | ---- | -------------------------- | ---------------------------------------------------------------------------------------------- | ------------- | ------------------------ | -------- |
 | S-01 | first-substitute-lookup    | dodać składnik z kategorią i zamiennik z proporcją/uwagami i zobaczyć go na liście dla składnika + kategorii | —             | FR-001, FR-002, US-01    | done |
-| S-02 | best-substitute-highlight  | oznaczyć zamiennik jako „najlepszy" w kategorii i zobaczyć go wyróżnionego na liście           | S-01          | FR-003, US-01            | in-progress |
+| S-02 | best-substitute-highlight  | oznaczyć zamiennik jako „najlepszy" w kategorii i zobaczyć go wyróżnionego na liście           | S-01          | FR-003, US-01            | done |
 | S-03 | ingredient-name-search     | wyszukać zamienniki po nazwie składnika, opcjonalnie zawężając do kategorii                    | S-01          | FR-004, FR-005, US-01    | ready |
 | S-04 | edit-entries               | edytować własny wpis składnika lub zamiennika                                                  | S-01          | FR-006                   | ready |
 | S-05 | delete-entries-confirmed   | usunąć własny wpis składnika lub zamiennika (kaskadowo, po potwierdzeniu)                      | S-01          | FR-007                   | ready |
@@ -88,7 +88,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** To reguła biznesowa odróżniająca narzędzie od płaskiej listy; sekwencjonowana zaraz po S-01, żeby kryterium Primary zostało domknięte jak najwcześniej. Jeden „najlepszy" na kategorię — kontekst przygotowania świadomie poza MVP.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-03: Wyszukiwanie po nazwie składnika
 
@@ -123,7 +123,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 - **Parallel with:** S-02, S-03, S-04
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** Utrata ręcznie zbudowanej bazy przy braku potwierdzenia — potwierdzenie jest częścią wymagania, nie ozdobą.
+- **Risk:** Utrata ręcznie zbudowanej bazy przy braku potwierdzenia — potwierdzenie jest częścią wymagania, nie ozdobą. Po dodaniu polityki DELETE na `substitutes` funkcja `set_best_substitute` (z S-02) musi czytać wiersz przez `select … for update`, inaczej usunięcie w trakcie zamiany da fałszywy sukces (review S-02, F1).
 - **Status:** ready
 
 ## Backlog Handoff
@@ -157,3 +157,4 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 ## Done
 
 - **S-01: user can dodać składnik z kategorią z predefiniowanej listy i zamiennik z proporcją i uwagami, a następnie wybrać składnik + kategorię i zobaczyć listę zamienników (z czytelnym stanem pustym).** — Archived 2026-10-09 → `context/archive/2026-10-04-first-substitute-lookup/`. Lesson: —.
+- **S-02: user can oznaczyć zamiennik jako „najlepszy" w danej kategorii i zobaczyć go wizualnie wyróżnionego na liście.** — Archived 2026-10-12 → `context/archive/2026-10-11-best-substitute-highlight/`. Lesson: —.
