@@ -333,31 +333,31 @@ Zmiana addytywna: istniejące zamienniki dostają `is_best = false`, więc żadn
 
 #### Automated
 
-- [x] 2.1 Lint przechodzi: `npm run lint`
-- [x] 2.2 Build przechodzi: `npm run build`
-- [x] 2.3 Smoke przechodzi z nowymi krokami listy: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 2.1 Lint przechodzi: `npm run lint` — 31cd35d
+- [x] 2.2 Build przechodzi: `npm run build` — 31cd35d
+- [x] 2.3 Smoke przechodzi z nowymi krokami listy: `BASE_URL=http://localhost:4321 npm run smoke` — 31cd35d
 
 #### Manual
 
-- [x] 2.4 Oznaczenie zamiennika na liście przenosi go na górę z plakietką „Najlepszy" i pomarańczową ramką
-- [x] 2.5 Oznaczenie innego zamiennika w tej samej parze pokazuje komunikat „Najlepszy zamiennik zmieniony: X → Y." i tylko jeden wyróżniony
-- [x] 2.6 „Usuń wyróżnienie" zostawia listę bez wyróżnionej pozycji, w kolejności od najstarszego
-- [x] 2.7 Najlepszy w innej kategorii tego samego składnika pozostaje bez zmian
+- [x] 2.4 Oznaczenie zamiennika na liście przenosi go na górę z plakietką „Najlepszy" i pomarańczową ramką — 31cd35d
+- [x] 2.5 Oznaczenie innego zamiennika w tej samej parze pokazuje komunikat „Najlepszy zamiennik zmieniony: X → Y." i tylko jeden wyróżniony — 31cd35d
+- [x] 2.6 „Usuń wyróżnienie" zostawia listę bez wyróżnionej pozycji, w kolejności od najstarszego — 31cd35d
+- [x] 2.7 Najlepszy w innej kategorii tego samego składnika pozostaje bez zmian — 31cd35d
 
 ### Phase 3: Formularz dodawania — checkbox „Najlepszy"
 
 #### Automated
 
-- [ ] 3.1 Lint przechodzi: `npm run lint`
-- [ ] 3.2 Build przechodzi: `npm run build`
-- [ ] 3.3 Smoke przechodzi z krokiem formularza: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 3.1 Lint przechodzi: `npm run lint`
+- [x] 3.2 Build przechodzi: `npm run build`
+- [x] 3.3 Smoke przechodzi z krokiem formularza: `BASE_URL=http://localhost:4321 npm run smoke`
 
 #### Manual
 
-- [ ] 3.4 Dodanie zamiennika z zaznaczonym checkboxem w parze bez najlepszego pokazuje go na górze z plakietką, bez komunikatu
-- [ ] 3.5 Dodanie z checkboxem w parze z najlepszym pokazuje komunikat zamiany i nowego najlepszego na górze
-- [ ] 3.6 Błąd walidacji (np. pusta proporcja) zachowuje zaznaczenie checkboxa
-- [ ] 3.7 Dodanie bez checkboxa nie zmienia obecnego najlepszego
+- [x] 3.4 Dodanie zamiennika z zaznaczonym checkboxem w parze bez najlepszego pokazuje go na górze z plakietką, bez komunikatu
+- [x] 3.5 Dodanie z checkboxem w parze z najlepszym pokazuje komunikat zamiany i nowego najlepszego na górze
+- [x] 3.6 Błąd walidacji (np. pusta proporcja) zachowuje zaznaczenie checkboxa
+- [x] 3.7 Dodanie bez checkboxa nie zmienia obecnego najlepszego
 
 ### Phase 4: Wydanie — migracja produkcyjna i PR
 

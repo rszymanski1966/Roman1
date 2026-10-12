@@ -30,6 +30,7 @@ interface FormValues {
   substitute: string;
   ratio: string;
   notes: string;
+  isBest: boolean;
 }
 
 function errorRedirect(message: string, values?: FormValues): string {
@@ -41,6 +42,7 @@ function errorRedirect(message: string, values?: FormValues): string {
       ["substitute", truncate(values.substitute, MAX_NAME)],
       ["ratio", truncate(values.ratio, MAX_RATIO)],
       ["notes", truncate(values.notes, MAX_NOTES)],
+      ["is_best", values.isBest ? "1" : ""],
     ];
     for (const [name, value] of echoed) {
       if (value) params.set(name, value);
@@ -71,7 +73,9 @@ export const POST: APIRoute = async (context) => {
   const substitute = normalizeName(field(form, "substitute"));
   const ratio = field(form, "ratio").trim();
   const notes = field(form, "notes").trim();
-  const values: FormValues = { ingredient, categoryId, substitute, ratio, notes };
+  // Checkbox: sent as "1" when checked, absent otherwise.
+  const isBest = field(form, "is_best") === "1";
+  const values: FormValues = { ingredient, categoryId, substitute, ratio, notes, isBest };
 
   if (!ingredient) return context.redirect(errorRedirect("Podaj nazwę składnika.", values));
   if (charLength(ingredient) > MAX_NAME) {
@@ -98,12 +102,20 @@ export const POST: APIRoute = async (context) => {
     substituteName: substitute,
     ratio,
     notes: notes || null,
-    isBest: false,
+    isBest,
   });
   if (result.error !== null) {
     return context.redirect(errorRedirect(result.error, values));
   }
 
   const params = new URLSearchParams({ ingredient: result.data.ingredientId, category: result.data.categoryId });
+  // A failed mark goes to the list, not back to the form: the substitute is already saved.
+  // A swap gets the same notice as marking from the list (api/substitutes/best.ts).
+  const { replacedName, bestError } = result.data;
+  if (bestError !== null) {
+    params.set("error", bestError);
+  } else if (replacedName !== null) {
+    params.set("notice", `Najlepszy zamiennik zmieniony: ${replacedName} → ${substitute}.`);
+  }
   return context.redirect(`/ingredients?${params.toString()}`);
 };

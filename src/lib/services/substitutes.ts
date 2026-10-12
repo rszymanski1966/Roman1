@@ -59,6 +59,8 @@ export async function listIngredients(client: SupabaseClient): Promise<ServiceRe
  * because ON CONFLICT DO UPDATE would need an UPDATE RLS policy that does not exist.
  * A substitute name already saved for the pair (case-insensitive) returns a "already saved" message
  * instead of GENERIC_ERROR; any other database error stays generic.
+ * With isBest the new substitute is then marked as the best one of its pair (see setBestSubstitute):
+ * replacedName is the previous best that lost the mark, bestError is set when marking failed.
  */
 export async function addSubstitute(
   client: SupabaseClient,
@@ -102,12 +104,16 @@ export async function addSubstitute(
   const ingredientCategoryId = pairRow.data.id;
 
   const substituteName = normalizeName(input.substituteName);
-  const substituteInsert = await client.from("substitutes").insert({
-    ingredient_category_id: ingredientCategoryId,
-    name: substituteName,
-    ratio: input.ratio.trim(),
-    notes: input.notes?.trim() ? input.notes.trim() : null,
-  });
+  const substituteInsert = await client
+    .from("substitutes")
+    .insert({
+      ingredient_category_id: ingredientCategoryId,
+      name: substituteName,
+      ratio: input.ratio.trim(),
+      notes: input.notes?.trim() ? input.notes.trim() : null,
+    })
+    .select("id")
+    .single<{ id: string }>();
   if (substituteInsert.error) {
     // 23505 = unique_violation on (ingredient_category_id, name_key): the same name is already saved for this pair.
     if (substituteInsert.error.code === "23505") {
@@ -116,7 +122,22 @@ export async function addSubstitute(
     return fail();
   }
 
-  return ok({ ingredientId, categoryId: input.categoryId, replacedName: null, bestError: null });
+  if (!input.isBest) {
+    return ok({ ingredientId, categoryId: input.categoryId, replacedName: null, bestError: null });
+  }
+
+  // Not atomic with the insert: if marking fails, the substitute stays saved without the mark and the add
+  // still counts as a success (re-submitting the form would only hit the duplicate-name conflict).
+  const best = await setBestSubstitute(client, substituteInsert.data.id, true);
+  if (best.error !== null) {
+    return ok({
+      ingredientId,
+      categoryId: input.categoryId,
+      replacedName: null,
+      bestError: "Zamiennik zapisany, ale nie udało się oznaczyć go jako najlepszy.",
+    });
+  }
+  return ok({ ingredientId, categoryId: input.categoryId, replacedName: best.data.replacedName, bestError: null });
 }
 
 /**

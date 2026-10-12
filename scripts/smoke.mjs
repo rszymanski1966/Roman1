@@ -19,6 +19,8 @@ const anonJar = new Map();
 
 // Second substitute in the same pair (best-substitute steps). Not prefixed by substituteMarker, so lookups stay unambiguous.
 const secondSubstitute = `smoke-second-${runId}`;
+// Third substitute, added with the "best" checkbox on the add form.
+const thirdSubstitute = `smoke-third-${runId}`;
 
 // Values captured by earlier steps and used by later ones.
 let categoryId = "";
@@ -179,6 +181,42 @@ const steps = [
       status: 302,
       location: listPath,
       locationIncludes: `notice=Najlepszy+zamiennik+zmieniony%3A+${substituteMarker}+`,
+    }),
+  ],
+  [
+    // Validation error (empty ratio): the checked "best" checkbox is echoed back to the form.
+    "add form echoes the best checkbox after a validation error",
+    () =>
+      request("/api/ingredients", {
+        method: "POST",
+        form: {
+          ingredient: `smoke-ingredient-${runId}`,
+          category_id: categoryId,
+          substitute: thirdSubstitute,
+          ratio: "",
+          is_best: "1",
+        },
+      }),
+    { status: 302, location: "/ingredients/new?error=", locationIncludes: "is_best=1" },
+  ],
+  [
+    // Adding with the checkbox replaces the current best (the second one) and shows the same notice as the list.
+    "account A adds a third substitute marked as best",
+    () =>
+      request("/api/ingredients", {
+        method: "POST",
+        form: {
+          ingredient: `smoke-ingredient-${runId}`,
+          category_id: categoryId,
+          substitute: thirdSubstitute,
+          ratio: "3:1",
+          is_best: "1",
+        },
+      }),
+    () => ({
+      status: 302,
+      location: listPath,
+      locationIncludes: `notice=Najlepszy+zamiennik+zmieniony%3A+${secondSubstitute}+`,
     }),
   ],
   [
