@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
-import { isUuid, setBestSubstitute } from "@/lib/services/substitutes";
+import { bestSwapNotice, isUuid, setBestSubstitute } from "@/lib/services/substitutes";
 
 const LIST_PAGE = "/ingredients";
 const INVALID_FORM = "Nieprawidłowe dane formularza.";
@@ -67,9 +67,7 @@ export const POST: APIRoute = async (context) => {
   // Only a swap gets a notice; marking without a previous best or unmarking is visible on the list itself.
   const { substituteName, replacedName } = result.data;
   if (replacedName !== null) {
-    return context.redirect(
-      listRedirect(pair, { notice: `Najlepszy zamiennik zmieniony: ${replacedName} → ${substituteName}.` }),
-    );
+    return context.redirect(listRedirect(pair, { notice: bestSwapNotice(replacedName, substituteName) }));
   }
   return context.redirect(listRedirect(pair));
 };

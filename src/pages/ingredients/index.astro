@@ -8,7 +8,7 @@ import type { Category, IngredientListItem, SubstituteListItem } from "@/types";
 // Selection from the GET form (or the redirect after adding): ?ingredient=<id>&category=<id>.
 const ingredientParam = Astro.url.searchParams.get("ingredient")?.trim() ?? "";
 const categoryParam = Astro.url.searchParams.get("category")?.trim() ?? "";
-// Messages from /api/substitutes/best: ?notice= after a best-substitute swap, ?error= when an action failed.
+// Messages from /api/substitutes/best and /api/ingredients: ?notice= after a best-substitute swap, ?error= when an action failed.
 const notice = Astro.url.searchParams.get("notice");
 const error = Astro.url.searchParams.get("error");
 const hasSelection = ingredientParam !== "" && categoryParam !== "";

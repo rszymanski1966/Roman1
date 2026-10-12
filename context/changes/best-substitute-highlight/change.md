@@ -1,9 +1,9 @@
 ---
 change_id: best-substitute-highlight
 title: Best substitute highlight
-status: implementing
+status: impl_reviewed
 created: 2026-10-11
-updated: 2026-10-11
+updated: 2026-10-12
 archived_at: null
 ---
 

@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
-import { addSubstitute, isUuid, normalizeName } from "@/lib/services/substitutes";
+import { addSubstitute, bestSwapNotice, isUuid, normalizeName } from "@/lib/services/substitutes";
 
 const FORM_PAGE = "/ingredients/new";
 
@@ -115,7 +115,7 @@ export const POST: APIRoute = async (context) => {
   if (bestError !== null) {
     params.set("error", bestError);
   } else if (replacedName !== null) {
-    params.set("notice", `Najlepszy zamiennik zmieniony: ${replacedName} → ${substitute}.`);
+    params.set("notice", bestSwapNotice(replacedName, substitute));
   }
   return context.redirect(`/ingredients?${params.toString()}`);
 };

@@ -199,3 +199,8 @@ export async function setBestSubstitute(
   if (!row) return fail();
   return ok({ substituteName: row.substitute_name, replacedName: row.replaced_name });
 }
+
+/** List notice after the best mark moved from `replacedName` to `substituteName` (list button or add form). */
+export function bestSwapNotice(replacedName: string, substituteName: string): string {
+  return `Najlepszy zamiennik zmieniony: ${replacedName} → ${substituteName}.`;
+}

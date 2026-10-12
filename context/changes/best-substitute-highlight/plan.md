@@ -348,16 +348,16 @@ Zmiana addytywna: istniejące zamienniki dostają `is_best = false`, więc żadn
 
 #### Automated
 
-- [x] 3.1 Lint przechodzi: `npm run lint`
-- [x] 3.2 Build przechodzi: `npm run build`
-- [x] 3.3 Smoke przechodzi z krokiem formularza: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 3.1 Lint przechodzi: `npm run lint` — 1ea886b
+- [x] 3.2 Build przechodzi: `npm run build` — 1ea886b
+- [x] 3.3 Smoke przechodzi z krokiem formularza: `BASE_URL=http://localhost:4321 npm run smoke` — 1ea886b
 
 #### Manual
 
-- [x] 3.4 Dodanie zamiennika z zaznaczonym checkboxem w parze bez najlepszego pokazuje go na górze z plakietką, bez komunikatu
-- [x] 3.5 Dodanie z checkboxem w parze z najlepszym pokazuje komunikat zamiany i nowego najlepszego na górze
-- [x] 3.6 Błąd walidacji (np. pusta proporcja) zachowuje zaznaczenie checkboxa
-- [x] 3.7 Dodanie bez checkboxa nie zmienia obecnego najlepszego
+- [x] 3.4 Dodanie zamiennika z zaznaczonym checkboxem w parze bez najlepszego pokazuje go na górze z plakietką, bez komunikatu — 1ea886b
+- [x] 3.5 Dodanie z checkboxem w parze z najlepszym pokazuje komunikat zamiany i nowego najlepszego na górze — 1ea886b
+- [x] 3.6 Błąd walidacji (np. pusta proporcja) zachowuje zaznaczenie checkboxa — 1ea886b
+- [x] 3.7 Dodanie bez checkboxa nie zmienia obecnego najlepszego — 1ea886b
 
 ### Phase 4: Wydanie — migracja produkcyjna i PR
 
