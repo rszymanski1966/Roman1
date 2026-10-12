@@ -363,5 +363,5 @@ Zmiana addytywna: istniejące zamienniki dostają `is_best = false`, więc żadn
 
 #### Manual
 
-- [ ] 4.1 Migracja zastosowana na produkcji (`npx supabase db push`) przed merge'em
-- [ ] 4.2 Po deployu na produkcji oznaczenie i zamiana najlepszego działają na koncie testowym
+- [x] 4.1 Migracja zastosowana na produkcji (`npx supabase db push`) przed merge'em
+- [x] 4.2 Po deployu na produkcji oznaczenie i zamiana najlepszego działają na koncie testowym
