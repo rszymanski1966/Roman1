@@ -123,7 +123,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 - **Parallel with:** S-02, S-03, S-04
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** Utrata ręcznie zbudowanej bazy przy braku potwierdzenia — potwierdzenie jest częścią wymagania, nie ozdobą.
+- **Risk:** Utrata ręcznie zbudowanej bazy przy braku potwierdzenia — potwierdzenie jest częścią wymagania, nie ozdobą. Po dodaniu polityki DELETE na `substitutes` funkcja `set_best_substitute` (z S-02) musi czytać wiersz przez `select … for update`, inaczej usunięcie w trakcie zamiany da fałszywy sukces (review S-02, F1).
 - **Status:** ready
 
 ## Backlog Handoff
