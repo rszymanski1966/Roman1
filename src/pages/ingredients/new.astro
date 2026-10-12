@@ -13,6 +13,7 @@ const echoedIngredientName = Astro.url.searchParams.get("ingredient_name") ?? ""
 const echoedSubstitute = Astro.url.searchParams.get("substitute") ?? "";
 const echoedRatio = Astro.url.searchParams.get("ratio") ?? "";
 const echoedNotes = Astro.url.searchParams.get("notes") ?? "";
+const echoedIsBest = Astro.url.searchParams.get("is_best") === "1";
 
 let categories: Category[] = [];
 let loadError: string | null = null;
@@ -132,6 +133,20 @@ const labelClass = "mb-1 block text-sm text-stone-700";
               placeholder="np. lekki posmak kokosa"
               class:list={inputClass}
             >{echoedNotes}</textarea>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <input
+              id="is_best"
+              name="is_best"
+              type="checkbox"
+              value="1"
+              checked={echoedIsBest}
+              class="h-4 w-4 accent-orange-600"
+            />
+            <label for="is_best" class="text-sm text-stone-700">
+              Najlepszy zamiennik w tej kategorii
+            </label>
           </div>
 
           {error && <p class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}

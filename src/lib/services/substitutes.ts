@@ -59,6 +59,8 @@ export async function listIngredients(client: SupabaseClient): Promise<ServiceRe
  * because ON CONFLICT DO UPDATE would need an UPDATE RLS policy that does not exist.
  * A substitute name already saved for the pair (case-insensitive) returns a "already saved" message
  * instead of GENERIC_ERROR; any other database error stays generic.
+ * With isBest the new substitute is then marked as the best one of its pair (see setBestSubstitute):
+ * replacedName is the previous best that lost the mark, bestError is set when marking failed.
  */
 export async function addSubstitute(
   client: SupabaseClient,
@@ -102,12 +104,16 @@ export async function addSubstitute(
   const ingredientCategoryId = pairRow.data.id;
 
   const substituteName = normalizeName(input.substituteName);
-  const substituteInsert = await client.from("substitutes").insert({
-    ingredient_category_id: ingredientCategoryId,
-    name: substituteName,
-    ratio: input.ratio.trim(),
-    notes: input.notes?.trim() ? input.notes.trim() : null,
-  });
+  const substituteInsert = await client
+    .from("substitutes")
+    .insert({
+      ingredient_category_id: ingredientCategoryId,
+      name: substituteName,
+      ratio: input.ratio.trim(),
+      notes: input.notes?.trim() ? input.notes.trim() : null,
+    })
+    .select("id")
+    .single<{ id: string }>();
   if (substituteInsert.error) {
     // 23505 = unique_violation on (ingredient_category_id, name_key): the same name is already saved for this pair.
     if (substituteInsert.error.code === "23505") {
@@ -116,10 +122,28 @@ export async function addSubstitute(
     return fail();
   }
 
-  return ok({ ingredientId, categoryId: input.categoryId });
+  if (!input.isBest) {
+    return ok({ ingredientId, categoryId: input.categoryId, replacedName: null, bestError: null });
+  }
+
+  // Not atomic with the insert: if marking fails, the substitute stays saved without the mark and the add
+  // still counts as a success (re-submitting the form would only hit the duplicate-name conflict).
+  const best = await setBestSubstitute(client, substituteInsert.data.id, true);
+  if (best.error !== null) {
+    return ok({
+      ingredientId,
+      categoryId: input.categoryId,
+      replacedName: null,
+      bestError: "Zamiennik zapisany, ale nie udało się oznaczyć go jako najlepszy.",
+    });
+  }
+  return ok({ ingredientId, categoryId: input.categoryId, replacedName: best.data.replacedName, bestError: null });
 }
 
-/** Substitutes for (ingredient, category), oldest first. Missing pair (or foreign ids) = empty list. */
+/**
+ * Substitutes for (ingredient, category): the best one first, then the rest oldest first.
+ * Missing pair (or foreign ids) = empty list.
+ */
 export async function listSubstitutes(
   client: SupabaseClient,
   ingredientId: string,
@@ -137,9 +161,46 @@ export async function listSubstitutes(
 
   const { data, error } = await client
     .from("substitutes")
-    .select("id, name, ratio, notes")
+    .select("id, name, ratio, notes, is_best")
     .eq("ingredient_category_id", ingredientCategoryId)
+    .order("is_best", { ascending: false })
     .order("created_at", { ascending: true });
   if (error) return fail();
   return ok(data as SubstituteListItem[]);
+}
+
+/**
+ * Marks (isBest = true) or unmarks a substitute as the best one of its pair via the set_best_substitute
+ * function, which swaps the mark atomically. replacedName is the previous best that lost the mark,
+ * or null (no previous best, already the best, or unmark). A foreign or missing substitute is "not found".
+ */
+export async function setBestSubstitute(
+  client: SupabaseClient,
+  substituteId: string,
+  isBest: boolean,
+): Promise<ServiceResult<{ substituteName: string; replacedName: string | null }>> {
+  const result = await client.rpc("set_best_substitute", {
+    p_substitute_id: substituteId,
+    p_is_best: isBest,
+  });
+  const error = result.error;
+  // Returns a one-row table (substitute_name, replaced_name); no generated DB types, so the shape is asserted.
+  const data = result.data as { substitute_name: string; replaced_name: string | null }[] | null;
+  if (error) {
+    // P0002 = raised by the function when the substitute is missing or hidden by RLS (another account's row).
+    if (error.code === "P0002") return fail("Nie znaleziono zamiennika.");
+    // 23505 = partial unique index (one best per pair): a concurrent change, e.g. from another tab.
+    if (error.code === "23505") {
+      return fail("Najlepszy zamiennik właśnie się zmienił. Odśwież listę i spróbuj ponownie.");
+    }
+    return fail();
+  }
+  const row = data?.[0];
+  if (!row) return fail();
+  return ok({ substituteName: row.substitute_name, replacedName: row.replaced_name });
+}
+
+/** List notice after the best mark moved from `replacedName` to `substituteName` (list button or add form). */
+export function bestSwapNotice(replacedName: string, substituteName: string): string {
+  return `Najlepszy zamiennik zmieniony: ${replacedName} → ${substituteName}.`;
 }
