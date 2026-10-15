@@ -4,6 +4,8 @@ import type {
   AddSubstituteResult,
   Category,
   IngredientListItem,
+  MatchMode,
+  SubstituteGroup,
   SubstituteListItem,
 } from "@/types";
 
@@ -36,6 +38,32 @@ export function isUuid(value: string): boolean {
 /** Case-insensitive comparison key for an already-normalized name. */
 export function toNameKey(normalizedName: string): string {
   return normalizedName.toLocaleLowerCase("pl");
+}
+
+/** Cookie that remembers the last chosen MatchMode on the ingredients page. */
+export const MATCH_MODE_COOKIE = "ingredients_match";
+
+/** Reads a MatchMode from a URL param or cookie value; anything else is null. */
+export function parseMatchMode(value: string | null | undefined): MatchMode | null {
+  return value === "contains" || value === "prefix" ? value : null;
+}
+
+/**
+ * Ingredients whose name matches the query (case-insensitive, same key as ingredients.name_key),
+ * anywhere in the name ("contains") or at its start ("prefix"). Keeps the input order.
+ * An empty query (after normalization) matches nothing.
+ */
+export function matchIngredients(
+  ingredients: IngredientListItem[],
+  query: string,
+  mode: MatchMode,
+): IngredientListItem[] {
+  const queryKey = toNameKey(normalizeName(query));
+  if (queryKey === "") return [];
+  return ingredients.filter((ingredient) => {
+    const nameKey = toNameKey(normalizeName(ingredient.name));
+    return mode === "prefix" ? nameKey.startsWith(queryKey) : nameKey.includes(queryKey);
+  });
 }
 
 export async function listCategories(client: SupabaseClient): Promise<ServiceResult<Category[]>> {
@@ -167,6 +195,69 @@ export async function listSubstitutes(
     .order("created_at", { ascending: true });
   if (error) return fail();
   return ok(data as SubstituteListItem[]);
+}
+
+/** Ids of ingredients that have at least one substitute in the category (search filter). */
+export async function listIngredientIdsWithSubstitutes(
+  client: SupabaseClient,
+  categoryId: string,
+): Promise<ServiceResult<Set<string>>> {
+  // !inner drops pairs without substitutes; only ingredient_id is used from each row.
+  const { data, error } = await client
+    .from("ingredient_categories")
+    .select("ingredient_id, substitutes!inner(id)")
+    .eq("category_id", categoryId);
+  if (error) return fail();
+  const rows = data as { ingredient_id: string }[];
+  return ok(new Set(rows.map((row) => row.ingredient_id)));
+}
+
+// Row shape of the embedded select in listIngredientSubstitutes (no generated DB types, so it is asserted).
+// categories is many-to-one (an object), but without generated types it is read defensively (object or array).
+interface IngredientSubstitutesRow {
+  categories: SubstituteGroup["category"] | SubstituteGroup["category"][] | null;
+  substitutes: (SubstituteListItem & { created_at: string })[] | null;
+}
+
+/**
+ * Substitutes of an ingredient grouped per category: with categoryId at most one group, without it every
+ * category that has substitutes. Groups by category sort_order; in a group the best one first, then oldest first.
+ * Both sorts run in JS: .order(..., { referencedTable }) would only sort the embedded rows, not the pairs.
+ * Categories without substitutes are skipped; a missing pair (or foreign ids) = empty list.
+ */
+export async function listIngredientSubstitutes(
+  client: SupabaseClient,
+  ingredientId: string,
+  categoryId: string | null,
+): Promise<ServiceResult<SubstituteGroup[]>> {
+  let query = client
+    .from("ingredient_categories")
+    .select("categories(id, name, sort_order), substitutes(id, name, ratio, notes, is_best, created_at)")
+    .eq("ingredient_id", ingredientId);
+  if (categoryId !== null) query = query.eq("category_id", categoryId);
+  const { data, error } = await query;
+  if (error) return fail();
+
+  const groups: SubstituteGroup[] = [];
+  for (const row of data as IngredientSubstitutesRow[]) {
+    const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
+    const rows = row.substitutes ?? [];
+    if (!category || rows.length === 0) continue;
+    const sorted = [...rows].sort(
+      (a, b) =>
+        Number(b.is_best) - Number(a.is_best) ||
+        Date.parse(a.created_at) - Date.parse(b.created_at) ||
+        // Same millisecond: the timestamp strings still carry microseconds.
+        (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0),
+    );
+    groups.push({
+      category: { id: category.id, name: category.name, sort_order: category.sort_order },
+      // created_at is only needed for sorting; the public item shape leaves it out.
+      substitutes: sorted.map(({ id, name, ratio, notes, is_best }) => ({ id, name, ratio, notes, is_best })),
+    });
+  }
+  groups.sort((a, b) => a.category.sort_order - b.category.sort_order);
+  return ok(groups);
 }
 
 /**

@@ -3,7 +3,7 @@ project: "Kuchenny Zamiennik"
 version: 1
 status: draft
 created: 2026-10-02
-updated: 2026-10-13
+updated: 2026-10-15
 prd_version: 1
 main_goal: low-complexity
 top_blocker: time
@@ -43,7 +43,7 @@ Osoba gotująca w domu (na start autor projektu) nie ma wygodnego miejsca ze spr
 | ---- | -------------------------- | ---------------------------------------------------------------------------------------------- | ------------- | ------------------------ | -------- |
 | S-01 | first-substitute-lookup    | dodać składnik z kategorią i zamiennik z proporcją/uwagami i zobaczyć go na liście dla składnika + kategorii | —             | FR-001, FR-002, US-01    | done |
 | S-02 | best-substitute-highlight  | oznaczyć zamiennik jako „najlepszy" w kategorii i zobaczyć go wyróżnionego na liście           | S-01          | FR-003, US-01            | done |
-| S-03 | ingredient-name-search     | wyszukać zamienniki po nazwie składnika, opcjonalnie zawężając do kategorii                    | S-01          | FR-004, FR-005, US-01    | planning |
+| S-03 | ingredient-name-search     | wyszukać zamienniki po nazwie składnika, opcjonalnie zawężając do kategorii                    | S-01          | FR-004, FR-005, US-01    | in-progress |
 | S-04 | edit-entries               | edytować własny wpis składnika lub zamiennika                                                  | S-01          | FR-006                   | ready |
 | S-05 | delete-entries-confirmed   | usunąć własny wpis składnika lub zamiennika (kaskadowo, po potwierdzeniu)                      | S-01          | FR-007                   | ready |
 
@@ -100,7 +100,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Dwa wymagania (FR-004/FR-005) dublują się — planować jako jedno wyszukiwanie; tolerancja literówek jest poza MVP.
-- **Status:** planning
+- **Status:** in-progress
 
 ### S-04: Edycja wpisów
 
@@ -131,7 +131,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 | Roadmap ID | Change ID                 | Suggested issue title                                                  | Ready for `/10x-plan` | Notes                                  |
 | ---------- | ------------------------- | ---------------------------------------------------------------------- | --------------------- | -------------------------------------- |
 | S-01       | first-substitute-lookup   | Dodawanie składnika i zamiennika oraz lista zamienników (z RLS)        | —                     | Done (archived 2026-10-09)             |
-| S-02       | best-substitute-highlight | Oznaczanie i wyróżnianie najlepszego zamiennika                        | yes                   | Run `/10x-plan best-substitute-highlight` |
+| S-02       | best-substitute-highlight | Oznaczanie i wyróżnianie najlepszego zamiennika                        | —                     | Done (archived 2026-10-12)             |
 | S-03       | ingredient-name-search    | Wyszukiwanie zamienników po nazwie składnika (+ filtr kategorii)       | yes                   | Run `/10x-plan ingredient-name-search` |
 | S-04       | edit-entries              | Edycja składników i zamienników                                        | yes                   | Run `/10x-plan edit-entries`; edycja nazwy musi respektować unikalność zamienników (23505, lessons.md) |
 | S-05       | delete-entries-confirmed  | Usuwanie składników i zamienników z potwierdzeniem                     | yes                   | Run `/10x-plan delete-entries-confirmed` |

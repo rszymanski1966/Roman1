@@ -284,12 +284,12 @@ Brak migracji bazy. Wycofanie to revert commitów; stare adresy `?ingredient&cat
 
 #### Automated
 
-- [ ] 1.1 Lint przechodzi: `npm run lint`
-- [ ] 1.2 Build przechodzi (przy zatrzymanym `npm run dev`): `npm run build`
+- [x] 1.1 Lint przechodzi: `npm run lint`
+- [x] 1.2 Build przechodzi (przy zatrzymanym `npm run dev`): `npm run build`
 
 #### Manual
 
-- [ ] 1.3 Przegląd kodu: `matchIngredients` dla „Mąka" w trybie „zawiera" zwraca „mąka pszenna" i „Mąka żytnia", w trybie „zaczyna się od" nie zwraca „skrobia z mąki" ani „biała mąka"
+- [x] 1.3 Przegląd kodu: `matchIngredients` dla „Mąka" w trybie „zawiera" zwraca „mąka pszenna" i „Mąka żytnia", w trybie „zaczyna się od" nie zwraca „skrobia z mąki" ani „biała mąka"
 
 ### Phase 2: Strona i przekierowanie — wyszukiwanie, sekcje, ciasteczko
 
