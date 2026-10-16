@@ -42,6 +42,15 @@ export type SubstituteListItem = Pick<Substitute, "id" | "name" | "ratio" | "not
 
 export type IngredientListItem = Pick<Ingredient, "id" | "name">;
 
+// How the ingredient search query is matched against names: anywhere in the name, or at its start.
+export type MatchMode = "contains" | "prefix";
+
+// Substitutes of one ingredient within one category (the best one first, then oldest first).
+export interface SubstituteGroup {
+  category: Pick<Category, "id" | "name" | "sort_order">;
+  substitutes: SubstituteListItem[];
+}
+
 export interface AddSubstituteInput {
   ingredientName: string;
   categoryId: string;

@@ -1,36 +1,80 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { createClient } from "@/lib/supabase";
-import { isUuid, listCategories, listIngredients, listSubstitutes } from "@/lib/services/substitutes";
+import {
+  MATCH_MODE_COOKIE,
+  MAX_QUERY_LENGTH,
+  isUuid,
+  listCategories,
+  listIngredientIdsWithSubstitutes,
+  listIngredientSubstitutes,
+  listIngredients,
+  matchIngredients,
+  normalizeQuery,
+  parseMatchMode,
+} from "@/lib/services/substitutes";
 import { cn } from "@/lib/utils";
-import type { Category, IngredientListItem, SubstituteListItem } from "@/types";
+import type { Category, IngredientListItem, MatchMode, SubstituteGroup } from "@/types";
 
-// Selection from the GET form (or the redirect after adding): ?ingredient=<id>&category=<id>.
+const MATCH_MODE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+// GET params from both forms (and the redirects after adding / marking the best one):
+// ?ingredient=<id>[&category=<id>][&q=<text>][&match=contains|prefix]. An empty category means all categories.
 const ingredientParam = Astro.url.searchParams.get("ingredient")?.trim() ?? "";
 const categoryParam = Astro.url.searchParams.get("category")?.trim() ?? "";
+const query = normalizeQuery(Astro.url.searchParams.get("q"));
 // Messages from /api/substitutes/best and /api/ingredients: ?notice= after a best-substitute swap, ?error= when an action failed.
 const notice = Astro.url.searchParams.get("notice");
 const error = Astro.url.searchParams.get("error");
-const hasSelection = ingredientParam !== "" && categoryParam !== "";
+
+// Match mode: URL > cookie > "contains". A valid mode from the URL is remembered for the next visit.
+const urlMode = parseMatchMode(Astro.url.searchParams.get("match"));
+const cookieMode = parseMatchMode(Astro.cookies.get(MATCH_MODE_COOKIE)?.value);
+const mode: MatchMode = urlMode ?? cookieMode ?? "contains";
+if (urlMode !== null && urlMode !== cookieMode) {
+  Astro.cookies.set(MATCH_MODE_COOKIE, urlMode, {
+    path: "/ingredients",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: Astro.url.protocol === "https:",
+    maxAge: MATCH_MODE_COOKIE_MAX_AGE,
+  });
+}
+
 // Malformed ids are rejected before querying (Postgres would fail with 22P02); they yield the empty state.
-const validSelection = hasSelection && isUuid(ingredientParam) && isUuid(categoryParam);
+const categoryValid = categoryParam === "" || isUuid(categoryParam);
+// The category the view is narrowed to; null = all categories.
+const viewCategory = categoryParam !== "" && categoryValid ? categoryParam : null;
+// View precedence: ingredient > search > initial state. With an ingredient, q refills the search field and
+// decides whether the back link to the results makes sense (see backHref).
+const hasIngredientParam = ingredientParam !== "";
+const isSearch = !hasIngredientParam && query !== "";
+
+type View =
+  | { kind: "initial" }
+  | { kind: "no-match" }
+  | { kind: "matches"; matches: IngredientListItem[] }
+  // ingredient = null: unknown, foreign or malformed id (empty state, substitutes never queried).
+  | { kind: "ingredient"; ingredient: IngredientListItem | null; groups: SubstituteGroup[] };
 
 let categories: Category[] = [];
 let ingredients: IngredientListItem[] = [];
-let substitutes: SubstituteListItem[] = [];
+let view: View = { kind: "initial" };
 let loadError: string | null = null;
-// Kept separate from loadError so a failed lookup still shows the selection form.
+// Kept separate from loadError so a failed lookup still shows the forms.
 let substitutesError: string | null = null;
+// Hits of the search in the URL (also counted with an ingredient, for the back link); null = not run or failed.
+let searchHits: number | null = null;
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 if (!supabase) {
   loadError = "Baza danych nie jest skonfigurowana.";
 } else {
-  const [categoriesResult, ingredientsResult, substitutesResult] = await Promise.all([
+  const [categoriesResult, ingredientsResult, filterResult] = await Promise.all([
     listCategories(supabase),
     listIngredients(supabase),
-    // Foreign ids return zero rows under RLS, so they also end up in the empty state.
-    validSelection ? listSubstitutes(supabase, ingredientParam, categoryParam) : null,
+    // Search with a category only lists ingredients that have a substitute in it (also with an ingredient, for the back link).
+    query !== "" && viewCategory !== null ? listIngredientIdsWithSubstitutes(supabase, viewCategory) : null,
   ]);
 
   if (categoriesResult.error !== null) {
@@ -40,27 +84,92 @@ if (!supabase) {
   } else {
     categories = categoriesResult.data;
     ingredients = ingredientsResult.data;
-    if (substitutesResult && substitutesResult.error !== null) {
-      substitutesError = substitutesResult.error;
-    } else {
-      substitutes = substitutesResult?.data ?? [];
+
+    const filterFailed = filterResult !== null && filterResult.error !== null;
+    let matches: IngredientListItem[] = [];
+    if (query !== "" && categoryValid && !filterFailed) {
+      const allowedIds = filterResult?.data ?? null;
+      matches = matchIngredients(ingredients, query, mode).filter(
+        (ingredient) => allowedIds === null || allowedIds.has(ingredient.id),
+      );
+      searchHits = matches.length;
+    }
+
+    let target: IngredientListItem | null = null;
+    if (hasIngredientParam) {
+      // The name comes from the user's own list (RLS), so a foreign id is simply not found.
+      target =
+        categoryValid && isUuid(ingredientParam)
+          ? (ingredients.find((ingredient) => ingredient.id === ingredientParam) ?? null)
+          : null;
+      view = { kind: "ingredient", ingredient: target, groups: [] };
+    } else if (isSearch) {
+      if (!categoryValid) {
+        view = { kind: "no-match" };
+      } else if (filterFailed) {
+        substitutesError = filterResult.error;
+      } else if (matches.length === 0) {
+        view = { kind: "no-match" };
+      } else if (matches.length === 1) {
+        // One hit: show its substitutes right away, on the search URL (no redirect).
+        target = matches[0];
+        view = { kind: "ingredient", ingredient: target, groups: [] };
+      } else {
+        view = { kind: "matches", matches };
+      }
+    }
+
+    if (target) {
+      const substitutesResult = await listIngredientSubstitutes(supabase, target.id, viewCategory);
+      if (substitutesResult.error !== null) {
+        substitutesError = substitutesResult.error;
+      } else {
+        view = { kind: "ingredient", ingredient: target, groups: substitutesResult.data };
+      }
     }
   }
 }
 
-// Empty-state CTA prefills /ingredients/new (it expects the ingredient id and the category id).
-const addHref = validSelection
-  ? `/ingredients/new?${new URLSearchParams({ ingredient: ingredientParam, category: categoryParam }).toString()}`
-  : "/ingredients/new";
+// Builds a URL with the given params in insertion order, leaving out empty values.
+function withParams(path: string, values: Record<string, string | null>): string {
+  const params = new URLSearchParams();
+  for (const [name, value] of Object.entries(values)) {
+    if (value) params.set(name, value);
+  }
+  const search = params.toString();
+  return search ? `${path}?${search}` : path;
+}
+
+const shownIngredient = view.kind === "ingredient" ? view.ingredient : null;
+// Ingredient empty-state CTA prefills /ingredients/new (it expects the ingredient id and the category id).
+const addSubstituteHref = withParams("/ingredients/new", {
+  ingredient: shownIngredient?.id ?? null,
+  category: viewCategory,
+});
+// No-match CTA: the add form with the searched name (and the chosen category).
+const addIngredientHref = withParams("/ingredients/new", { ingredient_name: query, category: viewCategory });
+// Back to the search results, only when the ingredient came from a result list: ingredient + q in the URL and
+// the same search has several hits (with one hit the link would lead back to this very ingredient).
+// If the hits could not be counted (filter query failed), the link stays.
+const backHref =
+  hasIngredientParam && query !== "" && (searchHits === null || searchHits > 1)
+    ? withParams("/ingredients", { q: query, match: mode, category: viewCategory })
+    : null;
+const matchHref = (ingredientId: string) =>
+  withParams("/ingredients", { ingredient: ingredientId, category: viewCategory, q: query, match: mode });
 
 const inputClass =
   "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 placeholder-stone-400 transition-colors focus:ring-2 focus:ring-orange-400 focus:outline-none";
 const labelClass = "mb-1 block text-sm text-stone-700";
+const submitClass =
+  "w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-700";
 const ctaClass =
   "inline-block rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-700";
+const linkClass = "text-orange-700 hover:underline";
 const infoClass = "rounded-lg border border-stone-200 bg-white/60 px-4 py-4 text-center text-sm text-stone-700";
 const errorClass = "rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700";
 const noticeClass = "rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800";
+const headingClass = "text-lg font-semibold text-stone-900";
 const cardClass = "rounded-lg border border-stone-200 bg-white/80 px-4 py-3";
 // The best card overrides the base border and background, so the classes are merged with cn() (not class:list).
 const bestCardClass = "border-orange-400 bg-orange-50";
@@ -70,7 +179,7 @@ const markButtonClass =
 
 <Layout title="Zamienniki">
   <div class="bg-kitchen flex min-h-screen items-center justify-center p-4">
-    <div class="w-full max-w-md rounded-2xl border border-amber-900/10 bg-white/70 shadow-sm p-8 text-stone-900 backdrop-blur-xl">
+    <div class="w-full max-w-md md:max-w-3xl rounded-2xl border border-amber-900/10 bg-white/70 shadow-sm p-8 text-stone-900 backdrop-blur-xl">
       <h1 class="mb-6 text-center text-2xl font-bold text-stone-900">Zamienniki</h1>
 
       {notice && (
@@ -96,94 +205,213 @@ const markButtonClass =
         </div>
       ) : (
         <div class="space-y-6">
-          <form method="GET" action="/ingredients" class="space-y-4">
-            <div>
-              <label for="ingredient" class:list={labelClass}>
-                Składnik
-              </label>
-              <select id="ingredient" name="ingredient" required class:list={inputClass}>
-                <option value="" selected={!ingredientParam} class="text-black">
-                  Wybierz składnik
-                </option>
-                {ingredients.map((ingredient) => (
-                  <option value={ingredient.id} selected={ingredient.id === ingredientParam} class="text-black">
-                    {ingredient.name}
+          {/* Both forms side by side from md up, so the results stay closer to the top of the page. */}
+          <div class="grid gap-6 md:grid-cols-[1fr_auto_1fr]">
+            <form method="GET" action="/ingredients" class="flex flex-col gap-4">
+              <div>
+                <label for="q" class:list={labelClass}>
+                  Nazwa składnika
+                </label>
+                <input
+                  id="q"
+                  type="search"
+                  name="q"
+                  value={query}
+                  maxlength={MAX_QUERY_LENGTH}
+                  placeholder="np. mąka"
+                  class:list={inputClass}
+                />
+              </div>
+
+              <fieldset>
+                <legend class:list={labelClass}>Dopasowanie</legend>
+                <div class="flex flex-wrap gap-4 text-sm text-stone-700">
+                  <div class="flex items-center gap-2">
+                    <input
+                      id="match-contains"
+                      type="radio"
+                      name="match"
+                      value="contains"
+                      checked={mode === "contains"}
+                      class="accent-orange-600"
+                    />
+                    <label for="match-contains">zawiera</label>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input
+                      id="match-prefix"
+                      type="radio"
+                      name="match"
+                      value="prefix"
+                      checked={mode === "prefix"}
+                      class="accent-orange-600"
+                    />
+                    <label for="match-prefix">zaczyna się od</label>
+                  </div>
+                </div>
+              </fieldset>
+
+              <div>
+                <label for="search-category" class:list={labelClass}>
+                  Kategoria
+                </label>
+                <select id="search-category" name="category" class:list={inputClass}>
+                  <option value="" selected={viewCategory === null} class="text-black">
+                    Wszystkie kategorie
                   </option>
-                ))}
-              </select>
+                  {categories.map((category) => (
+                    <option value={category.id} selected={category.id === viewCategory} class="text-black">
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button type="submit" class:list={[submitClass, "mt-auto"]}>
+                Szukaj
+              </button>
+            </form>
+
+            <div class="flex items-center gap-3 text-xs text-stone-500 md:flex-col">
+              <span class="h-px flex-1 bg-stone-300 md:h-auto md:w-px"></span>
+              <span class="md:hidden">albo wybierz z listy</span>
+              <span class="hidden md:inline">albo</span>
+              <span class="h-px flex-1 bg-stone-300 md:h-auto md:w-px"></span>
             </div>
 
-            <div>
-              <label for="category" class:list={labelClass}>
-                Kategoria
-              </label>
-              <select id="category" name="category" required class:list={inputClass}>
-                <option value="" selected={!categoryParam} class="text-black">
-                  Wybierz kategorię
-                </option>
-                {categories.map((category) => (
-                  <option value={category.id} selected={category.id === categoryParam} class="text-black">
-                    {category.name}
+            <form method="GET" action="/ingredients" class="flex flex-col gap-4">
+              {/* Keeps the current mode in the URL, so picking from the list does not reset it. */}
+              <input type="hidden" name="match" value={mode} />
+              <div>
+                <label for="ingredient" class:list={labelClass}>
+                  Składnik
+                </label>
+                <select id="ingredient" name="ingredient" required class:list={inputClass}>
+                  <option value="" selected={!ingredientParam} class="text-black">
+                    Wybierz składnik
                   </option>
-                ))}
-              </select>
-            </div>
+                  {ingredients.map((ingredient) => (
+                    <option value={ingredient.id} selected={ingredient.id === ingredientParam} class="text-black">
+                      {ingredient.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <button
-              type="submit"
-              class="w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-700"
-            >
-              Pokaż zamienniki
-            </button>
-          </form>
+              <div>
+                <label for="category" class:list={labelClass}>
+                  Kategoria
+                </label>
+                <select id="category" name="category" class:list={inputClass}>
+                  <option value="" selected={viewCategory === null} class="text-black">
+                    Wszystkie kategorie
+                  </option>
+                  {categories.map((category) => (
+                    <option value={category.id} selected={category.id === viewCategory} class="text-black">
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {!hasSelection ? (
-            <p class:list={infoClass}>Wybierz składnik i kategorię, aby zobaczyć zamienniki.</p>
-          ) : substitutesError ? (
+              <button type="submit" class:list={[submitClass, "mt-auto"]}>
+                Pokaż zamienniki
+              </button>
+            </form>
+          </div>
+
+          {substitutesError ? (
             <p class:list={errorClass}>{substitutesError}</p>
-          ) : substitutes.length === 0 ? (
+          ) : view.kind === "initial" ? (
+            <p class:list={infoClass}>Wpisz nazwę składnika albo wybierz go z listy, aby zobaczyć zamienniki.</p>
+          ) : view.kind === "no-match" ? (
             <div class:list={infoClass}>
-              <p>Brak zamienników dla tego składnika w wybranej kategorii.</p>
-              <a href={addHref} class:list={[ctaClass, "mt-4"]}>
-                Dodaj zamiennik
+              <p>Nie znaleziono składnika „{query}”.</p>
+              <a href={addIngredientHref} class:list={[ctaClass, "mt-4"]}>
+                Dodaj składnik
               </a>
             </div>
+          ) : view.kind === "matches" ? (
+            <section class="space-y-3">
+              <h2 class:list={headingClass}>Pasujące składniki ({view.matches.length})</h2>
+              <ul class="space-y-2">
+                {view.matches.map((ingredient) => (
+                  <li class:list={cardClass}>
+                    <a href={matchHref(ingredient.id)} class:list={[linkClass, "font-medium"]}>
+                      {ingredient.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : (
-            <ul class="space-y-3">
-              {substitutes.map((substitute) => (
-                <li class:list={cn(cardClass, substitute.is_best && bestCardClass)}>
-                  <p class="flex flex-wrap items-center gap-2 font-semibold text-stone-900">
-                    <span>{substitute.name}</span>
-                    {substitute.is_best && (
-                      <span
-                        data-best-badge
-                        class="rounded-full bg-orange-600 px-2 py-0.5 text-xs font-medium text-white"
-                      >
-                        Najlepszy
-                      </span>
-                    )}
+            <div class="space-y-4">
+              {backHref && (
+                <p class="text-sm">
+                  <a href={backHref} class:list={linkClass}>
+                    ← Wszystkie wyniki dla „{query}”
+                  </a>
+                </p>
+              )}
+              {view.ingredient && <h2 class:list={headingClass}>{view.ingredient.name}</h2>}
+              {view.groups.length === 0 ? (
+                <div class:list={infoClass}>
+                  <p>
+                    {categoryParam !== ""
+                      ? "Brak zamienników dla tego składnika w wybranej kategorii."
+                      : "Brak zamienników dla tego składnika."}
                   </p>
-                  <p class="text-sm text-stone-700">
-                    Proporcja: <span class="font-medium">{substitute.ratio}</span>
-                  </p>
-                  {substitute.notes !== null && <p class="mt-1 text-sm text-stone-600">{substitute.notes}</p>}
-                  <form method="POST" action="/api/substitutes/best">
-                    <input type="hidden" name="substitute_id" value={substitute.id} />
-                    <input type="hidden" name="is_best" value={substitute.is_best ? "0" : "1"} />
-                    <input type="hidden" name="ingredient" value={ingredientParam} />
-                    <input type="hidden" name="category" value={categoryParam} />
-                    {/* aria-label starts with the visible text and names the substitute, since every card has this button. */}
-                    <button
-                      type="submit"
-                      class:list={markButtonClass}
-                      aria-label={`${substitute.is_best ? "Usuń wyróżnienie" : "Oznacz jako najlepszy"}: ${substitute.name}`}
-                    >
-                      {substitute.is_best ? "Usuń wyróżnienie" : "Oznacz jako najlepszy"}
-                    </button>
-                  </form>
-                </li>
-              ))}
-            </ul>
+                  <a href={addSubstituteHref} class:list={[ctaClass, "mt-4"]}>
+                    Dodaj zamiennik
+                  </a>
+                </div>
+              ) : (
+                view.groups.map((group) => (
+                  <section class="space-y-3">
+                    {/* With a category the view is one plain list; without it, one section per category. */}
+                    {viewCategory === null && <h3 class:list={headingClass}>{group.category.name}</h3>}
+                    <ul class="space-y-3">
+                      {group.substitutes.map((substitute) => (
+                        <li class:list={cn(cardClass, substitute.is_best && bestCardClass)}>
+                          <p class="flex flex-wrap items-center gap-2 font-semibold text-stone-900">
+                            <span>{substitute.name}</span>
+                            {substitute.is_best && (
+                              <span
+                                data-best-badge
+                                class="rounded-full bg-orange-600 px-2 py-0.5 text-xs font-medium text-white"
+                              >
+                                Najlepszy
+                              </span>
+                            )}
+                          </p>
+                          <p class="text-sm text-stone-700">
+                            Proporcja: <span class="font-medium">{substitute.ratio}</span>
+                          </p>
+                          {substitute.notes !== null && <p class="mt-1 text-sm text-stone-600">{substitute.notes}</p>}
+                          <form method="POST" action="/api/substitutes/best">
+                            <input type="hidden" name="substitute_id" value={substitute.id} />
+                            <input type="hidden" name="is_best" value={substitute.is_best ? "0" : "1"} />
+                            {/* The view to return to: this ingredient, the view's category (or none), q and match. */}
+                            <input type="hidden" name="ingredient" value={shownIngredient?.id ?? ""} />
+                            <input type="hidden" name="category" value={viewCategory ?? ""} />
+                            <input type="hidden" name="q" value={query} />
+                            <input type="hidden" name="match" value={mode} />
+                            {/* aria-label starts with the visible text and names the substitute, since every card has this button. */}
+                            <button
+                              type="submit"
+                              class:list={markButtonClass}
+                              aria-label={`${substitute.is_best ? "Usuń wyróżnienie" : "Oznacz jako najlepszy"}: ${substitute.name}`}
+                            >
+                              {substitute.is_best ? "Usuń wyróżnienie" : "Oznacz jako najlepszy"}
+                            </button>
+                          </form>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))
+              )}
+            </div>
           )}
         </div>
       )}

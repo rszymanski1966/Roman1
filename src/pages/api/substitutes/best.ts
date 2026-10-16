@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
-import { bestSwapNotice, isUuid, setBestSubstitute } from "@/lib/services/substitutes";
+import { bestSwapNotice, isUuid, normalizeQuery, parseMatchMode, setBestSubstitute } from "@/lib/services/substitutes";
 
 const LIST_PAGE = "/ingredients";
 const INVALID_FORM = "Nieprawidłowe dane formularza.";
@@ -10,12 +10,24 @@ function field(form: FormData, name: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-// Back to the list; with a pair it re-opens the same ingredient + category, otherwise the bare list.
-function listRedirect(
-  pair: { ingredient: string; category: string } | null,
-  extra: Record<string, string> = {},
-): string {
-  const params = new URLSearchParams(pair ? { ingredient: pair.ingredient, category: pair.category } : {});
+// The list view to return to: the ingredient, optionally its category, and the search context (q, match).
+interface ListView {
+  ingredient: string;
+  category: string;
+  q: string;
+  match: string;
+}
+
+// Back to the list; with a view it re-opens the same ingredient (+ category, q, match), otherwise the bare list.
+// Order matters: ingredient, category, q, match, then notice / error; empty values are left out.
+function listRedirect(view: ListView | null, extra: Record<string, string> = {}): string {
+  const params = new URLSearchParams();
+  if (view) {
+    params.set("ingredient", view.ingredient);
+    if (view.category) params.set("category", view.category);
+    if (view.q) params.set("q", view.q);
+    if (view.match) params.set("match", view.match);
+  }
   for (const [name, value] of Object.entries(extra)) params.set(name, value);
   const query = params.toString();
   return query ? `${LIST_PAGE}?${query}` : LIST_PAGE;
@@ -41,33 +53,40 @@ export const POST: APIRoute = async (context) => {
   }
 
   const ingredient = field(form, "ingredient");
+  // Empty category = the view across all categories.
   const category = field(form, "category");
-  // The pair only drives the redirect; malformed ids must not end up in the list URL.
-  if (!isUuid(ingredient) || !isUuid(category)) {
+  // The view only drives the redirect; malformed ids must not end up in the list URL.
+  if (!isUuid(ingredient) || (category !== "" && !isUuid(category))) {
     return context.redirect(listRedirect(null, { error: INVALID_FORM }));
   }
-  const pair = { ingredient, category };
+  const view: ListView = {
+    ingredient,
+    category,
+    q: normalizeQuery(field(form, "q")),
+    // Only a known mode is carried over; anything else is dropped.
+    match: parseMatchMode(field(form, "match")) ?? "",
+  };
 
   const substituteId = field(form, "substitute_id");
   if (!isUuid(substituteId)) {
-    return context.redirect(listRedirect(pair, { error: "Nie znaleziono zamiennika." }));
+    return context.redirect(listRedirect(view, { error: "Nie znaleziono zamiennika." }));
   }
 
   const isBestValue = field(form, "is_best");
   if (isBestValue !== "1" && isBestValue !== "0") {
-    return context.redirect(listRedirect(pair, { error: INVALID_FORM }));
+    return context.redirect(listRedirect(view, { error: INVALID_FORM }));
   }
 
   // The service returns a short, user-safe message on failure (no SQL details).
   const result = await setBestSubstitute(supabase, substituteId, isBestValue === "1");
   if (result.error !== null) {
-    return context.redirect(listRedirect(pair, { error: result.error }));
+    return context.redirect(listRedirect(view, { error: result.error }));
   }
 
   // Only a swap gets a notice; marking without a previous best or unmarking is visible on the list itself.
   const { substituteName, replacedName } = result.data;
   if (replacedName !== null) {
-    return context.redirect(listRedirect(pair, { notice: bestSwapNotice(replacedName, substituteName) }));
+    return context.redirect(listRedirect(view, { notice: bestSwapNotice(replacedName, substituteName) }));
   }
-  return context.redirect(listRedirect(pair));
+  return context.redirect(listRedirect(view));
 };

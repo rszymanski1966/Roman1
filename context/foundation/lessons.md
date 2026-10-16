@@ -22,3 +22,10 @@
 - **Problem**: Projekt ma dwa sposoby wyliczania klucza porównania nazw: `ingredients.name_key` liczy aplikacja (`toLocaleLowerCase("pl")`), `substitutes.name_key` to kolumna generowana `lower(name)`. Bez reguły kolejna tabela może wybrać dowolny wariant, a klucz liczony w aplikacji łatwo rozjeżdża się z nazwą przy edycji (S-04).
 - **Rule**: Nowe klucze porównania nazw rób jako kolumnę `generated always as (lower(name)) stored` z ograniczeniem unikalności w bazie. Trim i scalanie spacji robi `normalizeName` przed zapisem. `ingredients.name_key` (liczony w aplikacji) jest wyjątkiem z S-01. Przy jego edycji aktualizuj klucz razem z nazwą.
 - **Applies to**: plan, implement, impl-review
+
+## Wiersz Backlog Handoff w roadmapie po archiwizacji
+
+- **Context**: context/foundation/roadmap.md, sekcja `## Backlog Handoff` (wiersz S-03 :135; wcześniej S-02, poprawiony ręcznie w 6b39beb).
+- **Problem**: /10x-archive przestawia Status na `done` w tabeli „At a glance” i w treści pozycji, ale nie zmienia wiersza w `## Backlog Handoff`. Po archiwizacji wiersz dalej ma Ready `yes` i „Run /10x-plan <change-id>”, więc roadmapa przeczy sama sobie. Zdarzyło się przy S-02 i powtarza się przy S-03, czyli będzie przy każdym slice.
+- **Rule**: W commicie archiwizacji (albo zaraz po nim) ustaw wiersz slice'a w `## Backlog Handoff` na Ready `—` i Notes `Done (archived <data>)`, w stylu wiersza S-01. Przy `/10x-plan` warto też od razu zmienić Notes z „Run /10x-plan…” na „Planned”.
+- **Applies to**: archive, plan, impl-review
