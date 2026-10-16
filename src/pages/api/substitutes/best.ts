@@ -1,11 +1,9 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
-import { bestSwapNotice, isUuid, parseMatchMode, setBestSubstitute } from "@/lib/services/substitutes";
+import { bestSwapNotice, isUuid, normalizeQuery, parseMatchMode, setBestSubstitute } from "@/lib/services/substitutes";
 
 const LIST_PAGE = "/ingredients";
 const INVALID_FORM = "Nieprawidłowe dane formularza.";
-// Same cap as the search field on the list page.
-const MAX_QUERY_LENGTH = 100;
 
 function field(form: FormData, name: string): string {
   const value = form.get(name);
@@ -64,7 +62,7 @@ export const POST: APIRoute = async (context) => {
   const view: ListView = {
     ingredient,
     category,
-    q: field(form, "q").slice(0, MAX_QUERY_LENGTH).trim(),
+    q: normalizeQuery(field(form, "q")),
     // Only a known mode is carried over; anything else is dropped.
     match: parseMatchMode(field(form, "match")) ?? "",
   };

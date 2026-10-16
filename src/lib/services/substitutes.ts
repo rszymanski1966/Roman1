@@ -48,6 +48,14 @@ export function parseMatchMode(value: string | null | undefined): MatchMode | nu
   return value === "contains" || value === "prefix" ? value : null;
 }
 
+/** Max length of the ingredient search query (the search field's maxlength and the server-side cap). */
+export const MAX_QUERY_LENGTH = 100;
+
+/** Search query from a URL param or form field: trimmed and capped at MAX_QUERY_LENGTH. */
+export function normalizeQuery(raw: string | null | undefined): string {
+  return (raw ?? "").trim().slice(0, MAX_QUERY_LENGTH).trim();
+}
+
 /**
  * Ingredients whose name matches the query (case-insensitive, same key as ingredients.name_key),
  * anywhere in the name ("contains") or at its start ("prefix"). Keeps the input order.

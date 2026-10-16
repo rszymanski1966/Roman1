@@ -26,6 +26,8 @@ const thirdSubstitute = `smoke-third-${runId}`;
 const searchIngredient = `smoke-search-${runId}`;
 const searchFragment = `search-${runId}`;
 const foundSubstitute = `smoke-found-${runId}`;
+// Second substitute of the search ingredient, in the other category (the view without a category shows two sections).
+const otherSubstitute = `smoke-other-${runId}`;
 
 // Values captured by earlier steps and used by later ones.
 let categoryId = "";
@@ -282,7 +284,13 @@ const steps = [
     { status: 200, bodyIncludes: "Nie znaleziono składnika" },
   ],
   [
-    // Explicit contains (resets the cookie): otherwise the remembered prefix mode alone would hide the ingredient.
+    // The cookie still says prefix: the URL mode must win, and the category filter must let the ingredient through.
+    "contains from the URL beats the cookie and the category filter keeps the ingredient",
+    () => request(`/ingredients?q=${searchFragment}&match=contains&category=${categoryId}`),
+    { status: 200, bodyIncludes: foundSubstitute },
+  ],
+  [
+    // Explicit contains: the step must not depend on the remembered mode, which alone could hide the ingredient.
     "search in a category without its substitutes finds nothing",
     () => request(`/ingredients?q=${searchFragment}&match=contains&category=${otherCategoryId}`),
     { status: 200, bodyIncludes: "Nie znaleziono składnika" },
@@ -322,6 +330,43 @@ const steps = [
       locationIncludes: "q=",
       locationExcludes: "error=",
     }),
+  ],
+  [
+    // Both of A's ingredients carry runId: several hits render the list, not a substitute view.
+    "search matching several ingredients lists them",
+    () => request(`/ingredients?q=${runId}&match=contains`),
+    { status: 200, bodyIncludes: "Pasujące składniki (2)" },
+  ],
+  [
+    // The best-mark redirect lands here: with one hit the back link would only lead to this same ingredient.
+    "ingredient view from a one-hit search has no back link",
+    () => request(`/ingredients?ingredient=${searchIngredientId}&q=${searchFragment}&match=contains`),
+    { status: 200, bodyIncludes: foundSubstitute, bodyExcludes: "Wszystkie wyniki dla" },
+  ],
+  [
+    "ingredient view from a several-hit search links back to the results",
+    () => request(`/ingredients?ingredient=${searchIngredientId}&q=${runId}&match=contains`),
+    { status: 200, bodyIncludes: "Wszystkie wyniki dla" },
+  ],
+  [
+    "account A adds a substitute for the search ingredient in the other category",
+    () =>
+      request("/api/ingredients", {
+        method: "POST",
+        form: { ingredient: searchIngredient, category_id: otherCategoryId, substitute: otherSubstitute, ratio: "1:1" },
+      }),
+    { status: 302, location: "/ingredients?ingredient=" },
+  ],
+  [
+    // categoryId is the first option on the add form (sorted by sort_order), so its section renders first.
+    "ingredient view without a category shows both categories in sort order",
+    async () => {
+      const actual = await request(`/ingredients?ingredient=${searchIngredientId}`);
+      const first = actual.body.indexOf(`>${foundSubstitute}<`);
+      const second = actual.body.indexOf(`>${otherSubstitute}<`);
+      return first !== -1 && first < second ? actual : { ...actual, status: 0 };
+    },
+    { status: 200, bodyIncludes: otherSubstitute },
   ],
   [
     "signup creates account B",

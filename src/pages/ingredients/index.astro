@@ -3,25 +3,26 @@ import Layout from "@/layouts/Layout.astro";
 import { createClient } from "@/lib/supabase";
 import {
   MATCH_MODE_COOKIE,
+  MAX_QUERY_LENGTH,
   isUuid,
   listCategories,
   listIngredientIdsWithSubstitutes,
   listIngredientSubstitutes,
   listIngredients,
   matchIngredients,
+  normalizeQuery,
   parseMatchMode,
 } from "@/lib/services/substitutes";
 import { cn } from "@/lib/utils";
 import type { Category, IngredientListItem, MatchMode, SubstituteGroup } from "@/types";
 
-const MAX_QUERY_LENGTH = 100;
 const MATCH_MODE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 // GET params from both forms (and the redirects after adding / marking the best one):
 // ?ingredient=<id>[&category=<id>][&q=<text>][&match=contains|prefix]. An empty category means all categories.
 const ingredientParam = Astro.url.searchParams.get("ingredient")?.trim() ?? "";
 const categoryParam = Astro.url.searchParams.get("category")?.trim() ?? "";
-const query = (Astro.url.searchParams.get("q") ?? "").trim().slice(0, MAX_QUERY_LENGTH).trim();
+const query = normalizeQuery(Astro.url.searchParams.get("q"));
 // Messages from /api/substitutes/best and /api/ingredients: ?notice= after a best-substitute swap, ?error= when an action failed.
 const notice = Astro.url.searchParams.get("notice");
 const error = Astro.url.searchParams.get("error");
@@ -44,7 +45,8 @@ if (urlMode !== null && urlMode !== cookieMode) {
 const categoryValid = categoryParam === "" || isUuid(categoryParam);
 // The category the view is narrowed to; null = all categories.
 const viewCategory = categoryParam !== "" && categoryValid ? categoryParam : null;
-// View precedence: ingredient > search > initial state. With an ingredient, q only refills the search field.
+// View precedence: ingredient > search > initial state. With an ingredient, q refills the search field and
+// decides whether the back link to the results makes sense (see backHref).
 const hasIngredientParam = ingredientParam !== "";
 const isSearch = !hasIngredientParam && query !== "";
 
@@ -61,6 +63,8 @@ let view: View = { kind: "initial" };
 let loadError: string | null = null;
 // Kept separate from loadError so a failed lookup still shows the forms.
 let substitutesError: string | null = null;
+// Hits of the search in the URL (also counted with an ingredient, for the back link); null = not run or failed.
+let searchHits: number | null = null;
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 if (!supabase) {
@@ -69,8 +73,8 @@ if (!supabase) {
   const [categoriesResult, ingredientsResult, filterResult] = await Promise.all([
     listCategories(supabase),
     listIngredients(supabase),
-    // Search with a category only lists ingredients that have a substitute in it.
-    isSearch && viewCategory !== null ? listIngredientIdsWithSubstitutes(supabase, viewCategory) : null,
+    // Search with a category only lists ingredients that have a substitute in it (also with an ingredient, for the back link).
+    query !== "" && viewCategory !== null ? listIngredientIdsWithSubstitutes(supabase, viewCategory) : null,
   ]);
 
   if (categoriesResult.error !== null) {
@@ -80,6 +84,16 @@ if (!supabase) {
   } else {
     categories = categoriesResult.data;
     ingredients = ingredientsResult.data;
+
+    const filterFailed = filterResult !== null && filterResult.error !== null;
+    let matches: IngredientListItem[] = [];
+    if (query !== "" && categoryValid && !filterFailed) {
+      const allowedIds = filterResult?.data ?? null;
+      matches = matchIngredients(ingredients, query, mode).filter(
+        (ingredient) => allowedIds === null || allowedIds.has(ingredient.id),
+      );
+      searchHits = matches.length;
+    }
 
     let target: IngredientListItem | null = null;
     if (hasIngredientParam) {
@@ -92,22 +106,16 @@ if (!supabase) {
     } else if (isSearch) {
       if (!categoryValid) {
         view = { kind: "no-match" };
-      } else if (filterResult && filterResult.error !== null) {
+      } else if (filterFailed) {
         substitutesError = filterResult.error;
+      } else if (matches.length === 0) {
+        view = { kind: "no-match" };
+      } else if (matches.length === 1) {
+        // One hit: show its substitutes right away, on the search URL (no redirect).
+        target = matches[0];
+        view = { kind: "ingredient", ingredient: target, groups: [] };
       } else {
-        const allowedIds = filterResult?.data ?? null;
-        const matches = matchIngredients(ingredients, query, mode).filter(
-          (ingredient) => allowedIds === null || allowedIds.has(ingredient.id),
-        );
-        if (matches.length === 0) {
-          view = { kind: "no-match" };
-        } else if (matches.length === 1) {
-          // One hit: show its substitutes right away, on the search URL (no redirect).
-          target = matches[0];
-          view = { kind: "ingredient", ingredient: target, groups: [] };
-        } else {
-          view = { kind: "matches", matches };
-        }
+        view = { kind: "matches", matches };
       }
     }
 
@@ -140,9 +148,11 @@ const addSubstituteHref = withParams("/ingredients/new", {
 });
 // No-match CTA: the add form with the searched name (and the chosen category).
 const addIngredientHref = withParams("/ingredients/new", { ingredient_name: query, category: viewCategory });
-// Back to the search results, only when the ingredient came from a result link (ingredient + q in the URL).
+// Back to the search results, only when the ingredient came from a result list: ingredient + q in the URL and
+// the same search has several hits (with one hit the link would lead back to this very ingredient).
+// If the hits could not be counted (filter query failed), the link stays.
 const backHref =
-  hasIngredientParam && query !== ""
+  hasIngredientParam && query !== "" && (searchHits === null || searchHits > 1)
     ? withParams("/ingredients", { q: query, match: mode, category: viewCategory })
     : null;
 const matchHref = (ingredientId: string) =>
