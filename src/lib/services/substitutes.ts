@@ -168,35 +168,6 @@ export async function addSubstitute(
   return ok({ ingredientId, categoryId: input.categoryId, replacedName: best.data.replacedName, bestError: null });
 }
 
-/**
- * Substitutes for (ingredient, category): the best one first, then the rest oldest first.
- * Missing pair (or foreign ids) = empty list.
- */
-export async function listSubstitutes(
-  client: SupabaseClient,
-  ingredientId: string,
-  categoryId: string,
-): Promise<ServiceResult<SubstituteListItem[]>> {
-  const pairRow = await client
-    .from("ingredient_categories")
-    .select("id")
-    .eq("ingredient_id", ingredientId)
-    .eq("category_id", categoryId)
-    .maybeSingle<{ id: string }>();
-  if (pairRow.error) return fail();
-  if (!pairRow.data) return ok([]);
-  const ingredientCategoryId = pairRow.data.id;
-
-  const { data, error } = await client
-    .from("substitutes")
-    .select("id, name, ratio, notes, is_best")
-    .eq("ingredient_category_id", ingredientCategoryId)
-    .order("is_best", { ascending: false })
-    .order("created_at", { ascending: true });
-  if (error) return fail();
-  return ok(data as SubstituteListItem[]);
-}
-
 /** Ids of ingredients that have at least one substitute in the category (search filter). */
 export async function listIngredientIdsWithSubstitutes(
   client: SupabaseClient,
