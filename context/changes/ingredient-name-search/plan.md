@@ -312,9 +312,9 @@ Brak migracji bazy. Wycofanie to revert commitów; stare adresy `?ingredient&cat
 
 #### Automated
 
-- [x] 3.1 Lint przechodzi: `npm run lint`
-- [x] 3.2 Smoke przechodzi z nowymi krokami: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 3.1 Lint przechodzi: `npm run lint` — bff12e2
+- [x] 3.2 Smoke przechodzi z nowymi krokami: `BASE_URL=http://localhost:4321 npm run smoke` — bff12e2
 
 #### Manual
 
-- [x] 3.3 Celowe zepsucie (np. ignorowanie `match` w serwisie) powoduje FAIL co najmniej jednego nowego kroku smoke; po cofnięciu zmiany smoke znów przechodzi
+- [x] 3.3 Celowe zepsucie (np. ignorowanie `match` w serwisie) powoduje FAIL co najmniej jednego nowego kroku smoke; po cofnięciu zmiany smoke znów przechodzi — bff12e2
