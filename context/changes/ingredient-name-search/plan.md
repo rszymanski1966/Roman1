@@ -295,26 +295,26 @@ Brak migracji bazy. Wycofanie to revert commitów; stare adresy `?ingredient&cat
 
 #### Automated
 
-- [x] 2.1 Lint przechodzi: `npm run lint`
-- [x] 2.2 Build przechodzi (przy zatrzymanym `npm run dev`): `npm run build`
-- [x] 2.3 Dotychczasowy smoke przechodzi bez zmian w krokach: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 2.1 Lint przechodzi: `npm run lint` — 463ab1f
+- [x] 2.2 Build przechodzi (przy zatrzymanym `npm run dev`): `npm run build` — 463ab1f
+- [x] 2.3 Dotychczasowy smoke przechodzi bez zmian w krokach: `BASE_URL=http://localhost:4321 npm run smoke` — 463ab1f
 
 #### Manual
 
-- [x] 2.4 „mąka" w trybie „zawiera" bez kategorii pokazuje listę pasujących składników; kliknięcie pokazuje sekcje per kategoria z najlepszym na górze każdej
-- [x] 2.5 Przełączenie na „zaczyna się od" zawęża wynik; po ponownym wejściu na `/ingredients` przełącznik stoi na „zaczyna się od"
-- [x] 2.6 „mąka" + Ciasta pokazuje tylko składniki z zamiennikami w Ciastach; przy jednym trafieniu od razu ich zamienniki
-- [x] 2.7 Brak trafień pokazuje komunikat i CTA, które otwiera formularz dodawania z wpisaną nazwą (i kategorią, jeśli wybrana)
-- [x] 2.8 Lista rozwijana bez kategorii pokazuje sekcje per kategoria; z kategorią działa jak wcześniej
-- [x] 2.9 „Oznacz jako najlepszy" w widoku bez kategorii i w widoku z wyszukiwania wraca do tego samego widoku z tym samym `q` i trybem
+- [x] 2.4 „mąka" w trybie „zawiera" bez kategorii pokazuje listę pasujących składników; kliknięcie pokazuje sekcje per kategoria z najlepszym na górze każdej — 463ab1f
+- [x] 2.5 Przełączenie na „zaczyna się od" zawęża wynik; po ponownym wejściu na `/ingredients` przełącznik stoi na „zaczyna się od" — 463ab1f
+- [x] 2.6 „mąka" + Ciasta pokazuje tylko składniki z zamiennikami w Ciastach; przy jednym trafieniu od razu ich zamienniki — 463ab1f
+- [x] 2.7 Brak trafień pokazuje komunikat i CTA, które otwiera formularz dodawania z wpisaną nazwą (i kategorią, jeśli wybrana) — 463ab1f
+- [x] 2.8 Lista rozwijana bez kategorii pokazuje sekcje per kategoria; z kategorią działa jak wcześniej — 463ab1f
+- [x] 2.9 „Oznacz jako najlepszy" w widoku bez kategorii i w widoku z wyszukiwania wraca do tego samego widoku z tym samym `q` i trybem — 463ab1f
 
 ### Phase 3: Smoke — kroki wyszukiwania
 
 #### Automated
 
-- [ ] 3.1 Lint przechodzi: `npm run lint`
-- [ ] 3.2 Smoke przechodzi z nowymi krokami: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 3.1 Lint przechodzi: `npm run lint`
+- [x] 3.2 Smoke przechodzi z nowymi krokami: `BASE_URL=http://localhost:4321 npm run smoke`
 
 #### Manual
 
-- [ ] 3.3 Celowe zepsucie (np. ignorowanie `match` w serwisie) powoduje FAIL co najmniej jednego nowego kroku smoke; po cofnięciu zmiany smoke znów przechodzi
+- [x] 3.3 Celowe zepsucie (np. ignorowanie `match` w serwisie) powoduje FAIL co najmniej jednego nowego kroku smoke; po cofnięciu zmiany smoke znów przechodzi

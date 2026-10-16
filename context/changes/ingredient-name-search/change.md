@@ -3,7 +3,7 @@ change_id: ingredient-name-search
 title: Ingredient name search
 status: implementing
 created: 2026-10-12
-updated: 2026-10-15
+updated: 2026-10-16
 archived_at: null
 ---
 

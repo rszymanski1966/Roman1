@@ -21,12 +21,20 @@ const anonJar = new Map();
 const secondSubstitute = `smoke-second-${runId}`;
 // Third substitute, added with the "best" checkbox on the add form.
 const thirdSubstitute = `smoke-third-${runId}`;
+// Search steps: an ingredient whose name is disjoint from the other ones (smoke-ingredient-* would also match B's own),
+// searched by a fragment from the middle of its name. Its substitute is not prefixed by substituteMarker either.
+const searchIngredient = `smoke-search-${runId}`;
+const searchFragment = `search-${runId}`;
+const foundSubstitute = `smoke-found-${runId}`;
 
 // Values captured by earlier steps and used by later ones.
 let categoryId = "";
+let otherCategoryId = "";
 let listPath = "";
 let firstSubstituteId = "";
 let secondSubstituteId = "";
+let searchIngredientId = "";
+let foundSubstituteId = "";
 
 // The substitute id from the mark-as-best form of the card whose name is exactly `name` (the name renders as >name<).
 function substituteIdFor(body, name) {
@@ -117,8 +125,11 @@ const steps = [
     "add form lists categories for account A",
     async () => {
       const actual = await request("/ingredients/new");
-      categoryId = /<option value="([0-9a-f-]{36})"/i.exec(actual.body)?.[1] ?? "";
-      return actual;
+      const ids = [...actual.body.matchAll(/<option value="([0-9a-f-]{36})"/gi)].map((match) => match[1]);
+      categoryId = ids[0] ?? "";
+      otherCategoryId = ids[1] ?? "";
+      // Fail the step without a second category: the category-filter search step needs one.
+      return otherCategoryId ? actual : { ...actual, status: 0 };
     },
     { status: 200, bodyIncludes: "<option value=" },
   ],
@@ -239,6 +250,80 @@ const steps = [
     },
   ],
   [
+    "account A adds an ingredient for the search steps",
+    async () => {
+      const actual = await request("/api/ingredients", {
+        method: "POST",
+        form: { ingredient: searchIngredient, category_id: categoryId, substitute: foundSubstitute, ratio: "1:1" },
+      });
+      searchIngredientId = new URLSearchParams(actual.location.split("?")[1] ?? "").get("ingredient") ?? "";
+      return actual;
+    },
+    { status: 302, location: "/ingredients?ingredient=" },
+  ],
+  [
+    // No match param and no cookie yet, so the default "contains" applies. One hit shows its substitutes right away.
+    "search by a fragment from the middle of the name finds the ingredient",
+    () => request(`/ingredients?q=${searchFragment}`),
+    { status: 200, bodyIncludes: foundSubstitute },
+  ],
+  [
+    "prefix search by the same fragment finds nothing and remembers the mode",
+    async () => {
+      const actual = await request(`/ingredients?q=${searchFragment}&match=prefix`);
+      // The jar had no mode cookie before, so this response must have set it.
+      return jar.get("ingredients_match") === "prefix" ? actual : { ...actual, status: 0 };
+    },
+    { status: 200, bodyIncludes: "Nie znaleziono składnika" },
+  ],
+  [
+    "search without match uses the remembered prefix mode",
+    () => request(`/ingredients?q=${searchFragment}`),
+    { status: 200, bodyIncludes: "Nie znaleziono składnika" },
+  ],
+  [
+    // Explicit contains (resets the cookie): otherwise the remembered prefix mode alone would hide the ingredient.
+    "search in a category without its substitutes finds nothing",
+    () => request(`/ingredients?q=${searchFragment}&match=contains&category=${otherCategoryId}`),
+    { status: 200, bodyIncludes: "Nie znaleziono składnika" },
+  ],
+  [
+    "ingredient view without a category shows the found substitute",
+    async () => {
+      const actual = await request(`/ingredients?ingredient=${searchIngredientId}`);
+      foundSubstituteId = substituteIdFor(actual.body, foundSubstitute);
+      // Fail the step if the id could not be parsed, instead of posting an empty id later.
+      return foundSubstituteId ? actual : { ...actual, status: 0 };
+    },
+    { status: 200, bodyIncludes: foundSubstitute },
+  ],
+  [
+    // Back to the search context: ingredient, q and match in this order, the empty category left out.
+    "marking the best from a search returns to the search URL",
+    () =>
+      request("/api/substitutes/best", {
+        method: "POST",
+        form: {
+          substitute_id: foundSubstituteId,
+          is_best: "1",
+          ingredient: searchIngredientId,
+          category: "",
+          q: searchFragment,
+          match: "contains",
+        },
+      }),
+    () => ({
+      status: 302,
+      location: `/ingredients?${new URLSearchParams([
+        ["ingredient", searchIngredientId],
+        ["q", searchFragment],
+        ["match", "contains"],
+      ])}`,
+      locationIncludes: "q=",
+      locationExcludes: "error=",
+    }),
+  ],
+  [
     "signup creates account B",
     () => request("/api/auth/signup", { method: "POST", cookies: jarB, form: { email: emailB, password } }),
     { status: 302, location: "/auth/confirm-email" },
@@ -274,6 +359,12 @@ const steps = [
     "account B sees empty state on account A's URL",
     () => request(listPath, { cookies: jarB }),
     { status: 200, bodyIncludes: "Brak zamienników", bodyExcludes: substituteMarker },
+  ],
+  [
+    // Not bodyExcludes: substituteMarker, which is a prefix of B's own substitute name.
+    "account B search does not find account A's ingredient",
+    () => request(`/ingredients?q=${searchIngredient}`, { cookies: jarB }),
+    () => ({ status: 200, bodyIncludes: "Nie znaleziono składnika", bodyExcludes: searchIngredientId }),
   ],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
