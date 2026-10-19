@@ -1,0 +1,188 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Alert from "@/components/ui/Alert.astro";
+import Badge from "@/components/ui/Badge.astro";
+import Card from "@/components/ui/Card.astro";
+import Input from "@/components/ui/Input.astro";
+import Label from "@/components/ui/Label.astro";
+import NativeSelect from "@/components/ui/NativeSelect.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+// Dev-only visual gate for the ui/ components; no database access.
+// The rule crashes on a top-level return in Astro frontmatter (no enclosing function), so it is off for this file.
+/* eslint @typescript-eslint/no-misused-promises: "off" */
+if (!import.meta.env.DEV) {
+  return new Response(null, { status: 404 });
+}
+
+const sectionClass = "space-y-4";
+const headingClass = "text-lg font-semibold text-foreground";
+const stateClass = "text-xs text-muted-foreground";
+---
+
+<Layout title="Kitchen sink">
+  <main class="min-h-screen bg-background p-4 text-foreground md:p-8">
+    <div class="mx-auto w-full max-w-3xl space-y-10">
+      <header class="space-y-2">
+        <h1 class="text-2xl font-bold">Kitchen sink</h1>
+        <p class="text-sm text-muted-foreground">
+          Komponenty z <code>src/components/ui/</code> we wszystkich stanach. Hover: najedź kursorem. Focus-visible:
+          przejdź po stronie klawiszem Tab.
+        </p>
+      </header>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Pole tekstowe (Input + Label)</h2>
+        <div class="grid gap-6 md:grid-cols-2">
+          <div class="space-y-2">
+            <p class:list={stateClass}>Domyślny</p>
+            <Label for="ks-input-default">Nazwa składnika</Label>
+            <Input id="ks-input-default" type="search" placeholder="np. mąka" />
+          </div>
+          <div class="space-y-2">
+            <p class:list={stateClass}>Z wartością</p>
+            <Label for="ks-input-value">Nazwa składnika</Label>
+            <Input id="ks-input-value" type="search" value="mąka pszenna" />
+          </div>
+          <div class="space-y-2">
+            <p class:list={stateClass}>Focus-visible (Tab do pola)</p>
+            <Label for="ks-input-focus">Nazwa składnika</Label>
+            <Input id="ks-input-focus" type="search" placeholder="Przejdź tu klawiszem Tab" />
+          </div>
+          <div class="space-y-2">
+            <p class:list={stateClass}>Disabled</p>
+            <Input id="ks-input-disabled" type="search" value="mąka" disabled class="peer" />
+            <Label for="ks-input-disabled">Etykieta po polu (peer-disabled)</Label>
+          </div>
+          <div class="space-y-2">
+            <p class:list={stateClass}>Błąd (aria-invalid)</p>
+            <Label for="ks-input-invalid">Nazwa składnika</Label>
+            <Input
+              id="ks-input-invalid"
+              type="search"
+              value=""
+              aria-invalid="true"
+              aria-describedby="ks-input-invalid-msg"
+            />
+            <p id="ks-input-invalid-msg" class="text-sm text-destructive">
+              Podaj nazwę składnika.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Lista wyboru (NativeSelect)</h2>
+        <div class="grid gap-6 md:grid-cols-2">
+          <div class="space-y-2">
+            <p class:list={stateClass}>Domyślny / focus-visible (Tab)</p>
+            <Label for="ks-select-default">Kategoria</Label>
+            <NativeSelect id="ks-select-default" name="category">
+              <option value="">Wszystkie kategorie</option>
+              <option value="baking">Pieczenie</option>
+              <option value="cooking">Gotowanie</option>
+            </NativeSelect>
+          </div>
+          <div class="space-y-2">
+            <p class:list={stateClass}>Disabled</p>
+            <Label for="ks-select-disabled">Kategoria</Label>
+            <NativeSelect id="ks-select-disabled" disabled>
+              <option value="">Wszystkie kategorie</option>
+            </NativeSelect>
+          </div>
+          <div class="space-y-2">
+            <p class:list={stateClass}>Błąd (aria-invalid)</p>
+            <Label for="ks-select-invalid">Składnik</Label>
+            <NativeSelect id="ks-select-invalid" aria-invalid="true" aria-describedby="ks-select-invalid-msg">
+              <option value="">Wybierz składnik</option>
+              <option value="flour">mąka</option>
+            </NativeSelect>
+            <p id="ks-select-invalid-msg" class="text-sm text-destructive">
+              Wybierz składnik z listy.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Przyciski (buttonVariants)</h2>
+        <p class:list={stateClass}>
+          Hover: najedź kursorem. Focus-visible: Tab. Klasy na natywnym &lt;button&gt; / &lt;a&gt;.
+        </p>
+        <div class="space-y-3">
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="button" class:list={buttonVariants()}>
+              Szukaj (default)
+            </button>
+            <button type="button" class:list={buttonVariants({ variant: "outline" })}>
+              Wyloguj się (outline)
+            </button>
+            <a href="#ks-buttons" class:list={buttonVariants({ variant: "link" })}>
+              Wróć do panelu (link)
+            </a>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="button" class:list={buttonVariants({ size: "sm" })}>
+              Default sm
+            </button>
+            <button type="button" class:list={buttonVariants({ variant: "outline", size: "sm" })}>
+              Oznacz jako najlepszy (outline sm)
+            </button>
+            <a id="ks-buttons" href="#ks-buttons" class:list={buttonVariants()}>
+              Dodaj składnik (link-CTA)
+            </a>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="button" disabled class:list={buttonVariants()}>
+              Disabled
+            </button>
+            <button type="button" disabled class:list={buttonVariants({ variant: "outline" })}>
+              Disabled outline
+            </button>
+          </div>
+          <div class="max-w-xs">
+            <button type="button" class:list={cn(buttonVariants(), "w-full")}>
+              Pełna szerokość (cn + w-full)
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Komunikaty (Alert)</h2>
+        <Alert role="status">Wpisz nazwę składnika albo wybierz go z listy, aby zobaczyć zamienniki. (default)</Alert>
+        <Alert role="alert" variant="destructive">
+          Nie udało się oznaczyć zamiennika. (destructive)
+        </Alert>
+        <Alert role="status" variant="success">
+          Zmieniono najlepszy zamiennik. (success)
+        </Alert>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Plakietki (Badge)</h2>
+        <div class="flex flex-wrap items-center gap-3">
+          <Badge data-best-badge>Najlepszy</Badge>
+          <Badge variant="outline">Outline</Badge>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Karta (Card)</h2>
+        <Card>
+          <p class="flex flex-wrap items-center gap-2 font-semibold">
+            <span>Mąka orkiszowa</span>
+            <Badge data-best-badge>Najlepszy</Badge>
+          </p>
+          <p class="text-sm text-muted-foreground">
+            Proporcja: <span class="font-medium">1:1</span>
+          </p>
+          <button type="button" class:list={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-2")}>
+            Usuń wyróżnienie
+          </button>
+        </Card>
+      </section>
+    </div>
+  </main>
+</Layout>

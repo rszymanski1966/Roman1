@@ -1,0 +1,19 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { cn } from "@/lib/utils";
+
+type Props = HTMLAttributes<"label">;
+
+const { class: className, for: htmlFor, ...rest } = Astro.props;
+---
+
+<label
+  for={htmlFor}
+  class:list={cn(
+    "flex items-center gap-2 text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+    className,
+  )}
+  {...rest}
+>
+  <slot />
+</label>
