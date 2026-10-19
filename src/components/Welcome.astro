@@ -36,7 +36,8 @@ const features = [
     <!-- Hero section -->
     <div class="mx-auto flex max-w-4xl flex-col items-center justify-center px-4 py-6 text-center">
       <div class="mb-4 flex size-24 items-center justify-center rounded-full border border-orange-200 bg-white/70 text-orange-600 shadow-sm">
-        <!-- Crossed fork and spoon -->
+        <!-- Egg ⇄ banana (a classic egg substitute in baking), built from Lucide egg + banana with swap arrows.
+             Scaled groups divide the stroke width by their scale, so every line keeps the 1.75 stroke. -->
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="56"
@@ -49,10 +50,17 @@ const features = [
           stroke-linejoin="round"
           aria-hidden="true"
         >
-          <path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"></path>
-          <path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"></path>
-          <path d="m2.1 21.8 6.4-6.3"></path>
-          <path d="m19 5-7 7"></path>
+          <g transform="translate(0.6 0.6) scale(0.44)" stroke-width="3.98">
+            <path d="M12 2C8 2 4 8 4 14a8 8 0 0 0 16 0c0-6-4-12-8-12"></path>
+          </g>
+          <g transform="translate(12.2 12.2) scale(0.48)" stroke-width="3.65">
+            <path d="M4 13c3.5-2 8-2 10 2a5.5 5.5 0 0 1 8 5"></path>
+            <path d="M5.15 17.89c5.52-1.52 8.65-6.89 7-12C11.55 4 11.5 2 13 2c3.22 0 5 5.5 5 8 0 6.5-4.2 12-10.49 12C5.11 22 2 22 2 20c0-1.5 1.14-1.55 3.15-2.11Z"></path>
+          </g>
+          <path d="M14 4h4a2 2 0 0 1 2 2v4"></path>
+          <path d="m17 7 3 3 3-3"></path>
+          <path d="M10 20H6a2 2 0 0 1-2-2v-4"></path>
+          <path d="m1 17 3-3 3 3"></path>
         </svg>
       </div>
       <h1 class="mb-6 text-5xl leading-tight font-bold text-stone-900 sm:text-6xl">
