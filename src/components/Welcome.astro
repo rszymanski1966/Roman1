@@ -3,25 +3,11 @@ import Topbar from "@/components/Topbar.astro";
 
 const { user } = Astro.locals;
 
-const features = [
-  {
-    title: "Zamiennik w kilka sekund",
-    description:
-      "Wybierasz składnik i rodzaj potrawy, np. masło do ciasta, i od razu widzisz listę zamienników. Gdy niczego nie ma, możesz dodać pierwszy wpis.",
-    icons: ["M3 11a8 8 0 1 0 16 0a8 8 0 1 0 -16 0", "m21 21-4.3-4.3"],
-  },
-  {
-    title: "Proporcja i uwagi",
-    description:
-      "Przy każdym zamienniku zapisana jest proporcja zamiany oraz uwagi o wpływie na smak czy barwę, więc nie zepsujesz potrawy złą zamianą.",
-    icons: ["M12 3v18", "m5 7 7-4 7 4", "M5 7l-3 7a3 3 0 0 0 6 0z", "m19 7-3 7a3 3 0 0 0 6 0z"],
-  },
-  {
-    title: "Twoja prywatna baza",
-    description:
-      "Zamienniki budujesz sam, a dane każdego konta są odizolowane od pozostałych. Nikt poza Tobą ich nie zobaczy.",
-    icons: ["M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z", "M7 11V7a5 5 0 0 1 10 0v4"],
-  },
+// A real sequence, so the steps are numbered; short texts keep them the same height.
+const steps = [
+  { title: "Dodaj składnik", text: "Na przykład jajko, z rodzajem potrawy: ciasta i desery." },
+  { title: "Zapisz zamiennik", text: "Z proporcją i uwagami: 1 jajko = ½ banana." },
+  { title: "Znajdź go, gdy brakuje", text: "Wpisz nazwę składnika. Najlepszy zamiennik jest wyróżniony." },
 ];
 ---
 
@@ -96,31 +82,45 @@ const features = [
       </div>
     </div>
 
-    <!-- Feature cards -->
-    <div class="mx-auto grid max-w-4xl grid-cols-1 gap-6 px-4 pb-24 sm:grid-cols-3">
-      {features.map((feature) => (
-        <div class="rounded-xl border border-amber-900/10 bg-white/70 p-6 shadow-sm backdrop-blur-xl">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="mb-4 text-orange-600"
-            aria-hidden="true"
-          >
-            {feature.icons.map((d) => (
-              <path d={d} />
-            ))}
-          </svg>
-          <h3 class="mb-2 text-lg font-semibold text-stone-900">{feature.title}</h3>
-          <p class="text-sm leading-relaxed text-stone-600">{feature.description}</p>
-        </div>
-      ))}
-    </div>
+    <!-- How it works: a horizontal line of steps from sm up, a vertical axis on phones -->
+    <section class="mx-auto max-w-4xl px-4 pb-24">
+      <h2 class="mb-6 text-center text-lg font-semibold text-stone-900">Jak to działa</h2>
+      <ol class="relative grid gap-5 sm:grid-cols-3 sm:gap-4">
+        <span
+          class="absolute top-5 bottom-5 left-5 w-0.5 -translate-x-1/2 bg-orange-200 sm:right-1/6 sm:bottom-auto sm:left-1/6 sm:h-0.5 sm:w-auto sm:translate-x-0"
+          aria-hidden="true"
+        ></span>
+        {steps.map((step, index) => (
+          <li class="flex gap-4 sm:flex-col sm:items-center sm:gap-2 sm:px-2 sm:text-center">
+            <span class="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-orange-600 font-bold text-white tabular-nums ring-6 ring-orange-50">
+              {index + 1}
+            </span>
+            <div>
+              <h3 class="font-semibold text-stone-900">{step.title}</h3>
+              <p class="text-sm text-stone-600 sm:mx-auto sm:max-w-56">{step.text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p class="mt-8 flex items-center justify-center gap-2 text-center text-sm text-stone-600">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="shrink-0 text-orange-700"
+          aria-hidden="true"
+        >
+          <path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"></path>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        Twoja baza jest prywatna. Widzisz tylko własne wpisy.
+      </p>
+    </section>
   </div>
 </div>
