@@ -7,7 +7,13 @@ import Input from "@/components/ui/Input.astro";
 import Label from "@/components/ui/Label.astro";
 import NativeSelect from "@/components/ui/NativeSelect.astro";
 import { buttonVariants } from "@/components/ui/button";
+import EmptyState from "@/components/ingredients/EmptyState.astro";
+import IngredientsFooter from "@/components/ingredients/IngredientsFooter.astro";
+import IngredientsHeader from "@/components/ingredients/IngredientsHeader.astro";
+import LookupForms from "@/components/ingredients/LookupForms.astro";
+import SubstituteCard from "@/components/ingredients/SubstituteCard.astro";
 import { cn } from "@/lib/utils";
+import type { Category, IngredientListItem, SubstituteListItem } from "@/types";
 
 // Dev-only visual gate for the ui/ components; no database access.
 // The rule crashes on a top-level return in Astro frontmatter (no enclosing function), so it is off for this file.
@@ -19,6 +25,37 @@ if (!import.meta.env.DEV) {
 const sectionClass = "space-y-4";
 const headingClass = "text-lg font-semibold text-foreground";
 const stateClass = "text-xs text-muted-foreground";
+
+// Fixtures for the /ingredients view section (local, no database).
+const fixtureCategories: Category[] = [
+  { id: "00000000-0000-4000-8000-000000000001", slug: "baking", name: "Pieczenie", sort_order: 1 },
+  { id: "00000000-0000-4000-8000-000000000002", slug: "cooking", name: "Gotowanie", sort_order: 2 },
+];
+const fixtureIngredients: IngredientListItem[] = [
+  { id: "00000000-0000-4000-8000-000000000011", name: "mąka pszenna" },
+  { id: "00000000-0000-4000-8000-000000000012", name: "mąka ziemniaczana" },
+  { id: "00000000-0000-4000-8000-000000000013", name: "masło" },
+];
+const fixtureBest: SubstituteListItem = {
+  id: "00000000-0000-4000-8000-000000000021",
+  name: "mąka orkiszowa",
+  ratio: "1:1",
+  notes: "Ciasto wychodzi nieco cięższe.",
+  is_best: true,
+};
+const fixtureRegular: SubstituteListItem = {
+  id: "00000000-0000-4000-8000-000000000022",
+  name: "mąka gryczana",
+  ratio: "3/4 szklanki na 1 szklankę",
+  notes: null,
+  is_best: false,
+};
+const fixtureIngredient = fixtureIngredients[0];
+const fixtureMatches = fixtureIngredients.slice(0, 2);
+// Same text-link classes as src/pages/ingredients/index.astro (the matches list lives in the page).
+const textLinkClass = cn(buttonVariants({ variant: "link" }), "h-auto p-0 whitespace-normal");
+const viewFrameClass = "bg-kitchen rounded-2xl p-4";
+const viewCardClass = "rounded-2xl border-border bg-card/70 p-8 text-foreground shadow-sm backdrop-blur-xl";
 ---
 
 <Layout title="Kitchen sink">
@@ -182,6 +219,99 @@ const stateClass = "text-xs text-muted-foreground";
             Usuń wyróżnienie
           </button>
         </Card>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Widok /ingredients</h2>
+        <p class:list={stateClass}>
+          Części widoku z <code>src/components/ingredients/</code> na fixturach (bez bazy). Formularze prowadzą do
+          prawdziwych endpointów.
+        </p>
+
+        <p class:list={stateClass}>Pasek akcji i formularze</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <IngredientsHeader />
+            <LookupForms
+              categories={fixtureCategories}
+              ingredients={fixtureIngredients}
+              query="mąka"
+              mode="contains"
+              viewCategory={null}
+              ingredientParam=""
+            />
+            <IngredientsFooter />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Karta zwykła i karta najlepszego</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <div class="space-y-4">
+              <h2 class:list={headingClass}>{fixtureIngredient.name}</h2>
+              <section class="space-y-3">
+                <h3 class:list={headingClass}>{fixtureCategories[0].name}</h3>
+                <ul class="space-y-3">
+                  <SubstituteCard
+                    substitute={fixtureBest}
+                    ingredient={fixtureIngredient.id}
+                    category=""
+                    q=""
+                    match="contains"
+                  />
+                  <SubstituteCard
+                    substitute={fixtureRegular}
+                    ingredient={fixtureIngredient.id}
+                    category=""
+                    q=""
+                    match="contains"
+                  />
+                </ul>
+              </section>
+            </div>
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Lista dopasowań</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <section class="space-y-3">
+              <h2 class:list={headingClass}>Pasujące składniki ({fixtureMatches.length})</h2>
+              <ul class="space-y-2">
+                {fixtureMatches.map((ingredient) => (
+                  <li>
+                    <Card class="bg-card/80">
+                      <a href="#ks-view" class:list={cn(textLinkClass, "font-medium")}>
+                        {ingredient.name}
+                      </a>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </Card>
+        </div>
+
+        <p id="ks-view" class:list={stateClass}>
+          Puste stany
+        </p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={cn(viewCardClass, "space-y-4")}>
+            <EmptyState href="#ks-view" label="Dodaj pierwszy składnik">
+              <p>Nie masz jeszcze żadnych składników.</p>
+              <p class="mt-1">Dodaj pierwszy składnik z zamiennikiem, aby móc go tu wyszukać.</p>
+            </EmptyState>
+            <EmptyState>
+              <p>Wpisz nazwę składnika albo wybierz go z listy, aby zobaczyć zamienniki.</p>
+            </EmptyState>
+            <EmptyState href="#ks-view" label="Dodaj składnik">
+              <p>Nie znaleziono składnika „cukier trzcinowy”.</p>
+            </EmptyState>
+            <EmptyState href="#ks-view" label="Dodaj zamiennik">
+              <p>Brak zamienników dla tego składnika.</p>
+            </EmptyState>
+          </Card>
+        </div>
       </section>
     </div>
   </main>

@@ -1,0 +1,22 @@
+---
+import Card from "@/components/ui/Card.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+// Empty state of /ingredients: the message goes in the slot, the CTA link is optional (both href and label).
+interface Props {
+  href?: string;
+  label?: string;
+}
+
+const { href, label } = Astro.props;
+---
+
+<Card class="bg-card/60 py-4 text-center text-sm">
+  <slot />
+  {href && label && (
+    <a href={href} class:list={cn(buttonVariants(), "mt-4")}>
+      {label}
+    </a>
+  )}
+</Card>

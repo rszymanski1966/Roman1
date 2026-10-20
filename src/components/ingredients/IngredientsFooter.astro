@@ -1,0 +1,19 @@
+---
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+// Footer of /ingredients: back to the dashboard and sign-out (a POST form, like the dashboard's).
+// Sign-out lives here, away from the "Dodaj składnik" CTA, so it is not tapped by mistake on a phone.
+const textLinkClass = cn(buttonVariants({ variant: "link" }), "h-auto p-0 whitespace-normal");
+---
+
+<footer class="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-border pt-4 text-sm">
+  <a href="/dashboard" class:list={textLinkClass}>
+    Wróć do panelu
+  </a>
+  <form method="POST" action="/api/auth/signout">
+    <button type="submit" class:list={cn(textLinkClass, "text-muted-foreground")}>
+      Wyloguj się
+    </button>
+  </form>
+</footer>

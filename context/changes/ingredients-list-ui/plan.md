@@ -486,30 +486,30 @@ Brak istotnych: zmiany CSS i markupu SSR, bez nowych zapytań. Kitchen-sink nie 
 
 #### Automated
 
-- [x] 2.1 Lint przechodzi: `npm run lint`
-- [x] 2.2 Typy przechodzą: `npx astro check`
-- [x] 2.3 @theme inline nie zawiera surowych kolorów
+- [x] 2.1 Lint przechodzi: `npm run lint` — a74b99a
+- [x] 2.2 Typy przechodzą: `npx astro check` — a74b99a
+- [x] 2.3 @theme inline nie zawiera surowych kolorów — a74b99a
 
 #### Manual
 
-- [x] 2.4 Kitchen-sink pokazuje motyw kitchen, kontrast z theme-values.md spełnia AA
-- [x] 2.5 Dashboard, signin i ingredients/new bez zmian poza kolorem obrysu fokusu
-- [x] 2.6 /ingredients wygląda jak przed fazą
+- [x] 2.4 Kitchen-sink pokazuje motyw kitchen, kontrast z theme-values.md spełnia AA — a74b99a
+- [x] 2.5 Dashboard, signin i ingredients/new bez zmian poza kolorem obrysu fokusu — a74b99a
+- [x] 2.6 /ingredients wygląda jak przed fazą — a74b99a
 
 ### Phase 3: Widok na komponentach i tokenach, pasek akcji
 
 #### Automated
 
-- [ ] 3.1 Lint przechodzi: `npm run lint`
-- [ ] 3.2 Typy przechodzą: `npx astro check`
-- [ ] 3.3 Skan literałów na widoku i src/components/ingredients daje 0 trafień
-- [ ] 3.4 Smoke przechodzi przy działającym dev
+- [x] 3.1 Lint przechodzi: `npm run lint`
+- [x] 3.2 Typy przechodzą: `npx astro check`
+- [x] 3.3 Skan literałów na widoku i src/components/ingredients daje 0 trafień
+- [x] 3.4 Smoke przechodzi przy działającym dev
 
 #### Manual
 
-- [ ] 3.5 Pasek akcji: Dodaj składnik i Wyloguj się działają
-- [ ] 3.6 Zrzuty /ingredients (desktop i 375 px) w trzech stanach, motyw kitchen z AA
-- [ ] 3.7 Kitchen-sink pokazuje sekcję widoku zgodną z /ingredients
+- [x] 3.5 Pasek akcji: Dodaj składnik i Wyloguj się działają
+- [x] 3.6 Zrzuty /ingredients (desktop i 375 px) w trzech stanach, motyw kitchen z AA
+- [x] 3.7 Kitchen-sink pokazuje sekcję widoku zgodną z /ingredients
 
 ### Phase 4: Stany, błąd przy karcie i macierz w kitchen-sink
 

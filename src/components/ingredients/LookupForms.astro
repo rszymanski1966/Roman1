@@ -1,0 +1,127 @@
+---
+import Label from "@/components/ui/Label.astro";
+import Input from "@/components/ui/Input.astro";
+import NativeSelect from "@/components/ui/NativeSelect.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { MAX_QUERY_LENGTH } from "@/lib/services/substitutes";
+import { cn } from "@/lib/utils";
+import type { Category, IngredientListItem, MatchMode } from "@/types";
+
+// The two GET lookup forms of /ingredients: search by name, or pick an ingredient from the list.
+interface Props {
+  categories: Category[];
+  ingredients: IngredientListItem[];
+  query: string;
+  mode: MatchMode;
+  // The category the view is narrowed to; null = all categories.
+  viewCategory: string | null;
+  ingredientParam: string;
+}
+
+const { categories, ingredients, query, mode, viewCategory, ingredientParam } = Astro.props;
+
+const submitClass = cn(buttonVariants(), "mt-auto w-full");
+---
+
+{/* Both forms side by side from md up, so the results stay closer to the top of the page. */}
+<div class="grid gap-6 md:grid-cols-[1fr_auto_1fr]">
+  <form method="GET" action="/ingredients" class="flex flex-col gap-4">
+    <div class="space-y-2">
+      <Label for="q">Nazwa składnika</Label>
+      <Input id="q" type="search" name="q" value={query} maxlength={MAX_QUERY_LENGTH} placeholder="np. mąka" />
+    </div>
+
+    <fieldset class="space-y-2">
+      <legend class="mb-2 text-sm leading-none font-medium text-foreground">Dopasowanie</legend>
+      <div class="flex flex-wrap gap-4 text-sm text-foreground">
+        <div class="flex items-center gap-2">
+          <input
+            id="match-contains"
+            type="radio"
+            name="match"
+            value="contains"
+            checked={mode === "contains"}
+            class="accent-primary"
+          />
+          <Label for="match-contains" class="font-normal">
+            zawiera
+          </Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="match-prefix"
+            type="radio"
+            name="match"
+            value="prefix"
+            checked={mode === "prefix"}
+            class="accent-primary"
+          />
+          <Label for="match-prefix" class="font-normal">
+            zaczyna się od
+          </Label>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="space-y-2">
+      <Label for="search-category">Kategoria</Label>
+      <NativeSelect id="search-category" name="category">
+        <option value="" selected={viewCategory === null}>
+          Wszystkie kategorie
+        </option>
+        {categories.map((category) => (
+          <option value={category.id} selected={category.id === viewCategory}>
+            {category.name}
+          </option>
+        ))}
+      </NativeSelect>
+    </div>
+
+    <button type="submit" class:list={submitClass}>
+      Szukaj
+    </button>
+  </form>
+
+  <div class="flex items-center gap-3 text-xs text-muted-foreground md:flex-col">
+    <span class="h-px flex-1 bg-border md:h-auto md:w-px"></span>
+    <span class="md:hidden">albo wybierz z listy</span>
+    <span class="hidden md:inline">albo</span>
+    <span class="h-px flex-1 bg-border md:h-auto md:w-px"></span>
+  </div>
+
+  <form method="GET" action="/ingredients" class="flex flex-col gap-4">
+    {/* Keeps the current mode in the URL, so picking from the list does not reset it. */}
+    <input type="hidden" name="match" value={mode} />
+    <div class="space-y-2">
+      <Label for="ingredient">Składnik</Label>
+      <NativeSelect id="ingredient" name="ingredient" required>
+        <option value="" selected={!ingredientParam}>
+          Wybierz składnik
+        </option>
+        {ingredients.map((ingredient) => (
+          <option value={ingredient.id} selected={ingredient.id === ingredientParam}>
+            {ingredient.name}
+          </option>
+        ))}
+      </NativeSelect>
+    </div>
+
+    <div class="space-y-2">
+      <Label for="category">Kategoria</Label>
+      <NativeSelect id="category" name="category">
+        <option value="" selected={viewCategory === null}>
+          Wszystkie kategorie
+        </option>
+        {categories.map((category) => (
+          <option value={category.id} selected={category.id === viewCategory}>
+            {category.name}
+          </option>
+        ))}
+      </NativeSelect>
+    </div>
+
+    <button type="submit" class:list={submitClass}>
+      Pokaż zamienniki
+    </button>
+  </form>
+</div>

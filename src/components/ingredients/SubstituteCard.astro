@@ -1,0 +1,64 @@
+---
+import Alert from "@/components/ui/Alert.astro";
+import Badge from "@/components/ui/Badge.astro";
+import Card from "@/components/ui/Card.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { MatchMode, SubstituteListItem } from "@/types";
+
+// One substitute card (a list item) with the mark-as-best form.
+// smoke.mjs relies on this markup: the name alone in its element (>name<), followed in the HTML by
+// the hidden name="substitute_id" field, and the data-best-badge attribute on the badge.
+interface Props {
+  substitute: SubstituteListItem;
+  // The view to return to after the POST: shown ingredient id, the view's category (or ""), q and match.
+  ingredient: string;
+  category: string;
+  q: string;
+  match: MatchMode;
+  // Error of the mark-as-best action for this card (used from phase 4 on).
+  error?: string | null;
+}
+
+const { substitute, ingredient, category, q, match, error = null } = Astro.props;
+const actionLabel = substitute.is_best ? "Usuń wyróżnienie" : "Oznacz jako najlepszy";
+---
+
+<li>
+  {/* The best card overrides the base border and background, so the classes are merged with cn(). */}
+  <Card class:list={cn("bg-card/80", substitute.is_best && "border-primary bg-accent")}>
+    <p class="flex flex-wrap items-center gap-2 font-semibold text-foreground">
+      <span>{substitute.name}</span>
+      {substitute.is_best && (
+        <Badge data-best-badge class="rounded-full">
+          Najlepszy
+        </Badge>
+      )}
+    </p>
+    <p class="text-sm text-foreground">
+      Proporcja: <span class="font-medium">{substitute.ratio}</span>
+    </p>
+    {substitute.notes !== null && <p class="mt-1 text-sm text-muted-foreground">{substitute.notes}</p>}
+    <form method="POST" action="/api/substitutes/best">
+      <input type="hidden" name="substitute_id" value={substitute.id} />
+      <input type="hidden" name="is_best" value={substitute.is_best ? "0" : "1"} />
+      <input type="hidden" name="ingredient" value={ingredient} />
+      <input type="hidden" name="category" value={category} />
+      <input type="hidden" name="q" value={q} />
+      <input type="hidden" name="match" value={match} />
+      {/* aria-label starts with the visible text and names the substitute, since every card has this button. */}
+      <button
+        type="submit"
+        class:list={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-2")}
+        aria-label={`${actionLabel}: ${substitute.name}`}
+      >
+        {actionLabel}
+      </button>
+    </form>
+    {error && (
+      <Alert role="alert" variant="destructive" class="mt-2">
+        {error}
+      </Alert>
+    )}
+  </Card>
+</li>
