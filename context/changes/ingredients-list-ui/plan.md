@@ -53,7 +53,8 @@ Na podstawie `research.md` (zarzuty C1–C5):
   - wartości motywu kitchen w `.dark`, w tym `--kitchen-*` i jaśniejszego `--success` (green-700 na ciemnym tle jest nieczytelny);
   - `color-scheme` per motyw w `global.css`, żeby natywne `<select>` / `<option>` i radio miały właściwe kolory (problem łatany kiedyś `text-black`);
   - przełącznika zapamiętywanego w ciasteczku (wzorzec jak `MATCH_MODE_COOKIE`), żeby serwer od razu renderował klasę `dark` na `<html>` i strona nie migała jasnym motywem;
-  - kitchen-sink i tabeli kontrastu w `theme-values.md` dla obu motywów.
+  - kitchen-sink i tabeli kontrastu w `theme-values.md` dla obu motywów;
+  - decyzji o wariantach `dark:` z `buttonVariants()` (`button.tsx:8`, `:16`, np. `dark:bg-input/30` w `outline`). Trafiają do HTML widoku wbrew regule `CLAUDE.md` „bez `dark:` w widokach i komponentach”. Wymagają zmiany w `button.tsx` albo wyjątku w regule (impl-review F4).
 - Instalacja Playwrighta lub innego narzędzia do zrzutów. Bramką jest kitchen-sink plus zrzuty ręczne lub przez Chrome.
 - Wtyczka ESLint dla Tailwinda.
 - Aktywacja husky i lint-staged. Hook jest w repo nieaktywny, a jego włączenie zmieniłoby każdy commit, więc to osobna decyzja.
@@ -435,7 +436,7 @@ Istniejący punkt o shadcn w `## Key conventions` (`CLAUDE.md:7`) zostaje albo o
 ### Integration Tests:
 
 - `npm run smoke` przy działającym `npm run dev`: istniejące 40 kroków plus 4 nowe (Faza 4: 2 dla konta A, 2 dla konta B).
-- `npx astro check` jako bezpieczne sprawdzenie typów przy działającym dev.
+- `npx astro check` przy wyłączonym dev. Uruchamia optymalizator Vite i, podobnie jak `npm run build`, psuje działający `npm run dev` (500 z `deps_ssr`). Kolejność: najpierw smoke, potem check.
 
 ### Manual Testing Steps:
 
@@ -464,6 +465,14 @@ Brak istotnych: zmiany CSS i markupu SSR, bez nowych zapytań. Kitchen-sink nie 
 - Kontrakt błędu: `src/pages/api/substitutes/best.ts:23-34`, `:70-84`
 - Smoke: `scripts/smoke.mjs:42-46`, `:381-386`, `:418-429`
 - Lekcja: `context/foundation/lessons.md` („class:list czy cn() w komponentach .astro”)
+
+## Deviations
+
+Odstępstwa od planu w trakcie implementacji, zatwierdzone przez użytkownika (impl-review F2, 2026-10-20):
+
+- **Tokeny (Faza 2, a74b99a).** `--ring` = orange-600 (plan: orange-500), `--success` = green-800 (plan: green-700), `--destructive` = red-700 (plan: bez zmian). Mapowanie z planu nie spełniało AA (2,89:1, 4,31:1, 3,99:1). Pomiary są w `theme-values.md`.
+- **Wylogowanie (Faza 3, d75d56c).** „Wyloguj się” nie jest w `IngredientsHeader` jako `outline`. Jest w nowym `src/components/ingredients/IngredientsFooter.astro`, obok „Wróć do panelu”, jako wariant `link` z `text-muted-foreground`. Dzięki temu na telefonie nie leży przy CTA „Dodaj składnik”. Nagłówek ma tytuł i CTA.
+- **Fokus (Faza 4, 0c91b82).** Nowy `src/components/ui/focus.ts`: `focusRing` (pełne krycie `ring`, zastępuje `ring-ring/50` z `buttonVariants` przez tailwind-merge) i `focusOutline` dla natywnych radio. Plik jest na liście `scripts/ui-literals.mjs` i opisany w `CLAUDE.md` `## UI`.
 
 ## Progress
 
@@ -531,12 +540,12 @@ Brak istotnych: zmiany CSS i markupu SSR, bez nowych zapytań. Kitchen-sink nie 
 
 #### Automated
 
-- [x] 5.1 npm run lint:ui przechodzi
-- [x] 5.2 npm run lint:ui kończy się kodem 1 przy wstrzykniętym literale
-- [x] 5.3 Lint przechodzi: `npm run lint`
-- [x] 5.4 Krok lint:ui jest w CI przed build
+- [x] 5.1 npm run lint:ui przechodzi — 804f181
+- [x] 5.2 npm run lint:ui kończy się kodem 1 przy wstrzykniętym literale — 804f181
+- [x] 5.3 Lint przechodzi: `npm run lint` — 804f181
+- [x] 5.4 Krok lint:ui jest w CI przed build — 804f181
 
 #### Manual
 
-- [x] 5.5 Sekcja UI w CLAUDE.md poza markerami 10x-cli, bez sprzeczności
+- [x] 5.5 Sekcja UI w CLAUDE.md poza markerami 10x-cli, bez sprzeczności — 804f181
 - [ ] 5.6 CI na PR pokazuje krok lint:ui i przechodzi

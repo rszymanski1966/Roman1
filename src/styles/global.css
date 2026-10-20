@@ -79,6 +79,7 @@
   /* Placeholder (about green-500), not tuned: dark mode is deferred. */
   --success: oklch(0.723 0.219 149.579);
   --success-foreground: oklch(0.205 0 0);
+  /* No --kitchen-from / -via / -to here yet: bg-kitchen keeps the light gradient until dark mode is tuned. */
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);

@@ -1,5 +1,5 @@
 // UI literal scan: fails when a guarded view or component uses a literal colour or an arbitrary px/rem value
-// instead of a design token. Same pattern as the /10x-ui pre-audit (.claude/skills/10x-ui/SKILL.md).
+// instead of a design token. Based on the /10x-ui pre-audit pattern (.claude/skills/10x-ui/SKILL.md), see PATTERN.
 // Zero dependencies on purpose. Run: node scripts/ui-literals.mjs [files...]
 // Without arguments it scans every guarded file; with arguments only those that are also guarded.
 
@@ -21,8 +21,11 @@ const GUARDED = [
   "src/pages/dev/kitchen-sink.astro",
 ];
 
+// Stricter than the /10x-ui pre-audit pattern: also side borders, ring-offset, accent/caret/decoration/placeholder,
+// lab()/lch()/hwb()/color-mix(), and any px/rem inside an arbitrary value (negative, several values, calc(),
+// type hints). A hex needs a non-word end, so anchors like #add-form are not hits.
 const PATTERN =
-  /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|oklch\(|-\[[0-9.]+(px|rem)\]|\b(bg|text|border|ring|outline|from|via|to|fill|stroke|shadow|divide)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|white|black)\b/g;
+  /#[0-9a-f]{3,8}(?![-\w])|\b(rgba?|hsla?|okl(ch|ab)|lab|lch|hwb|color-mix)\(|-\[[^\]]*\d(px|rem)[^\]]*\]|\b(bg|text|border(-[trblxyse])?|ring(-offset)?|outline|from|via|to|fill|stroke|shadow|divide|accent|caret|decoration|placeholder|inset-shadow|inset-ring)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|white|black)\b/gi;
 
 const root = path.resolve(import.meta.dirname, "..");
 

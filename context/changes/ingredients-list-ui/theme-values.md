@@ -65,4 +65,5 @@ Metoda: oklch → OKLab → liniowe sRGB (przycięte do gamutu) → luminancja w
 
 ### Otwarte punkty
 
+- **Ramka pól `input` (stone-300) na `card`: 1,49:1**, poniżej 3:1 z WCAG 1.4.11. Dla porównania: stone-400 daje 2,59:1, a stone-500 4,81:1. Decyzja (impl-review F7, 2026-10-20): zostaje stone-300, jak w domyślnym shadcn. Każde pole ma widoczną etykietę (`Label`) nad sobą, a fokus ma pełny pierścień `ring` (3,59:1). Do ponownej oceny przy pierwszym widoku, w którym pole nie ma widocznej etykiety.
 - **Bazowy obrys `outline-ring/50`** (`global.css`, `@layer base`): przy 50% kryciu wskaźnik ma mniej niż 3:1. Faza 4 daje kontrolkom widoku pełne krycie `ring` na `focus-visible`. Pozostałe strony (poza zakresem) zostają z obrysem `/50`.

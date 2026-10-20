@@ -24,6 +24,8 @@ interface Props {
 
 const { substitute, ingredient, category, q, match, error = null } = Astro.props;
 const actionLabel = substitute.is_best ? "Usuń wyróżnienie" : "Oznacz jako najlepszy";
+// The button points at its error, so a screen reader reads it with the button on focus.
+const errorId = `substitute-${substitute.id}-error`;
 ---
 
 {/* scroll-mt keeps the anchored card off the very edge of the viewport. */}
@@ -54,12 +56,13 @@ const actionLabel = substitute.is_best ? "Usuń wyróżnienie" : "Oznacz jako na
         type="submit"
         class:list={cn(buttonVariants({ variant: "outline", size: "sm" }), focusRing, "mt-2")}
         aria-label={`${actionLabel}: ${substitute.name}`}
+        aria-describedby={error ? errorId : undefined}
       >
         {actionLabel}
       </button>
     </form>
     {error && (
-      <Alert role="alert" variant="destructive" class="mt-2" data-substitute-error>
+      <Alert id={errorId} role="alert" variant="destructive" class="mt-2" data-substitute-error>
         {error}
       </Alert>
     )}

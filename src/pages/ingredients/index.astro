@@ -201,7 +201,9 @@ const headingClass = "text-lg font-semibold text-foreground";
       )}
 
       {loadError ? (
-        <Alert variant="destructive">{loadError}</Alert>
+        <Alert role="alert" variant="destructive">
+          {loadError}
+        </Alert>
       ) : ingredients.length === 0 ? (
         <EmptyState href="/ingredients/new" label="Dodaj pierwszy składnik">
           <p>Nie masz jeszcze żadnych składników.</p>
@@ -219,7 +221,9 @@ const headingClass = "text-lg font-semibold text-foreground";
           />
 
           {substitutesError ? (
-            <Alert variant="destructive">{substitutesError}</Alert>
+            <Alert role="alert" variant="destructive">
+              {substitutesError}
+            </Alert>
           ) : view.kind === "initial" ? (
             <EmptyState>
               <p>Wpisz nazwę składnika albo wybierz go z listy, aby zobaczyć zamienniki.</p>
