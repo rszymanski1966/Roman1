@@ -548,4 +548,4 @@ Odstępstwa od planu w trakcie implementacji, zatwierdzone przez użytkownika (i
 #### Manual
 
 - [x] 5.5 Sekcja UI w CLAUDE.md poza markerami 10x-cli, bez sprzeczności — 804f181
-- [ ] 5.6 CI na PR pokazuje krok lint:ui i przechodzi
+- [x] 5.6 CI na PR pokazuje krok lint:ui i przechodzi — PR #20, run 39475229418 (b614b90)
