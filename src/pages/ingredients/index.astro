@@ -8,6 +8,7 @@ import SubstituteCard from "@/components/ingredients/SubstituteCard.astro";
 import Alert from "@/components/ui/Alert.astro";
 import Card from "@/components/ui/Card.astro";
 import { buttonVariants } from "@/components/ui/button";
+import { focusRing } from "@/components/ui/focus";
 import { createClient } from "@/lib/supabase";
 import {
   MATCH_MODE_COOKIE,
@@ -33,6 +34,9 @@ const query = normalizeQuery(Astro.url.searchParams.get("q"));
 // Messages from /api/substitutes/best and /api/ingredients: ?notice= after a best-substitute swap, ?error= when an action failed.
 const notice = Astro.url.searchParams.get("notice");
 const error = Astro.url.searchParams.get("error");
+// ?error_for=<substitute id> ties the error to a card (see best.ts). Only compared with the shown cards' ids,
+// never rendered.
+const errorFor = Astro.url.searchParams.get("error_for") ?? "";
 
 // Match mode: URL > cookie > "contains". A valid mode from the URL is remembered for the next visit.
 const urlMode = parseMatchMode(Astro.url.searchParams.get("match"));
@@ -165,8 +169,18 @@ const backHref =
 const matchHref = (ingredientId: string) =>
   withParams("/ingredients", { ingredient: ingredientId, category: viewCategory, q: query, match: mode });
 
-// Text links (back to results, matches, back to the dashboard): the link variant without the button box.
-const textLinkClass = cn(buttonVariants({ variant: "link" }), "h-auto p-0 whitespace-normal");
+// The error goes into the card it names when that card is on screen; otherwise it stays at the top of the page.
+const cardErrorId =
+  error &&
+  errorFor !== "" &&
+  view.kind === "ingredient" &&
+  view.groups.some((group) => group.substitutes.some((substitute) => substitute.id === errorFor))
+    ? errorFor
+    : null;
+const topError = cardErrorId === null ? error : null;
+
+// Text links (back to results, matches): the link variant without the button box, with the full-opacity focus ring.
+const textLinkClass = cn(buttonVariants({ variant: "link" }), focusRing, "h-auto p-0 whitespace-normal");
 const headingClass = "text-lg font-semibold text-foreground";
 ---
 
@@ -180,9 +194,9 @@ const headingClass = "text-lg font-semibold text-foreground";
           {notice}
         </Alert>
       )}
-      {error && (
+      {topError && (
         <Alert role="alert" variant="destructive" class="mb-4">
-          {error}
+          {topError}
         </Alert>
       )}
 
@@ -260,6 +274,7 @@ const headingClass = "text-lg font-semibold text-foreground";
                           category={viewCategory ?? ""}
                           q={query}
                           match={mode}
+                          error={substitute.id === cardErrorId ? error : null}
                         />
                       ))}
                     </ul>

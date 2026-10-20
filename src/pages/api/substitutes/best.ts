@@ -19,8 +19,11 @@ interface ListView {
 }
 
 // Back to the list; with a view it re-opens the same ingredient (+ category, q, match), otherwise the bare list.
-// Order matters: ingredient, category, q, match, then notice / error; empty values are left out.
-function listRedirect(view: ListView | null, extra: Record<string, string> = {}): string {
+// Order matters: ingredient, category, q, match, then notice / error, then error_for; empty values are left out.
+// errorFor (a valid substitute id) ties the error to its card: error_for=<id> plus the #substitute-<id> anchor,
+// so the list shows the error in that card and the browser scrolls to it (if the card is not shown, the error
+// stays at the top of the list).
+function listRedirect(view: ListView | null, extra: Record<string, string> = {}, errorFor = ""): string {
   const params = new URLSearchParams();
   if (view) {
     params.set("ingredient", view.ingredient);
@@ -29,8 +32,10 @@ function listRedirect(view: ListView | null, extra: Record<string, string> = {})
     if (view.match) params.set("match", view.match);
   }
   for (const [name, value] of Object.entries(extra)) params.set(name, value);
+  if (errorFor) params.set("error_for", errorFor);
   const query = params.toString();
-  return query ? `${LIST_PAGE}?${query}` : LIST_PAGE;
+  const path = query ? `${LIST_PAGE}?${query}` : LIST_PAGE;
+  return errorFor ? `${path}#substitute-${errorFor}` : path;
 }
 
 /** Marks (is_best = "1") or unmarks (is_best = "0") a substitute as the best one of its pair, from the list page. */
@@ -74,13 +79,13 @@ export const POST: APIRoute = async (context) => {
 
   const isBestValue = field(form, "is_best");
   if (isBestValue !== "1" && isBestValue !== "0") {
-    return context.redirect(listRedirect(view, { error: INVALID_FORM }));
+    return context.redirect(listRedirect(view, { error: INVALID_FORM }, substituteId));
   }
 
   // The service returns a short, user-safe message on failure (no SQL details).
   const result = await setBestSubstitute(supabase, substituteId, isBestValue === "1");
   if (result.error !== null) {
-    return context.redirect(listRedirect(view, { error: result.error }));
+    return context.redirect(listRedirect(view, { error: result.error }, substituteId));
   }
 
   // Only a swap gets a notice; marking without a previous best or unmarking is visible on the list itself.

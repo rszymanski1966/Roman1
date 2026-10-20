@@ -3,6 +3,7 @@ import Label from "@/components/ui/Label.astro";
 import Input from "@/components/ui/Input.astro";
 import NativeSelect from "@/components/ui/NativeSelect.astro";
 import { buttonVariants } from "@/components/ui/button";
+import { focusOutline, focusRing } from "@/components/ui/focus";
 import { MAX_QUERY_LENGTH } from "@/lib/services/substitutes";
 import { cn } from "@/lib/utils";
 import type { Category, IngredientListItem, MatchMode } from "@/types";
@@ -20,7 +21,8 @@ interface Props {
 
 const { categories, ingredients, query, mode, viewCategory, ingredientParam } = Astro.props;
 
-const submitClass = cn(buttonVariants(), "mt-auto w-full");
+const submitClass = cn(buttonVariants(), focusRing, "mt-auto w-full");
+const radioClass = cn("accent-primary", focusOutline);
 ---
 
 {/* Both forms side by side from md up, so the results stay closer to the top of the page. */}
@@ -41,7 +43,7 @@ const submitClass = cn(buttonVariants(), "mt-auto w-full");
             name="match"
             value="contains"
             checked={mode === "contains"}
-            class="accent-primary"
+            class:list={radioClass}
           />
           <Label for="match-contains" class="font-normal">
             zawiera
@@ -54,7 +56,7 @@ const submitClass = cn(buttonVariants(), "mt-auto w-full");
             name="match"
             value="prefix"
             checked={mode === "prefix"}
-            class="accent-primary"
+            class:list={radioClass}
           />
           <Label for="match-prefix" class="font-normal">
             zaczyna się od

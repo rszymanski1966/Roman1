@@ -33,6 +33,11 @@ const otherSubstitute = `smoke-other-${runId}`;
 let categoryId = "";
 let otherCategoryId = "";
 let listPath = "";
+// Account B's list with its own ingredient (the redirect after B adds it).
+let listPathB = "";
+// Redirects after a mark-as-best error, tied to a card with error_for (the #anchor is stripped before the GET).
+let cardErrorPath = "";
+let topErrorPathB = "";
 let firstSubstituteId = "";
 let secondSubstituteId = "";
 let searchIngredientId = "";
@@ -45,9 +50,10 @@ function substituteIdFor(body, name) {
   return /name="substitute_id" value="([0-9a-f-]{36})"/i.exec(body.slice(start))?.[1] ?? "";
 }
 
-// Form fields for /api/substitutes/best: the pair comes from the list URL, so the redirect returns to the same list.
-function bestForm(substituteId, isBest) {
-  const params = new URLSearchParams(listPath.split("?")[1] ?? "");
+// Form fields for /api/substitutes/best: the pair comes from the list URL (account A's by default),
+// so the redirect returns to the same list.
+function bestForm(substituteId, isBest, path = listPath) {
+  const params = new URLSearchParams(path.split("?")[1] ?? "");
   return {
     substitute_id: substituteId,
     is_best: isBest,
@@ -195,6 +201,22 @@ const steps = [
       location: listPath,
       locationIncludes: `notice=Najlepszy+zamiennik+zmieniony%3A+${substituteMarker}+`,
     }),
+  ],
+  [
+    // A bad is_best with a valid substitute id: the error is tied to that card (error_for + #substitute-<id> anchor).
+    "account A best-mark error is tied to its card",
+    async () => {
+      const actual = await request("/api/substitutes/best", { method: "POST", form: bestForm(firstSubstituteId, "x") });
+      cardErrorPath = actual.location.split("#")[0];
+      return actual;
+    },
+    () => ({ status: 302, location: listPath, locationIncludes: `error_for=${firstSubstituteId}` }),
+  ],
+  [
+    // The card is on A's list, so the error renders inside it instead of at the top.
+    "account A list shows the error in the card",
+    () => request(cardErrorPath),
+    { status: 200, bodyIncludes: "data-substitute-error" },
   ],
   [
     // Validation error (empty ratio): the checked "best" checkbox is echoed back to the form.
@@ -387,8 +409,8 @@ const steps = [
   [
     // B needs its own ingredient, otherwise the list page short-circuits to "no ingredients" and never queries substitutes.
     "account B adds its own ingredient",
-    () =>
-      request("/api/ingredients", {
+    async () => {
+      const actual = await request("/api/ingredients", {
         method: "POST",
         cookies: jarB,
         form: {
@@ -397,8 +419,35 @@ const steps = [
           substitute: `smoke-substitute-${runId}-b`,
           ratio: "1:1",
         },
-      }),
+      });
+      listPathB = actual.location;
+      return actual;
+    },
     { status: 302, location: "/ingredients?ingredient=" },
+  ],
+  [
+    // From B's own list: A's substitute is "not found" for B, and the error still names its id in error_for.
+    "account B best-mark error on account A's substitute carries error_for",
+    async () => {
+      const actual = await request("/api/substitutes/best", {
+        method: "POST",
+        cookies: jarB,
+        form: bestForm(firstSubstituteId, "1", listPathB),
+      });
+      topErrorPathB = actual.location.split("#")[0];
+      return actual;
+    },
+    () => ({ status: 302, location: listPathB, locationIncludes: `error_for=${firstSubstituteId}` }),
+  ],
+  [
+    // B's cards are on screen, but none is the one in error_for: the error falls back to the top of the page.
+    "account B list shows the error at the top, not in a card",
+    async () => {
+      const actual = await request(topErrorPathB, { cookies: jarB });
+      // Fail the step unless B's own card renders, so the missing card error is not just an empty list.
+      return actual.body.includes(`>smoke-substitute-${runId}-b<`) ? actual : { ...actual, status: 0 };
+    },
+    { status: 200, bodyIncludes: 'role="alert"', bodyExcludes: "data-substitute-error" },
   ],
   [
     "account B sees empty state on account A's URL",

@@ -7,6 +7,7 @@ import Input from "@/components/ui/Input.astro";
 import Label from "@/components/ui/Label.astro";
 import NativeSelect from "@/components/ui/NativeSelect.astro";
 import { buttonVariants } from "@/components/ui/button";
+import { focusRing } from "@/components/ui/focus";
 import EmptyState from "@/components/ingredients/EmptyState.astro";
 import IngredientsFooter from "@/components/ingredients/IngredientsFooter.astro";
 import IngredientsHeader from "@/components/ingredients/IngredientsHeader.astro";
@@ -50,12 +51,68 @@ const fixtureRegular: SubstituteListItem = {
   notes: null,
   is_best: false,
 };
+// Separate ids for the error-state cards: every SubstituteCard root carries id="substitute-<id>", which must stay unique.
+const fixtureErrorCard: SubstituteListItem = {
+  id: "00000000-0000-4000-8000-000000000023",
+  name: "mąka owsiana",
+  ratio: "1:1",
+  notes: null,
+  is_best: false,
+};
+const fixtureTopErrorCard: SubstituteListItem = {
+  id: "00000000-0000-4000-8000-000000000024",
+  name: "mąka kukurydziana",
+  ratio: "1:1",
+  notes: null,
+  is_best: false,
+};
+const fixtureCardError = "Nieprawidłowe dane formularza.";
+const fixtureTopError = "Nie znaleziono zamiennika.";
 const fixtureIngredient = fixtureIngredients[0];
 const fixtureMatches = fixtureIngredients.slice(0, 2);
 // Same text-link classes as src/pages/ingredients/index.astro (the matches list lives in the page).
-const textLinkClass = cn(buttonVariants({ variant: "link" }), "h-auto p-0 whitespace-normal");
+const textLinkClass = cn(buttonVariants({ variant: "link" }), focusRing, "h-auto p-0 whitespace-normal");
 const viewFrameClass = "bg-kitchen rounded-2xl p-4";
 const viewCardClass = "rounded-2xl border-border bg-card/70 p-8 text-foreground shadow-sm backdrop-blur-xl";
+// Focus-visible forced for a screenshot: the classes of focusRing / focusOutline without the variant prefix.
+const forcedRing = "border-ring ring-3 ring-ring";
+const forcedOutline = "outline-2 outline-offset-2 outline-ring";
+const matrixCellClass = "border-b border-border px-3 py-2 align-top";
+
+// The 7-state matrix of /ingredients: what the view does in each state and where this page shows it.
+const stateMatrix = [
+  { state: "default", view: "Widok na tokenach motywu kitchen.", here: "Sekcja „Widok /ingredients” niżej." },
+  {
+    state: "hover",
+    view: "Przyciski default: tło primary/90; outline: tło accent; linki tekstowe: podkreślenie.",
+    here: "Najedź kursorem na przyciski i linki w sekcjach „Przyciski” i „Widok /ingredients”.",
+  },
+  {
+    state: "focus-visible",
+    view: "Pierścień ring-3 z tokenu ring przy pełnym kryciu (pola, selecty, przyciski, linki); radio: obrys outline-ring.",
+    here: "Tab po stronie albo wiersz „Focus-visible (wymuszony do zrzutu)” niżej.",
+  },
+  {
+    state: "disabled",
+    view: "N/A: widok nie ma kontrolek, które mogą być nieaktywne; formularze robią pełne przeładowanie strony.",
+    here: "Disabled Button, Input i NativeSelect w sekcjach komponentów wyżej.",
+  },
+  {
+    state: "error",
+    view: "Błąd akcji „najlepszy” w karcie (error_for); gdy karty nie ma, Alert destructive na górze. Pole z aria-invalid.",
+    here: "Karta z błędem i błąd na górze niżej; pola z aria-invalid w sekcjach komponentów wyżej.",
+  },
+  {
+    state: "empty",
+    view: "4 puste stany: brak składników, stan początkowy, brak dopasowań, brak zamienników.",
+    here: "Ramka „Puste stany” niżej.",
+  },
+  {
+    state: "loading",
+    view: "N/A: SSR, widok bez <script>, nic nie dociąga się po renderze.",
+    here: "Brak (nic do pokazania).",
+  },
+];
 ---
 
 <Layout title="Kitchen sink">
@@ -149,37 +206,37 @@ const viewCardClass = "rounded-2xl border-border bg-card/70 p-8 text-foreground 
         </p>
         <div class="space-y-3">
           <div class="flex flex-wrap items-center gap-3">
-            <button type="button" class:list={buttonVariants()}>
+            <button type="button" class:list={cn(buttonVariants(), focusRing)}>
               Szukaj (default)
             </button>
-            <button type="button" class:list={buttonVariants({ variant: "outline" })}>
+            <button type="button" class:list={cn(buttonVariants({ variant: "outline" }), focusRing)}>
               Wyloguj się (outline)
             </button>
-            <a href="#ks-buttons" class:list={buttonVariants({ variant: "link" })}>
+            <a href="#ks-buttons" class:list={cn(buttonVariants({ variant: "link" }), focusRing)}>
               Wróć do panelu (link)
             </a>
           </div>
           <div class="flex flex-wrap items-center gap-3">
-            <button type="button" class:list={buttonVariants({ size: "sm" })}>
+            <button type="button" class:list={cn(buttonVariants({ size: "sm" }), focusRing)}>
               Default sm
             </button>
-            <button type="button" class:list={buttonVariants({ variant: "outline", size: "sm" })}>
+            <button type="button" class:list={cn(buttonVariants({ variant: "outline", size: "sm" }), focusRing)}>
               Oznacz jako najlepszy (outline sm)
             </button>
-            <a id="ks-buttons" href="#ks-buttons" class:list={buttonVariants()}>
+            <a id="ks-buttons" href="#ks-buttons" class:list={cn(buttonVariants(), focusRing)}>
               Dodaj składnik (link-CTA)
             </a>
           </div>
           <div class="flex flex-wrap items-center gap-3">
-            <button type="button" disabled class:list={buttonVariants()}>
+            <button type="button" disabled class:list={cn(buttonVariants(), focusRing)}>
               Disabled
             </button>
-            <button type="button" disabled class:list={buttonVariants({ variant: "outline" })}>
+            <button type="button" disabled class:list={cn(buttonVariants({ variant: "outline" }), focusRing)}>
               Disabled outline
             </button>
           </div>
           <div class="max-w-xs">
-            <button type="button" class:list={cn(buttonVariants(), "w-full")}>
+            <button type="button" class:list={cn(buttonVariants(), focusRing, "w-full")}>
               Pełna szerokość (cn + w-full)
             </button>
           </div>
@@ -215,7 +272,7 @@ const viewCardClass = "rounded-2xl border-border bg-card/70 p-8 text-foreground 
           <p class="text-sm text-muted-foreground">
             Proporcja: <span class="font-medium">1:1</span>
           </p>
-          <button type="button" class:list={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-2")}>
+          <button type="button" class:list={cn(buttonVariants({ variant: "outline", size: "sm" }), focusRing, "mt-2")}>
             Usuń wyróżnienie
           </button>
         </Card>
@@ -311,6 +368,111 @@ const viewCardClass = "rounded-2xl border-border bg-card/70 p-8 text-foreground 
               <p>Brak zamienników dla tego składnika.</p>
             </EmptyState>
           </Card>
+        </div>
+
+        <p class:list={stateClass}>Błąd przy karcie (error_for wskazuje wyświetloną kartę)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <ul class="space-y-3">
+              <SubstituteCard
+                substitute={fixtureErrorCard}
+                ingredient={fixtureIngredient.id}
+                category=""
+                q=""
+                match="contains"
+                error={fixtureCardError}
+              />
+            </ul>
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Błąd na górze (fallback: karty z error_for nie ma w widoku)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <Alert role="alert" variant="destructive" class="mb-4">
+              {fixtureTopError}
+            </Alert>
+            <ul class="space-y-3">
+              <SubstituteCard
+                substitute={fixtureTopErrorCard}
+                ingredient={fixtureIngredient.id}
+                category=""
+                q=""
+                match="contains"
+              />
+            </ul>
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>
+          Focus-visible (wymuszony do zrzutu: klasy focusRing / focusOutline bez wariantu focus-visible)
+        </p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={cn(viewCardClass, "space-y-4")}>
+            <div class="space-y-2">
+              <Label for="ks-forced-input">Nazwa składnika</Label>
+              <Input id="ks-forced-input" type="search" value="mąka" class:list={forcedRing} />
+            </div>
+            <div class="space-y-2">
+              <Label for="ks-forced-select">Kategoria</Label>
+              <NativeSelect id="ks-forced-select" class:list={forcedRing}>
+                <option value="">Wszystkie kategorie</option>
+              </NativeSelect>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <input id="ks-forced-radio" type="radio" checked class:list={cn("accent-primary", forcedOutline)} />
+              <Label for="ks-forced-radio" class="font-normal">
+                zawiera
+              </Label>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <button type="button" class:list={cn(buttonVariants(), forcedRing)}>
+                Szukaj
+              </button>
+              <button type="button" class:list={cn(buttonVariants({ variant: "outline", size: "sm" }), forcedRing)}>
+                Oznacz jako najlepszy
+              </button>
+              <a href="#ks-view" class:list={cn(textLinkClass, forcedRing)}>
+                Wróć do panelu
+              </a>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Macierz 7 stanów widoku /ingredients</h2>
+        <p class:list={stateClass}>
+          Kolejność tabulacji w widoku: „Dodaj składnik” → formularz wyszukiwania → formularz listy → karty → stopka
+          („Wróć do panelu”, „Wyloguj się”).
+        </p>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr class="text-muted-foreground">
+                <th scope="col" class:list={matrixCellClass}>
+                  Stan
+                </th>
+                <th scope="col" class:list={matrixCellClass}>
+                  W widoku
+                </th>
+                <th scope="col" class:list={matrixCellClass}>
+                  Gdzie na tej stronie
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {stateMatrix.map((row) => (
+                <tr>
+                  <th scope="row" class:list={cn(matrixCellClass, "font-medium")}>
+                    {row.state}
+                  </th>
+                  <td class:list={matrixCellClass}>{row.view}</td>
+                  <td class:list={cn(matrixCellClass, "text-muted-foreground")}>{row.here}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>

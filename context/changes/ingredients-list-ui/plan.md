@@ -500,32 +500,32 @@ Brak istotnych: zmiany CSS i markupu SSR, bez nowych zapytań. Kitchen-sink nie 
 
 #### Automated
 
-- [x] 3.1 Lint przechodzi: `npm run lint`
-- [x] 3.2 Typy przechodzą: `npx astro check`
-- [x] 3.3 Skan literałów na widoku i src/components/ingredients daje 0 trafień
-- [x] 3.4 Smoke przechodzi przy działającym dev
+- [x] 3.1 Lint przechodzi: `npm run lint` — d75d56c
+- [x] 3.2 Typy przechodzą: `npx astro check` — d75d56c
+- [x] 3.3 Skan literałów na widoku i src/components/ingredients daje 0 trafień — d75d56c
+- [x] 3.4 Smoke przechodzi przy działającym dev — d75d56c
 
 #### Manual
 
-- [x] 3.5 Pasek akcji: Dodaj składnik i Wyloguj się działają
-- [x] 3.6 Zrzuty /ingredients (desktop i 375 px) w trzech stanach, motyw kitchen z AA
-- [x] 3.7 Kitchen-sink pokazuje sekcję widoku zgodną z /ingredients
+- [x] 3.5 Pasek akcji: Dodaj składnik i Wyloguj się działają — d75d56c
+- [x] 3.6 Zrzuty /ingredients (desktop i 375 px) w trzech stanach, motyw kitchen z AA — d75d56c
+- [x] 3.7 Kitchen-sink pokazuje sekcję widoku zgodną z /ingredients — d75d56c
 
 ### Phase 4: Stany, błąd przy karcie i macierz w kitchen-sink
 
 #### Automated
 
-- [ ] 4.1 Lint przechodzi: `npm run lint`
-- [ ] 4.2 Typy przechodzą: `npx astro check`
-- [ ] 4.3 Skan literałów na wszystkich strzeżonych plikach daje 0 trafień
-- [ ] 4.4 Smoke z nowymi krokami przechodzi przy działającym dev
+- [x] 4.1 Lint przechodzi: `npm run lint`
+- [x] 4.2 Typy przechodzą: `npx astro check`
+- [x] 4.3 Skan literałów na wszystkich strzeżonych plikach daje 0 trafień
+- [x] 4.4 Smoke z nowymi krokami przechodzi przy działającym dev
 
 #### Manual
 
-- [ ] 4.5 Zrzuty kitchen-sink (desktop i 375 px) pokazują każdy wiersz macierzy albo N/A
-- [ ] 4.6 Fokus klawiatury widoczny na każdej kontrolce, kolejność zgodna z wizualną
-- [ ] 4.7 Błąd przy karcie przewija do karty z komunikatem
-- [ ] 4.8 /dev/kitchen-sink zwraca 404 po build + preview
+- [x] 4.5 Zrzuty kitchen-sink (desktop i 375 px) pokazują każdy wiersz macierzy albo N/A
+- [x] 4.6 Fokus klawiatury widoczny na każdej kontrolce, kolejność zgodna z wizualną
+- [x] 4.7 Błąd przy karcie przewija do karty z komunikatem
+- [x] 4.8 /dev/kitchen-sink zwraca 404 po build + preview
 
 ### Phase 5: Strażnik i reguła
 
