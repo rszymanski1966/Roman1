@@ -4,7 +4,7 @@
 
 - **Astro components** for static content/layout; **React components** only when interactivity is needed.
 - **Tailwind class merging**: use the `cn()` helper from `@/lib/utils` (clsx + tailwind-merge) for conditional/merged class names. Do not concatenate class strings manually.
-- **shadcn/ui**: components live in `src/components/ui/`, "new-york" style variant. Install new ones with `npx shadcn@latest add [name]`.
+- **shadcn/ui**: components live in `src/components/ui/`, "new-york" style variant. Install new ones with `npx shadcn@latest add [name]`. Tokens and the UI contract: see `## UI`.
 - **API routes**: uppercase `GET`/`POST` exports. Auth routes take form posts and answer with redirects, not JSON. Errors go back as `?error=<encodeURIComponent(msg)>` on the originating page (see `@src/pages/api/auth/signin.ts`). zod is not installed yet; add it (`npm i zod`) before validating new input with it.
 - **Supabase migrations**: `supabase/migrations/` using naming format `YYYYMMDDHHmmss_short_description.sql`. Always enable RLS on new tables with granular per-operation, per-role policies.
 - **React**: no Next.js directives ("use client" etc.). Extract hooks to `src/components/hooks/`.
@@ -32,6 +32,16 @@ On a fresh checkout, run `npx astro sync` before `npm run lint`. It generates th
 
 - Setup, env vars, local Supabase, and deploy steps: @README.md
 - CI and deploy pipeline: @.github/workflows/ci.yml
+
+## UI
+
+- **Tokens** live in `src/styles/global.css`: values in `:root` / `.dark`, published to Tailwind through `@theme inline`. The comment above `:root` maps each token to its source palette step.
+- **Components** live in `src/components/ui/`. Check there before creating one. Static views use the Astro components (`Input`, `Label`, `NativeSelect`, `Card`, `Alert`, `Badge`); buttons and links use `buttonVariants()`. Add React components with `npx shadcn@latest add [name]`; model new static Astro ones on new-york and build them from tokens.
+- **No literals in views**: no colour literals (hex, `rgb()`, `oklch()`, palette classes like `text-orange-600`) and no arbitrary `px`/`rem` values; use tokens by role (`bg-primary`, `text-muted-foreground`).
+- **`npm run lint:ui`** (also in CI) scans the files listed in `scripts/ui-literals.mjs`. When you clean a view, add it to that list.
+- **Focus**: controls built with `buttonVariants()` add `focusRing` from `@/components/ui/focus` via `cn()` (full-opacity ring, AA 3:1); native radios/checkboxes use `focusOutline`.
+- **Dark mode** changes only in `.dark` in `global.css`. No `dark:` variants or off-token colours in views and components.
+- **Kitchen sink**: `src/pages/dev/kitchen-sink.astro` (dev only, 404 in production). Update it whenever a view or component changes.
 
 ## Git
 

@@ -1,0 +1,22 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { cn } from "@/lib/utils";
+import { focusRing } from "@/components/ui/focus";
+
+// Native <select> (no Radix): works in GET forms without JS; options go in the slot.
+type Props = HTMLAttributes<"select">;
+
+const { class: className, ...rest } = Astro.props;
+---
+
+<select
+  class:list={cn(
+    "h-9 w-full min-w-0 rounded-md border border-input bg-card px-3 py-1 text-base text-foreground shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+    focusRing,
+    "aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive",
+    className,
+  )}
+  {...rest}
+>
+  <slot />
+</select>

@@ -1,0 +1,14 @@
+---
+import { buttonVariants } from "@/components/ui/button";
+import { focusRing } from "@/components/ui/focus";
+import { cn } from "@/lib/utils";
+
+// Action bar of /ingredients: title and add-ingredient CTA. Sign-out sits in IngredientsFooter.
+---
+
+<header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-bold text-foreground">Zamienniki</h1>
+  <a href="/ingredients/new" class:list={cn(buttonVariants(), focusRing)}>
+    Dodaj składnik
+  </a>
+</header>

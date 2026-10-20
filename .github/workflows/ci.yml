@@ -24,6 +24,8 @@ jobs:
  
       - run: npm run lint
  
+      - run: npm run lint:ui
+ 
       - run: npm run build
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

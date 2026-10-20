@@ -3,26 +3,48 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Kitchen theme: values are exact steps of the Tailwind 4.3 palette.
+ *   --foreground, --card-foreground, --popover-foreground,
+ *   --secondary-foreground                       stone-900
+ *   --muted-foreground                           stone-600
+ *   --muted, --secondary                         stone-100
+ *   --border                                     stone-200
+ *   --input                                      stone-300
+ *   --primary, --accent-foreground               orange-700
+ *   --accent                                     orange-50
+ *   --ring                                       orange-600
+ *   --success                                    green-800
+ *   --destructive                                red-700
+ *   --kitchen-from / -via / -to                  hex kept from the previous bg-kitchen gradient
+ * --background, --card, --popover and the *-foreground
+ * whites stay at the shadcn defaults.
+ */
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0.216 0.006 56.043);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.216 0.006 56.043);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.216 0.006 56.043);
+  --primary: oklch(0.553 0.195 38.402);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --secondary: oklch(0.97 0.001 106.424);
+  --secondary-foreground: oklch(0.216 0.006 56.043);
+  --muted: oklch(0.97 0.001 106.424);
+  --muted-foreground: oklch(0.444 0.011 73.639);
+  --accent: oklch(0.98 0.016 73.684);
+  --accent-foreground: oklch(0.553 0.195 38.402);
+  --destructive: oklch(0.505 0.213 27.518);
+  --success: oklch(0.448 0.119 151.328);
+  --success-foreground: oklch(0.985 0 0);
+  --border: oklch(0.923 0.003 48.717);
+  --input: oklch(0.869 0.005 56.366);
+  --ring: oklch(0.646 0.222 41.116);
+  --kitchen-from: #fffbeb;
+  --kitchen-via: #fff7ed;
+  --kitchen-to: #fef3c7;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -54,6 +76,10 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  /* Placeholder (about green-500), not tuned: dark mode is deferred. */
+  --success: oklch(0.723 0.219 149.579);
+  --success-foreground: oklch(0.205 0 0);
+  /* No --kitchen-from / -via / -to here yet: bg-kitchen keeps the light gradient until dark mode is tuned. */
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
@@ -92,6 +118,8 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -111,7 +139,7 @@
 }
 
 @utility bg-kitchen {
-  background-image: linear-gradient(to bottom, #fffbeb, #fff7ed, #fef3c7);
+  background-image: linear-gradient(to bottom, var(--kitchen-from), var(--kitchen-via), var(--kitchen-to));
 }
 
 @layer base {
