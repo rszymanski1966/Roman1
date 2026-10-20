@@ -1,10 +1,10 @@
 ---
 change_id: ingredients-list-ui
 title: Ingredients list ui
-status: impl_reviewed
+status: archived
 created: 2026-10-19
 updated: 2026-10-20
-archived_at: null
+archived_at: 2026-10-20T18:44:51Z
 ---
 
 ## Notes
