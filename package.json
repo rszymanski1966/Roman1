@@ -9,6 +9,7 @@
     "astro": "astro",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "lint:ui": "node scripts/ui-literals.mjs",
     "format": "prettier --write .",
     "smoke": "node scripts/smoke.mjs"
   },

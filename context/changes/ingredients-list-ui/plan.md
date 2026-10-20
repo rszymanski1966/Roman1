@@ -515,28 +515,28 @@ Brak istotnych: zmiany CSS i markupu SSR, bez nowych zapytań. Kitchen-sink nie 
 
 #### Automated
 
-- [x] 4.1 Lint przechodzi: `npm run lint`
-- [x] 4.2 Typy przechodzą: `npx astro check`
-- [x] 4.3 Skan literałów na wszystkich strzeżonych plikach daje 0 trafień
-- [x] 4.4 Smoke z nowymi krokami przechodzi przy działającym dev
+- [x] 4.1 Lint przechodzi: `npm run lint` — 0c91b82
+- [x] 4.2 Typy przechodzą: `npx astro check` — 0c91b82
+- [x] 4.3 Skan literałów na wszystkich strzeżonych plikach daje 0 trafień — 0c91b82
+- [x] 4.4 Smoke z nowymi krokami przechodzi przy działającym dev — 0c91b82
 
 #### Manual
 
-- [x] 4.5 Zrzuty kitchen-sink (desktop i 375 px) pokazują każdy wiersz macierzy albo N/A
-- [x] 4.6 Fokus klawiatury widoczny na każdej kontrolce, kolejność zgodna z wizualną
-- [x] 4.7 Błąd przy karcie przewija do karty z komunikatem
-- [x] 4.8 /dev/kitchen-sink zwraca 404 po build + preview
+- [x] 4.5 Zrzuty kitchen-sink (desktop i 375 px) pokazują każdy wiersz macierzy albo N/A — 0c91b82
+- [x] 4.6 Fokus klawiatury widoczny na każdej kontrolce, kolejność zgodna z wizualną — 0c91b82
+- [x] 4.7 Błąd przy karcie przewija do karty z komunikatem — 0c91b82
+- [x] 4.8 /dev/kitchen-sink zwraca 404 po build + preview — 0c91b82
 
 ### Phase 5: Strażnik i reguła
 
 #### Automated
 
-- [ ] 5.1 npm run lint:ui przechodzi
-- [ ] 5.2 npm run lint:ui kończy się kodem 1 przy wstrzykniętym literale
-- [ ] 5.3 Lint przechodzi: `npm run lint`
-- [ ] 5.4 Krok lint:ui jest w CI przed build
+- [x] 5.1 npm run lint:ui przechodzi
+- [x] 5.2 npm run lint:ui kończy się kodem 1 przy wstrzykniętym literale
+- [x] 5.3 Lint przechodzi: `npm run lint`
+- [x] 5.4 Krok lint:ui jest w CI przed build
 
 #### Manual
 
-- [ ] 5.5 Sekcja UI w CLAUDE.md poza markerami 10x-cli, bez sprzeczności
+- [x] 5.5 Sekcja UI w CLAUDE.md poza markerami 10x-cli, bez sprzeczności
 - [ ] 5.6 CI na PR pokazuje krok lint:ui i przechodzi
