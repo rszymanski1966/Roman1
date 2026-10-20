@@ -473,28 +473,28 @@ Brak istotnych: zmiany CSS i markupu SSR, bez nowych zapytań. Kitchen-sink nie 
 
 #### Automated
 
-- [x] 1.1 Lint przechodzi: `npm run lint`
-- [x] 1.2 Typy przechodzą: `npx astro check`
-- [x] 1.3 Skan literałów na nowych komponentach ui/ i kitchen-sink daje 0 trafień
+- [x] 1.1 Lint przechodzi: `npm run lint` — 73867c3
+- [x] 1.2 Typy przechodzą: `npx astro check` — 73867c3
+- [x] 1.3 Skan literałów na nowych komponentach ui/ i kitchen-sink daje 0 trafień — 73867c3
 
 #### Manual
 
-- [x] 1.4 Kitchen-sink pokazuje wszystkie komponenty i ich stany (wartości jeszcze szare)
-- [x] 1.5 /ingredients wygląda tak samo jak przed fazą
+- [x] 1.4 Kitchen-sink pokazuje wszystkie komponenty i ich stany (wartości jeszcze szare) — 73867c3
+- [x] 1.5 /ingredients wygląda tak samo jak przed fazą — 73867c3
 
 ### Phase 2: Wartości tokenów (motyw kitchen)
 
 #### Automated
 
-- [ ] 2.1 Lint przechodzi: `npm run lint`
-- [ ] 2.2 Typy przechodzą: `npx astro check`
-- [ ] 2.3 @theme inline nie zawiera surowych kolorów
+- [x] 2.1 Lint przechodzi: `npm run lint`
+- [x] 2.2 Typy przechodzą: `npx astro check`
+- [x] 2.3 @theme inline nie zawiera surowych kolorów
 
 #### Manual
 
-- [ ] 2.4 Kitchen-sink pokazuje motyw kitchen, kontrast z theme-values.md spełnia AA
-- [ ] 2.5 Dashboard, signin i ingredients/new bez zmian poza kolorem obrysu fokusu
-- [ ] 2.6 /ingredients wygląda jak przed fazą
+- [x] 2.4 Kitchen-sink pokazuje motyw kitchen, kontrast z theme-values.md spełnia AA
+- [x] 2.5 Dashboard, signin i ingredients/new bez zmian poza kolorem obrysu fokusu
+- [x] 2.6 /ingredients wygląda jak przed fazą
 
 ### Phase 3: Widok na komponentach i tokenach, pasek akcji
 

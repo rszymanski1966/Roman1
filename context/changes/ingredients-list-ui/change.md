@@ -3,7 +3,7 @@ change_id: ingredients-list-ui
 title: Ingredients list ui
 status: implementing
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-20
 archived_at: null
 ---
 
