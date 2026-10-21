@@ -60,6 +60,21 @@ export interface AddSubstituteInput {
   isBest: boolean;
 }
 
+// A substitute on the edit page: its own fields plus the read-only pair it belongs to.
+export type SubstituteForEdit = SubstituteListItem & {
+  // Fallback list context for the way back when the edit URL carries no valid view.
+  ingredientId: string;
+  ingredientName: string;
+  categoryName: string;
+};
+
+// Editable fields of a substitute; is_best is changed only on the list, name_key follows the name.
+export interface UpdateSubstituteInput {
+  name: string;
+  ratio: string;
+  notes: string | null;
+}
+
 export interface AddSubstituteResult {
   ingredientId: string;
   categoryId: string;

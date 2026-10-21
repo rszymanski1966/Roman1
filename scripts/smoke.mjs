@@ -28,6 +28,8 @@ const searchFragment = `search-${runId}`;
 const foundSubstitute = `smoke-found-${runId}`;
 // Second substitute of the search ingredient, in the other category (the view without a category shows two sections).
 const otherSubstitute = `smoke-other-${runId}`;
+// New name of the third substitute after the edit steps (not a prefix of any other name).
+const editedSubstitute = `smoke-edited-${runId}`;
 
 // Values captured by earlier steps and used by later ones.
 let categoryId = "";
@@ -40,6 +42,7 @@ let cardErrorPath = "";
 let topErrorPathB = "";
 let firstSubstituteId = "";
 let secondSubstituteId = "";
+let thirdSubstituteId = "";
 let searchIngredientId = "";
 let foundSubstituteId = "";
 
@@ -60,6 +63,12 @@ function bestForm(substituteId, isBest, path = listPath) {
     ingredient: params.get("ingredient") ?? "",
     category: params.get("category") ?? "",
   };
+}
+
+// Form fields for /api/substitutes/update: the edited values plus the same list context as bestForm.
+function editForm(substituteId, values, path = listPath) {
+  const { ingredient, category } = bestForm(substituteId, "", path);
+  return { substitute_id: substituteId, ingredient, category, ...values };
 }
 
 function cookieHeader(cookies) {
@@ -391,6 +400,70 @@ const steps = [
     { status: 200, bodyIncludes: otherSubstitute },
   ],
   [
+    // The third substitute is the current best of A's pair; the edit page opens with A's list view.
+    "edit substitute form shows the current values",
+    async () => {
+      const list = await request(listPath);
+      thirdSubstituteId = substituteIdFor(list.body, thirdSubstitute);
+      // Fail the step if the id could not be parsed, instead of posting an empty id later.
+      if (!thirdSubstituteId) return { ...list, status: 0 };
+      const view = new URLSearchParams(listPath.split("?")[1] ?? "");
+      return request(`/ingredients/edit-substitute?substitute=${thirdSubstituteId}&${view}`);
+    },
+    { status: 200, bodyIncludes: `value="${thirdSubstitute}"` },
+  ],
+  [
+    "account A edits the best substitute",
+    () =>
+      request("/api/substitutes/update", {
+        method: "POST",
+        form: editForm(thirdSubstituteId, { name: editedSubstitute, ratio: "4:1", notes: "smoke edited" }),
+      }),
+    () => ({ status: 302, location: listPath, locationIncludes: "notice=Zapisano+zmiany." }),
+  ],
+  [
+    // The edit never touches is_best: the renamed card still carries the badge, and the old name is gone.
+    "edited substitute keeps the best badge",
+    async () => {
+      const actual = await request(listPath);
+      const start = actual.body.indexOf(`>${editedSubstitute}<`);
+      if (start === -1) return { ...actual, status: 0 };
+      // The badge must sit in the same card: after the name and before the card's closing </li>.
+      const badge = actual.body.indexOf("data-best-badge", start);
+      const cardEnd = actual.body.indexOf("</li>", start);
+      return badge !== -1 && badge < cardEnd ? actual : { ...actual, status: 0 };
+    },
+    { status: 200, bodyIncludes: editedSubstitute, bodyExcludes: `>${thirdSubstitute}<` },
+  ],
+  [
+    // Empty ratio: back to the form with the error and the echo; the cleared notes come back as an empty key.
+    "edit form echoes values after a validation error",
+    async () => {
+      const actual = await request("/api/substitutes/update", {
+        method: "POST",
+        form: editForm(thirdSubstituteId, { name: editedSubstitute, ratio: "", notes: "" }),
+      });
+      const echo = new URLSearchParams(actual.location.split("?")[1] ?? "");
+      return echo.get("name") === editedSubstitute && echo.has("notes") ? actual : { ...actual, status: 0 };
+    },
+    { status: 302, location: "/ingredients/edit-substitute?", locationIncludes: "error=Podaj+proporcj" },
+  ],
+  [
+    // Another substitute's name in a different case: the unique (pair, name_key) constraint rejects the rename.
+    "account A cannot rename a substitute to a name already in the pair",
+    () =>
+      request("/api/substitutes/update", {
+        method: "POST",
+        form: editForm(thirdSubstituteId, { name: secondSubstitute.toUpperCase(), ratio: "4:1" }),
+      }),
+    // Prefix up to the closing quote: proves the conflict message, not just any validation error.
+    {
+      status: 302,
+      location: "/ingredients/edit-substitute?",
+      locationIncludes: `${new URLSearchParams({ error: `Zamiennik „${secondSubstitute.toUpperCase()}”` })}`,
+    },
+  ],
+  [
     "signup creates account B",
     () => request("/api/auth/signup", { method: "POST", cookies: jarB, form: { email: emailB, password } }),
     { status: 302, location: "/auth/confirm-email" },
@@ -405,6 +478,22 @@ const steps = [
     "account B cannot mark account A's substitute",
     () => request("/api/substitutes/best", { method: "POST", cookies: jarB, form: bestForm(firstSubstituteId, "1") }),
     () => ({ status: 302, location: listPath, locationIncludes: "error=" }),
+  ],
+  [
+    // RLS hides A's row from B, so the update changes no row and the service reports "not found".
+    "account B cannot edit account A's substitute",
+    () =>
+      request("/api/substitutes/update", {
+        method: "POST",
+        cookies: jarB,
+        form: editForm(firstSubstituteId, { name: `smoke-taken-${runId}`, ratio: "1:1" }),
+      }),
+    { status: 302, location: "/ingredients/edit-substitute?", locationIncludes: "error=Nie+znaleziono+zamiennika." },
+  ],
+  [
+    "account B edit page for account A's substitute shows not found",
+    () => request(`/ingredients/edit-substitute?substitute=${firstSubstituteId}`, { cookies: jarB }),
+    { status: 200, bodyIncludes: "Nie znaleziono zamiennika", bodyExcludes: `value="${substituteMarker}"` },
   ],
   [
     // B needs its own ingredient, otherwise the list page short-circuits to "no ingredients" and never queries substitutes.

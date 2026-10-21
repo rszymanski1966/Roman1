@@ -5,8 +5,10 @@ import type {
   Category,
   IngredientListItem,
   MatchMode,
+  SubstituteForEdit,
   SubstituteGroup,
   SubstituteListItem,
+  UpdateSubstituteInput,
 } from "@/types";
 
 // Callers must pass a client already checked for null (see src/lib/supabase.ts).
@@ -89,10 +91,17 @@ export async function listIngredients(client: SupabaseClient): Promise<ServiceRe
   return ok(data as IngredientListItem[]);
 }
 
+// Add and edit report a duplicate substitute name with the same text.
+function duplicateSubstituteMessage(name: string): string {
+  return `Zamiennik „${name}” jest już zapisany dla tego składnika w tej kategorii.`;
+}
+
 /**
  * Adds a substitute for (ingredient, category). Re-uses an existing ingredient (same name_key)
- * and an existing ingredient-category pair. Uses ON CONFLICT DO NOTHING + separate id reads,
- * because ON CONFLICT DO UPDATE would need an UPDATE RLS policy that does not exist.
+ * and an existing ingredient-category pair. Uses ON CONFLICT DO NOTHING + separate id reads: an existing row
+ * must stay as it is (DO UPDATE would rewrite the saved ingredient name with the typed spelling), and
+ * ingredient_categories has no UPDATE grant or policy. The UPDATE policies on substitutes (S-02) and
+ * ingredients (S-04) serve the list and edit actions, not this upsert.
  * A substitute name already saved for the pair (case-insensitive) returns a "already saved" message
  * instead of GENERIC_ERROR; any other database error stays generic.
  * With isBest the new substitute is then marked as the best one of its pair (see setBestSubstitute):
@@ -152,9 +161,7 @@ export async function addSubstitute(
     .single<{ id: string }>();
   if (substituteInsert.error) {
     // 23505 = unique_violation on (ingredient_category_id, name_key): the same name is already saved for this pair.
-    if (substituteInsert.error.code === "23505") {
-      return fail(`Zamiennik „${substituteName}” jest już zapisany dla tego składnika w tej kategorii.`);
-    }
+    if (substituteInsert.error.code === "23505") return fail(duplicateSubstituteMessage(substituteName));
     return fail();
   }
 
@@ -273,4 +280,87 @@ export async function setBestSubstitute(
 /** List notice after the best mark moved from `replacedName` to `substituteName` (list button or add form). */
 export function bestSwapNotice(replacedName: string, substituteName: string): string {
   return `Najlepszy zamiennik zmieniony: ${replacedName} → ${substituteName}.`;
+}
+
+// Row shape of the embedded select in getSubstituteForEdit (no generated DB types, so it is asserted).
+// The relations are many-to-one (objects), but without generated types they are read defensively (object or array).
+type Embedded<T> = T | T[] | null;
+
+interface SubstituteForEditRow extends SubstituteListItem {
+  ingredient_categories: Embedded<{
+    ingredient_id: string;
+    ingredients: Embedded<{ name: string }>;
+    categories: Embedded<{ name: string }>;
+  }>;
+}
+
+function first<T>(value: Embedded<T>): T | null {
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+/**
+ * A substitute with its ingredient and category names, for the edit page.
+ * null = no such substitute or one hidden by RLS (another account's row): the caller shows "not found".
+ * The caller checks the id with isUuid first (otherwise Postgres fails with 22P02).
+ */
+export async function getSubstituteForEdit(
+  client: SupabaseClient,
+  substituteId: string,
+): Promise<ServiceResult<SubstituteForEdit | null>> {
+  const { data, error } = await client
+    .from("substitutes")
+    .select(
+      "id, name, ratio, notes, is_best, ingredient_categories(ingredient_id, ingredients(name), categories(name))",
+    )
+    .eq("id", substituteId)
+    .maybeSingle();
+  if (error) return fail();
+  if (!data) return ok(null);
+
+  const row = data as SubstituteForEditRow;
+  const pair = first(row.ingredient_categories);
+  const ingredient = pair ? first(pair.ingredients) : null;
+  const category = pair ? first(pair.categories) : null;
+  // The pair, ingredient and category belong to the same account as the substitute; missing ones are a broken row.
+  if (!pair || !ingredient || !category) return fail();
+  return ok({
+    id: row.id,
+    name: row.name,
+    ratio: row.ratio,
+    notes: row.notes,
+    is_best: row.is_best,
+    ingredientId: pair.ingredient_id,
+    ingredientName: ingredient.name,
+    categoryName: category.name,
+  });
+}
+
+/**
+ * Saves the edited name, ratio and notes of a substitute. Never sends is_best (it stays as it is) or name_key
+ * (generated from the name). A missing or foreign substitute (RLS hides it, so no row is updated) is "not found";
+ * a name already saved for the pair (case-insensitive) gets the same message as adding it.
+ */
+export async function updateSubstitute(
+  client: SupabaseClient,
+  substituteId: string,
+  input: UpdateSubstituteInput,
+): Promise<ServiceResult<{ name: string }>> {
+  const name = normalizeName(input.name);
+  const { data, error } = await client
+    .from("substitutes")
+    .update({
+      name,
+      ratio: input.ratio.trim(),
+      notes: input.notes?.trim() ? input.notes.trim() : null,
+    })
+    .eq("id", substituteId)
+    .select("name")
+    .maybeSingle<{ name: string }>();
+  if (error) {
+    // 23505 = unique_violation on (ingredient_category_id, name_key): the same name is already saved for this pair.
+    if (error.code === "23505") return fail(duplicateSubstituteMessage(name));
+    return fail();
+  }
+  if (!data) return fail("Nie znaleziono zamiennika.");
+  return ok({ name: data.name });
 }

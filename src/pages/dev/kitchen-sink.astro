@@ -6,6 +6,7 @@ import Card from "@/components/ui/Card.astro";
 import Input from "@/components/ui/Input.astro";
 import Label from "@/components/ui/Label.astro";
 import NativeSelect from "@/components/ui/NativeSelect.astro";
+import Textarea from "@/components/ui/Textarea.astro";
 import { buttonVariants } from "@/components/ui/button";
 import { focusRing } from "@/components/ui/focus";
 import EmptyState from "@/components/ingredients/EmptyState.astro";
@@ -13,8 +14,10 @@ import IngredientsFooter from "@/components/ingredients/IngredientsFooter.astro"
 import IngredientsHeader from "@/components/ingredients/IngredientsHeader.astro";
 import LookupForms from "@/components/ingredients/LookupForms.astro";
 import SubstituteCard from "@/components/ingredients/SubstituteCard.astro";
+import SubstituteEditForm from "@/components/ingredients/SubstituteEditForm.astro";
+import type { ListView } from "@/lib/list-view";
 import { cn } from "@/lib/utils";
-import type { Category, IngredientListItem, SubstituteListItem } from "@/types";
+import type { Category, IngredientListItem, SubstituteForEdit, SubstituteListItem } from "@/types";
 
 // Dev-only visual gate for the ui/ components; no database access.
 // The rule crashes on a top-level return in Astro frontmatter (no enclosing function), so it is off for this file.
@@ -70,6 +73,23 @@ const fixtureCardError = "Nieprawidłowe dane formularza.";
 const fixtureTopError = "Nie znaleziono zamiennika.";
 const fixtureIngredient = fixtureIngredients[0];
 const fixtureMatches = fixtureIngredients.slice(0, 2);
+// The edit page (/ingredients/edit-substitute): the best substitute with its pair, opened from a category view.
+const fixtureEdit: SubstituteForEdit = {
+  ...fixtureBest,
+  ingredientId: fixtureIngredient.id,
+  ingredientName: fixtureIngredient.name,
+  categoryName: fixtureCategories[0].name,
+};
+const fixtureEditView: ListView = {
+  ingredient: fixtureIngredient.id,
+  category: fixtureCategories[0].id,
+  q: "",
+  match: "contains",
+};
+const fixtureEditSaved = { name: fixtureEdit.name, ratio: fixtureEdit.ratio, notes: fixtureEdit.notes ?? "" };
+// Echo after a validation error: the ratio and the notes were cleared before saving.
+const fixtureEditEcho = { name: fixtureEdit.name, ratio: "", notes: "" };
+const editTitleClass = "mb-6 text-2xl font-bold text-foreground";
 // Same text-link classes as src/pages/ingredients/index.astro (the matches list lives in the page).
 const textLinkClass = cn(buttonVariants({ variant: "link" }), focusRing, "h-auto p-0 whitespace-normal");
 const viewFrameClass = "bg-kitchen rounded-2xl p-4";
@@ -161,6 +181,40 @@ const stateMatrix = [
             />
             <p id="ks-input-invalid-msg" class="text-sm text-destructive">
               Podaj nazwę składnika.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Pole wielowierszowe (Textarea + Label)</h2>
+        <div class="grid gap-6 md:grid-cols-2">
+          <div class="space-y-2">
+            <p class:list={stateClass}>Domyślny / focus-visible (Tab)</p>
+            <Label for="ks-textarea-default">Uwagi (opcjonalnie)</Label>
+            <Textarea id="ks-textarea-default" rows={3} placeholder="np. lekki posmak kokosa" />
+          </div>
+          <div class="space-y-2">
+            <p class:list={stateClass}>Z wartością</p>
+            <Label for="ks-textarea-value">Uwagi (opcjonalnie)</Label>
+            <Textarea id="ks-textarea-value" rows={3} value="Ciasto wychodzi nieco cięższe." />
+          </div>
+          <div class="space-y-2">
+            <p class:list={stateClass}>Disabled</p>
+            <Textarea id="ks-textarea-disabled" rows={3} value="Ciasto wychodzi nieco cięższe." disabled class="peer" />
+            <Label for="ks-textarea-disabled">Etykieta po polu (peer-disabled)</Label>
+          </div>
+          <div class="space-y-2">
+            <p class:list={stateClass}>Błąd (aria-invalid)</p>
+            <Label for="ks-textarea-invalid">Uwagi (opcjonalnie)</Label>
+            <Textarea
+              id="ks-textarea-invalid"
+              rows={3}
+              aria-invalid="true"
+              aria-describedby="ks-textarea-invalid-msg"
+            />
+            <p id="ks-textarea-invalid-msg" class="text-sm text-destructive">
+              Uwagi mogą mieć najwyżej 500 znaków.
             </p>
           </div>
         </div>
@@ -301,7 +355,7 @@ const stateMatrix = [
           </Card>
         </div>
 
-        <p class:list={stateClass}>Karta zwykła i karta najlepszego</p>
+        <p class:list={stateClass}>Karta zwykła i karta najlepszego (z linkiem „Edytuj”)</p>
         <div class:list={viewFrameClass}>
           <Card class:list={viewCardClass}>
             <div class="space-y-4">
@@ -436,6 +490,49 @@ const stateMatrix = [
                 Wróć do panelu
               </a>
             </div>
+          </Card>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Widok /ingredients/edit-substitute</h2>
+        <p class:list={stateClass}>
+          Formularz edycji z <code>SubstituteEditForm</code> na fixturach (bez bazy). Zapis prowadzi do prawdziwego
+          endpointu.
+        </p>
+
+        <p class:list={stateClass}>Wartości z bazy (najlepszy zamiennik)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Edytuj zamiennik</h3>
+            <SubstituteEditForm
+              substitute={fixtureEdit}
+              view={fixtureEditView}
+              values={fixtureEditSaved}
+              idPrefix="ks-edit-saved"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Błąd walidacji z echem (wyczyszczona proporcja i uwagi)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Edytuj zamiennik</h3>
+            <SubstituteEditForm
+              substitute={fixtureEdit}
+              view={fixtureEditView}
+              values={fixtureEditEcho}
+              error="Podaj proporcję."
+              idPrefix="ks-edit-error"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Nie znaleziono zamiennika (nieznane, cudze lub niepoprawne id)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Edytuj zamiennik</h3>
+            <SubstituteEditForm substitute={null} view={fixtureEditView} values={fixtureEditEcho} />
           </Card>
         </div>
       </section>

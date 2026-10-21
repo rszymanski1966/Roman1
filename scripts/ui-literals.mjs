@@ -10,8 +10,10 @@ import path from "node:path";
 // Add a view here once it reads only tokens and components.
 const GUARDED = [
   "src/pages/ingredients/index.astro",
+  "src/pages/ingredients/edit-substitute.astro",
   "src/components/ingredients/*.astro",
   "src/components/ui/Input.astro",
+  "src/components/ui/Textarea.astro",
   "src/components/ui/Label.astro",
   "src/components/ui/NativeSelect.astro",
   "src/components/ui/Card.astro",

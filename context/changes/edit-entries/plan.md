@@ -430,30 +430,30 @@ Każda akcja to jeden UPDATE po kluczu głównym oraz jeden odczyt przy wejściu
 
 #### Automated
 
-- [x] 1.1 Migracja wchodzi na lokalną bazę: `npx supabase migration up`
-- [x] 1.2 Testy bazy przechodzą, w tym nowy `edit-entries.sql` i zmieniony `best-substitute.sql`: `npx supabase test db`
-- [x] 1.3 Granty w lokalnej bazie odpowiadają kontraktowi (`information_schema.column_privileges`)
+- [x] 1.1 Migracja wchodzi na lokalną bazę: `npx supabase migration up` — 6125368
+- [x] 1.2 Testy bazy przechodzą, w tym nowy `edit-entries.sql` i zmieniony `best-substitute.sql`: `npx supabase test db` — 6125368
+- [x] 1.3 Granty w lokalnej bazie odpowiadają kontraktowi (`information_schema.column_privileges`) — 6125368
 
 #### Manual
 
-- [x] 1.4 Przegląd migracji: nagłówek wyjaśnia, czego nie grantujemy, i zawiera rollback
+- [x] 1.4 Przegląd migracji: nagłówek wyjaśnia, czego nie grantujemy, i zawiera rollback — 6125368
 
 ### Phase 2: Edycja zamiennika end-to-end
 
 #### Automated
 
-- [ ] 2.1 Lint przechodzi: `npm run lint`
-- [ ] 2.2 Skan literałów UI przechodzi z nowymi plikami na liście `GUARDED`: `npm run lint:ui`
-- [ ] 2.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check`
-- [ ] 2.4 Smoke przechodzi z nowymi krokami fazy 2 i bez zmian w istniejących krokach `/api/substitutes/best`
-- [ ] 2.5 Testy bazy dalej przechodzą: `npx supabase test db`
+- [x] 2.1 Lint przechodzi: `npm run lint`
+- [x] 2.2 Skan literałów UI przechodzi z nowymi plikami na liście `GUARDED`: `npm run lint:ui`
+- [x] 2.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check`
+- [x] 2.4 Smoke przechodzi z nowymi krokami fazy 2 i bez zmian w istniejących krokach `/api/substitutes/best`
+- [x] 2.5 Testy bazy dalej przechodzą: `npx supabase test db`
 
 #### Manual
 
-- [ ] 2.6 Każdy nowy krok smoke fazy 2 został raz celowo zepsuty i wtedy zawiódł
-- [ ] 2.7 „Edytuj” z widoku bez kategorii, z kategorią i z wyników wyszukiwania wraca po zapisie i po „Anuluj” do tego samego widoku
-- [ ] 2.8 Wyczyszczenie uwag z jednoczesnym błędem walidacji zostawia uwagi puste; po poprawnym zapisie uwagi znikają z karty
-- [ ] 2.9 Edycja najlepszego zamiennika zostawia znaczek „Najlepszy”
+- [x] 2.6 Każdy nowy krok smoke fazy 2 został raz celowo zepsuty i wtedy zawiódł
+- [x] 2.7 „Edytuj” z widoku bez kategorii, z kategorią i z wyników wyszukiwania wraca po zapisie i po „Anuluj” do tego samego widoku
+- [x] 2.8 Wyczyszczenie uwag z jednoczesnym błędem walidacji zostawia uwagi puste; po poprawnym zapisie uwagi znikają z karty
+- [x] 2.9 Edycja najlepszego zamiennika zostawia znaczek „Najlepszy”
 
 ### Phase 3: Zmiana nazwy składnika end-to-end
 

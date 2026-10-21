@@ -1,41 +1,13 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
-import { bestSwapNotice, isUuid, normalizeQuery, parseMatchMode, setBestSubstitute } from "@/lib/services/substitutes";
+import { listRedirect, parseListView } from "@/lib/list-view";
+import { bestSwapNotice, isUuid, setBestSubstitute } from "@/lib/services/substitutes";
 
-const LIST_PAGE = "/ingredients";
 const INVALID_FORM = "Nieprawidłowe dane formularza.";
 
 function field(form: FormData, name: string): string {
   const value = form.get(name);
   return typeof value === "string" ? value.trim() : "";
-}
-
-// The list view to return to: the ingredient, optionally its category, and the search context (q, match).
-interface ListView {
-  ingredient: string;
-  category: string;
-  q: string;
-  match: string;
-}
-
-// Back to the list; with a view it re-opens the same ingredient (+ category, q, match), otherwise the bare list.
-// Order matters: ingredient, category, q, match, then notice / error, then error_for; empty values are left out.
-// errorFor (a valid substitute id) ties the error to its card: error_for=<id> plus the #substitute-<id> anchor,
-// so the list shows the error in that card and the browser scrolls to it (if the card is not shown, the error
-// stays at the top of the list).
-function listRedirect(view: ListView | null, extra: Record<string, string> = {}, errorFor = ""): string {
-  const params = new URLSearchParams();
-  if (view) {
-    params.set("ingredient", view.ingredient);
-    if (view.category) params.set("category", view.category);
-    if (view.q) params.set("q", view.q);
-    if (view.match) params.set("match", view.match);
-  }
-  for (const [name, value] of Object.entries(extra)) params.set(name, value);
-  if (errorFor) params.set("error_for", errorFor);
-  const query = params.toString();
-  const path = query ? `${LIST_PAGE}?${query}` : LIST_PAGE;
-  return errorFor ? `${path}#substitute-${errorFor}` : path;
 }
 
 /** Marks (is_best = "1") or unmarks (is_best = "0") a substitute as the best one of its pair, from the list page. */
@@ -57,20 +29,11 @@ export const POST: APIRoute = async (context) => {
     return context.redirect(listRedirect(null, { error: INVALID_FORM }));
   }
 
-  const ingredient = field(form, "ingredient");
-  // Empty category = the view across all categories.
-  const category = field(form, "category");
-  // The view only drives the redirect; malformed ids must not end up in the list URL.
-  if (!isUuid(ingredient) || (category !== "" && !isUuid(category))) {
+  // The view to return to (ingredient, category, q, match); malformed ids give null (see parseListView).
+  const view = parseListView(form);
+  if (!view) {
     return context.redirect(listRedirect(null, { error: INVALID_FORM }));
   }
-  const view: ListView = {
-    ingredient,
-    category,
-    q: normalizeQuery(field(form, "q")),
-    // Only a known mode is carried over; anything else is dropped.
-    match: parseMatchMode(field(form, "match")) ?? "",
-  };
 
   const substituteId = field(form, "substitute_id");
   if (!isUuid(substituteId)) {
