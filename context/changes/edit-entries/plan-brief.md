@@ -36,8 +36,8 @@ Na liście każda karta zamiennika ma link „Edytuj”, a nagłówek składnika
 - wspólne helpery (kontekst listy, limity pól);
 - serwisy get i update;
 - `POST /api/substitutes/update`, `POST /api/ingredients/rename`;
-- strony `edit-substitute` i `edit-ingredient`;
-- linki na liście;
+- strony `edit-substitute` i `edit-ingredient` z tokenów i komponentów `ui/` (nie z markupu `new.astro`), nowy `Textarea.astro`, wpisy w `GUARDED` (`lint:ui`) i kitchen-sink;
+- linki na liście (`SubstituteCard.astro`, nagłówek w `index.astro`);
 - kroki smoke;
 - `db push` na prod.
 

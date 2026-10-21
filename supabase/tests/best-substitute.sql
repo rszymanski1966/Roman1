@@ -102,11 +102,11 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$update public.substitutes set name = 'Inna nazwa'
+  $$update public.substitutes set ingredient_category_id = '20000000-0000-0000-0000-0000000000a2'
     where id = '30000000-0000-0000-0000-0000000000a1'$$,
   '42501',
   null,
-  'A cannot update columns other than is_best'
+  'A cannot move a substitute to another pair'
 );
 
 reset role;

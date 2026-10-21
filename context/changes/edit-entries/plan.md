@@ -33,8 +33,10 @@ Na podstawie `context/changes/edit-entries/research.md`:
 
 ### Key Discoveries:
 
-- `listRedirect` pisze parametry w stałej kolejności: ingredient, category, q, match, potem notice/error. Smoke to sprawdza (`scripts/smoke.mjs:323-332`).
-- `substituteIdFor` (`scripts/smoke.mjs:42-46`) szuka pierwszego `>${name}<`, a po nim pierwszego `name="substitute_id"`. Link „Edytuj” nie może renderować nazwy zamiennika jako tekstu ani dodawać pola `substitute_id` z innym id.
+- `listRedirect` pisze parametry w stałej kolejności: ingredient, category, q, match, potem notice/error. Smoke to sprawdza (`scripts/smoke.mjs:331-355`).
+- `substituteIdFor` (`scripts/smoke.mjs:47-51`) szuka pierwszego `>${name}<`, a po nim pierwszego `name="substitute_id"`. Link „Edytuj” nie może renderować nazwy zamiennika jako tekstu ani dodawać pola `substitute_id` z innym id.
+- Po ingredients-list-ui karta zamiennika to `src/components/ingredients/SubstituteCard.astro` (formularz „Oznacz jako najlepszy” `:47-63`, komentarz o zależnościach smoke `:10-13`). Dostaje propsy `ingredient`, `category`, `q`, `match`, a `withParams` i `shownIngredient` są tylko w `index.astro`. Nagłówek składnika to `index.astro:259`, komunikat `notice` `:192-196`.
+- `new.astro` nie spełnia kontraktu UI z CLAUDE.md: ma literały palety (`stone-*`, `orange-*`, `amber-*`, `:43-49`, `:145-164`) i nie jest na liście `GUARDED` w `scripts/ui-literals.mjs`. Strony edycji nie mogą kopiować jego markupu. W `src/components/ui/` jest `Input.astro` (przepuszcza atrybuty, np. `maxlength`), ale nie ma komponentu `textarea`.
 - `new.astro:12-16` czyta echo przez `get() ?? ""`. Edycja potrzebuje rozróżnienia między „pole wyczyszczone” a „brak echa”, bo inaczej wyczyszczone uwagi wróciłyby z bazy.
 - Ten sam 23505 (`error.code`) bez nazwy ograniczenia wystarcza, bo każda akcja edycji aktualizuje jedną tabelę i trafia w jedno ograniczenie unikalności (`src/lib/services/substitutes.ts:153-158`).
 - Lekcja `name_key` (`context/foundation/lessons.md:19-24`): zmiana nazwy składnika aktualizuje `name` i `name_key` razem, a nazwa przechodzi wcześniej przez `normalizeName`.
@@ -56,7 +58,7 @@ Bezpośredni UPDATE przez PostgREST, chroniony dwiema warstwami. Grant kolumnowy
 
 Każda akcja edycji robi jeden `update(...).eq("id", …).select(...).maybeSingle()`, więc jest atomowa. Pusty wynik oznacza „nie znaleziono”: RLS ukrywa cudze wiersze, więc UPDATE zmienia 0 wierszy, a nie zwraca błędu. Kod 23505 oznacza duplikat.
 
-Kontekst widoku i limity pól są wydzielone do wspólnych modułów, bo korzystają z nich teraz trzy endpointy. Strony edycji powielają markup `new.astro`, tak jak dziś robią to strony listy i dodawania.
+Kontekst widoku i limity pól są wydzielone do wspólnych modułów, bo korzystają z nich teraz trzy endpointy. Strony edycji biorą z `new.astro` tylko logikę (odczyt echa, ukryte pola, komunikat błędu), a markup budują z tokenów i komponentów z `src/components/ui/` (`Card`, `Label`, `Input`, `Alert`, `buttonVariants()` + `focusRing`), na wzór `index.astro` i `SubstituteCard.astro`. Obie strony trafiają na listę `GUARDED` (`npm run lint:ui`) i do kitchen-sink.
 
 Kolejność: najpierw baza z testami pgTAP, potem dwa pionowe plastry (zamiennik, składnik), każdy z UI i krokami smoke.
 
@@ -161,7 +163,7 @@ Wspólne helpery, serwis, endpoint, strona edycji, link w karcie i kroki smoke. 
 **Intent**: Dodać odczyt zamiennika do edycji i jego aktualizację. Pusty wynik oznacza „nie znaleziono”, a 23505 duplikat. Przy okazji zaktualizować nieaktualny komentarz `:94-95`: polityka UPDATE na `substitutes` istnieje od S-02, a upsert zostaje DO NOTHING z innego powodu.
 
 **Contract**:
-- `getSubstituteForEdit(client, substituteId): ServiceResult<SubstituteForEdit | null>`. Zwraca `{id, name, ratio, notes, is_best, ingredientName, categoryName}` z embedded select przez `ingredient_categories(ingredients(name), categories(name))`. Relacje czytane defensywnie (obiekt albo tablica), jak w `listIngredientSubstitutes`. `null` oznacza wiersz nieistniejący albo ukryty przez RLS.
+- `getSubstituteForEdit(client, substituteId): ServiceResult<SubstituteForEdit | null>`. Zwraca `{id, name, ratio, notes, is_best, ingredientId, ingredientName, categoryName}` z embedded select przez `ingredient_categories(ingredient_id, ingredients(name), categories(name))`. `ingredientId` służy stronie jako zapasowy kontekst powrotu. Relacje czytane defensywnie (obiekt albo tablica), jak w `listIngredientSubstitutes`. `null` oznacza wiersz nieistniejący albo ukryty przez RLS.
 - `updateSubstitute(client, substituteId, {name, ratio, notes}): ServiceResult<{name: string}>`:
   - nazwa przez `normalizeName`, `ratio` przez trim, `notes` przez trim albo `null`;
   - `.update({name, ratio, notes}).eq("id", …).select("name").maybeSingle()`;
@@ -197,21 +199,23 @@ Wspólne helpery, serwis, endpoint, strona edycji, link w karcie i kroki smoke. 
 - Wartość pola pochodzi z echa, gdy jego klucz jest obecny (`searchParams.has`), w przeciwnym razie z bazy.
 - Składnik i kategoria są pokazane jako tekst tylko do odczytu. Przy `is_best` jest informacja „Najlepszy w tej kategorii — oznaczenie zostaje”.
 - Ukryte pola niosą `substitute_id` i kontekst. Przycisk „Zapisz zmiany”.
+- Gdy `ingredient` z URL nie jest poprawnym uuid (wejście z zakładki, ucięty link), ukryte pole `ingredient` dostaje `ingredientId` z bazy, a `category` zostaje puste. Inaczej `parseListView` odrzuci zapis i edycja przepadnie.
 - Link „Anuluj” prowadzi do tego samego widoku listy (te same parametry co `listRedirect`).
-- Nieznane, cudze lub niepoprawne id daje „Nie znaleziono zamiennika.” i link do listy.
+- Nieznane, cudze lub niepoprawne id daje „Nie znaleziono zamiennika.” i link do listy. W tym stanie strona nie pokazuje `Alert` z `?error=` (po nieudanym zapisie cudzego wpisu komunikat byłby podwójny).
 - `maxlength` z `entry-fields.ts`.
+- Markup z tokenów i komponentów: `Card`, `Label`, `Input`, `Alert`, przycisk i linki przez `cn(buttonVariants(...), focusRing)`. Uwagi przez nowy `Textarea.astro` (§8). Bez literałów kolorów i arbitralnych `px`/`rem`, bez `dark:`.
 
 #### 6. Link w karcie
 
-**File**: `src/pages/ingredients/index.astro`
+**File**: `src/components/ingredients/SubstituteCard.astro`
 
-**Intent**: Dodać link „Edytuj” w karcie zamiennika, obok formularza „Oznacz jako najlepszy” (`:391-407`), z kontekstem widoku.
+**Intent**: Dodać link „Edytuj” w karcie zamiennika, obok formularza „Oznacz jako najlepszy” (`:47-63`), z kontekstem widoku z propsów karty.
 
 **Contract**:
-- `href` budowany przez `withParams("/ingredients/edit-substitute", {substitute, ingredient: shownIngredient?.id, category: viewCategory, q: query, match: mode})`.
-- Tekst „Edytuj”, `aria-label` „Edytuj: <nazwa>”.
-- Bez renderowania nazwy jako tekstu i bez pola `name="substitute_id"`.
-- Komunikat `notice` (`:185-194`) wyświetla już „Zapisano zmiany.” bez zmian.
+- `href` budowany w karcie z propsów: `URLSearchParams` w kolejności `substitute`, `ingredient`, `category`, `q`, `match`, z pominięciem pustych wartości (jak `withParams` w `index.astro:145-152`).
+- Tekst „Edytuj”, `aria-label` „Edytuj: <nazwa>”. Klasy przez `cn(buttonVariants({ variant: "link" }) albo "outline", focusRing, …)`.
+- Bez renderowania nazwy jako tekstu i bez pola `name="substitute_id"`. Komentarz `:10-13` dopisuje ten warunek do listy zależności smoke.
+- Komunikat `notice` (`index.astro:192-196`) wyświetla już „Zapisano zmiany.” bez zmian.
 
 #### 7. Smoke
 
@@ -226,7 +230,7 @@ Konto A, po kroku „ingredient view without a category shows both categories in
 - „account A edits the best substitute”: nowa nazwa `smoke-edited-${runId}`, proporcja i uwagi → 302 na `listPath`, `locationIncludes: "notice=Zapisano+zmiany."`.
 - „edited substitute keeps the best badge”: na liście `>${editedSubstitute}<` jest przed `data-best-badge` w tej samej karcie, a `>${thirdSubstitute}<` nie występuje.
 - „edit form echoes values after a validation error”: pusta proporcja → 302 na `/ingredients/edit-substitute?`, `locationIncludes` `error=Podaj+proporcj` oraz `name=`.
-- „account A cannot rename a substitute to a name already in the pair”: `secondSubstitute.toUpperCase()` → 302 na `/ingredients/edit-substitute?`, z prefiksem komunikatu duplikatu (zakodowanym jak w kroku `:251`).
+- „account A cannot rename a substitute to a name already in the pair”: `secondSubstitute.toUpperCase()` → 302 na `/ingredients/edit-substitute?`, z prefiksem komunikatu duplikatu (zakodowanym jak w kroku `:273`).
 
 Konto B, po kroku „account B cannot mark account A's substitute”:
 - „account B cannot edit account A's substitute”: POST z `firstSubstituteId` → 302, `locationIncludes: "error=Nie+znaleziono+zamiennika."`.
@@ -234,12 +238,24 @@ Konto B, po kroku „account B cannot mark account A's substitute”:
 
 Pomocnicza zmienna `thirdSubstituteId` dochodzi do bloku „Values captured…”.
 
+#### 8. Kontrakt UI
+
+**File**: `src/components/ui/Textarea.astro` (nowy); `scripts/ui-literals.mjs`; `src/pages/dev/kitchen-sink.astro`
+
+**Intent**: Strona edycji i karta trzymają się kontraktu z CLAUDE.md § UI, a CI to pilnuje.
+
+**Contract**:
+- `Textarea.astro` na wzór `Input.astro` (new-york, te same tokeny, `focusRing`, `aria-invalid`), przepuszcza atrybuty (`maxlength`, `rows`).
+- `GUARDED` w `scripts/ui-literals.mjs` dostaje `src/pages/ingredients/edit-substitute.astro` i `src/components/ui/Textarea.astro` (`SubstituteCard.astro` jest już objęty przez `src/components/ingredients/*.astro`).
+- Kitchen-sink: karta z linkiem „Edytuj” (fixture już renderuje `SubstituteCard`) oraz formularz edycji zamiennika w stanach: wartości z bazy, błąd walidacji z echem, „Nie znaleziono zamiennika.”.
+
 ### Success Criteria:
 
 #### Automated Verification:
 
 - Lint przechodzi: `npm run lint`
-- Typy przechodzą przy działającym dev: `npx astro check`
+- Skan literałów UI przechodzi z nowymi plikami na liście `GUARDED`: `npm run lint:ui`
+- Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check`
 - Smoke przechodzi z nowymi krokami fazy 2 i bez zmian w istniejących krokach `/api/substitutes/best`: `BASE_URL=http://localhost:4321 npm run smoke`
 - Testy bazy dalej przechodzą: `npx supabase test db`
 
@@ -302,18 +318,20 @@ Serwis, endpoint, strona edycji, link przy nagłówku składnika i kroki smoke. 
 **Contract**:
 - GET `?ingredient_id=<id>[&ingredient&category&q&match][&error][&name]`.
 - Wartość pola pochodzi z echa (`has`) albo z bazy. Ukryte pola niosą `ingredient_id` i kontekst.
+- Gdy `ingredient` z URL nie jest poprawnym uuid, ukryte pole `ingredient` dostaje `ingredient_id`, a `category` zostaje puste (jak w fazie 2).
 - „Zapisz zmiany” i „Anuluj” działają jak w fazie 2.
-- Nieznane, cudze lub niepoprawne id daje „Nie znaleziono składnika.” i link do listy.
+- Nieznane, cudze lub niepoprawne id daje „Nie znaleziono składnika.” i link do listy, bez `Alert` z `?error=`.
+- Markup z tokenów i komponentów jak w fazie 2 (`Card`, `Label`, `Input`, `Alert`, `buttonVariants()` + `focusRing`). Strona trafia na listę `GUARDED` w `scripts/ui-literals.mjs`, a jej stany (wartość z bazy, błąd z echem, nie znaleziono) do kitchen-sink.
 
 #### 4. Link przy nagłówku
 
 **File**: `src/pages/ingredients/index.astro`
 
-**Intent**: Dodać link „Zmień nazwę” przy `<h2>` składnika (`:356`), tylko gdy `view.ingredient` istnieje.
+**Intent**: Dodać link „Zmień nazwę” przy `<h2>` składnika (`:259`), tylko gdy `view.ingredient` istnieje.
 
 **Contract**:
-- `href` przez `withParams("/ingredients/edit-ingredient", {ingredient_id, ingredient, category: viewCategory, q: query, match: mode})`.
-- `aria-label` „Zmień nazwę: <nazwa>”. Bez renderowania nazwy jako dodatkowego tekstu.
+- `href` przez `withParams("/ingredients/edit-ingredient", {ingredient_id: view.ingredient.id, ingredient: view.ingredient.id, category: viewCategory, q: query, match: mode})`.
+- `aria-label` „Zmień nazwę: <nazwa>”. Bez renderowania nazwy jako dodatkowego tekstu. Klasy przez `textLinkClass` (`:183`) albo `cn(buttonVariants(...), focusRing)`.
 
 #### 5. Smoke
 
@@ -347,7 +365,8 @@ Zmiana istniejącego kroku:
 #### Automated Verification:
 
 - Lint przechodzi: `npm run lint`
-- Typy przechodzą przy działającym dev: `npx astro check`
+- Skan literałów UI przechodzi z `edit-ingredient.astro` na liście `GUARDED`: `npm run lint:ui`
+- Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check`
 - Smoke przechodzi ze wszystkimi nowymi krokami: `BASE_URL=http://localhost:4321 npm run smoke`
 - Testy bazy dalej przechodzą: `npx supabase test db`
 - Build przechodzi przy zatrzymanym dev: `npm run build`
@@ -411,43 +430,45 @@ Każda akcja to jeden UPDATE po kluczu głównym oraz jeden odczyt przy wejściu
 
 #### Automated
 
-- [ ] 1.1 Migracja wchodzi na lokalną bazę: `npx supabase migration up`
-- [ ] 1.2 Testy bazy przechodzą, w tym nowy `edit-entries.sql` i zmieniony `best-substitute.sql`: `npx supabase test db`
-- [ ] 1.3 Granty w lokalnej bazie odpowiadają kontraktowi (`information_schema.column_privileges`)
+- [x] 1.1 Migracja wchodzi na lokalną bazę: `npx supabase migration up`
+- [x] 1.2 Testy bazy przechodzą, w tym nowy `edit-entries.sql` i zmieniony `best-substitute.sql`: `npx supabase test db`
+- [x] 1.3 Granty w lokalnej bazie odpowiadają kontraktowi (`information_schema.column_privileges`)
 
 #### Manual
 
-- [ ] 1.4 Przegląd migracji: nagłówek wyjaśnia, czego nie grantujemy, i zawiera rollback
+- [x] 1.4 Przegląd migracji: nagłówek wyjaśnia, czego nie grantujemy, i zawiera rollback
 
 ### Phase 2: Edycja zamiennika end-to-end
 
 #### Automated
 
 - [ ] 2.1 Lint przechodzi: `npm run lint`
-- [ ] 2.2 Typy przechodzą przy działającym dev: `npx astro check`
-- [ ] 2.3 Smoke przechodzi z nowymi krokami fazy 2 i bez zmian w istniejących krokach `/api/substitutes/best`
-- [ ] 2.4 Testy bazy dalej przechodzą: `npx supabase test db`
+- [ ] 2.2 Skan literałów UI przechodzi z nowymi plikami na liście `GUARDED`: `npm run lint:ui`
+- [ ] 2.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check`
+- [ ] 2.4 Smoke przechodzi z nowymi krokami fazy 2 i bez zmian w istniejących krokach `/api/substitutes/best`
+- [ ] 2.5 Testy bazy dalej przechodzą: `npx supabase test db`
 
 #### Manual
 
-- [ ] 2.5 Każdy nowy krok smoke fazy 2 został raz celowo zepsuty i wtedy zawiódł
-- [ ] 2.6 „Edytuj” z widoku bez kategorii, z kategorią i z wyników wyszukiwania wraca po zapisie i po „Anuluj” do tego samego widoku
-- [ ] 2.7 Wyczyszczenie uwag z jednoczesnym błędem walidacji zostawia uwagi puste; po poprawnym zapisie uwagi znikają z karty
-- [ ] 2.8 Edycja najlepszego zamiennika zostawia znaczek „Najlepszy”
+- [ ] 2.6 Każdy nowy krok smoke fazy 2 został raz celowo zepsuty i wtedy zawiódł
+- [ ] 2.7 „Edytuj” z widoku bez kategorii, z kategorią i z wyników wyszukiwania wraca po zapisie i po „Anuluj” do tego samego widoku
+- [ ] 2.8 Wyczyszczenie uwag z jednoczesnym błędem walidacji zostawia uwagi puste; po poprawnym zapisie uwagi znikają z karty
+- [ ] 2.9 Edycja najlepszego zamiennika zostawia znaczek „Najlepszy”
 
 ### Phase 3: Zmiana nazwy składnika end-to-end
 
 #### Automated
 
 - [ ] 3.1 Lint przechodzi: `npm run lint`
-- [ ] 3.2 Typy przechodzą przy działającym dev: `npx astro check`
-- [ ] 3.3 Smoke przechodzi ze wszystkimi nowymi krokami
-- [ ] 3.4 Testy bazy dalej przechodzą: `npx supabase test db`
-- [ ] 3.5 Build przechodzi przy zatrzymanym dev: `npm run build`
+- [ ] 3.2 Skan literałów UI przechodzi z `edit-ingredient.astro` na liście `GUARDED`: `npm run lint:ui`
+- [ ] 3.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check`
+- [ ] 3.4 Smoke przechodzi ze wszystkimi nowymi krokami
+- [ ] 3.5 Testy bazy dalej przechodzą: `npx supabase test db`
+- [ ] 3.6 Build przechodzi przy zatrzymanym dev: `npm run build`
 
 #### Manual
 
-- [ ] 3.6 Każdy nowy lub zmieniony krok smoke fazy 3 został raz celowo zepsuty i wtedy zawiódł
-- [ ] 3.7 Zmiana nazwy składnika z wyników wyszukiwania wraca do widoku z kontekstem, a nowa nazwa jest widoczna we wszystkich kategoriach
-- [ ] 3.8 Zmiana „Masło” na „masło” przechodzi, a zmiana na nazwę innego składnika daje komunikat i zostawia wpisaną nazwę
-- [ ] 3.9 Migracja wypchnięta na prod przed merge (`npx supabase db push`); po deployu edycja działa na prod
+- [ ] 3.7 Każdy nowy lub zmieniony krok smoke fazy 3 został raz celowo zepsuty i wtedy zawiódł
+- [ ] 3.8 Zmiana nazwy składnika z wyników wyszukiwania wraca do widoku z kontekstem, a nowa nazwa jest widoczna we wszystkich kategoriach
+- [ ] 3.9 Zmiana „Masło” na „masło” przechodzi, a zmiana na nazwę innego składnika daje komunikat i zostawia wpisaną nazwę
+- [ ] 3.10 Migracja wypchnięta na prod przed merge (`npx supabase db push`); po deployu edycja działa na prod

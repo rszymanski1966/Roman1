@@ -1,9 +1,9 @@
 ---
 change_id: edit-entries
 title: Edit entries
-status: planned
+status: implementing
 created: 2026-10-17
-updated: 2026-10-17
+updated: 2026-10-21
 archived_at: null
 ---
 
