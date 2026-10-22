@@ -30,6 +30,9 @@ const foundSubstitute = `smoke-found-${runId}`;
 const otherSubstitute = `smoke-other-${runId}`;
 // New name of the third substitute after the edit steps (not a prefix of any other name).
 const editedSubstitute = `smoke-edited-${runId}`;
+// New name of the search ingredient after the rename steps. It still contains searchFragment, so the search
+// context the rename returns to stays valid.
+const renamedIngredient = `smoke-renamed-search-${runId}`;
 
 // Values captured by earlier steps and used by later ones.
 let categoryId = "";
@@ -69,6 +72,12 @@ function bestForm(substituteId, isBest, path = listPath) {
 function editForm(substituteId, values, path = listPath) {
   const { ingredient, category } = bestForm(substituteId, "", path);
   return { substitute_id: substituteId, ingredient, category, ...values };
+}
+
+// Form fields for /api/ingredients/rename: the new name plus the list context of the ingredient's own view
+// (all categories); `context` adds or overrides q and match.
+function renameForm(ingredientId, name, context = {}) {
+  return { ingredient_id: ingredientId, name, ingredient: ingredientId, category: "", ...context };
 }
 
 function cookieHeader(cookies) {
@@ -464,6 +473,46 @@ const steps = [
     },
   ],
   [
+    // Back to the search context: ingredient, q and match in listRedirect order, the empty category left out.
+    // Runs after every step that looks the search ingredient up by its old name.
+    "account A renames the search ingredient from a search",
+    () =>
+      request("/api/ingredients/rename", {
+        method: "POST",
+        form: renameForm(searchIngredientId, renamedIngredient, { q: searchFragment, match: "contains" }),
+      }),
+    () => ({
+      status: 302,
+      location: `/ingredients?${new URLSearchParams([
+        ["ingredient", searchIngredientId],
+        ["q", searchFragment],
+        ["match", "contains"],
+        ["notice", "Zapisano zmiany."],
+      ])}`,
+    }),
+  ],
+  [
+    // The heading renders the name alone (>name<, the "Zmień nazwę" link only in aria-label); the old name is gone.
+    "renamed ingredient shows its new name",
+    () => request(`/ingredients?ingredient=${searchIngredientId}`),
+    { status: 200, bodyIncludes: `>${renamedIngredient}<`, bodyExcludes: `>${searchIngredient}<` },
+  ],
+  [
+    // A's first ingredient in a different case: the unique (user_id, name_key) constraint rejects the rename.
+    "account A cannot rename an ingredient to an existing name",
+    () =>
+      request("/api/ingredients/rename", {
+        method: "POST",
+        form: renameForm(searchIngredientId, `smoke-ingredient-${runId}`.toUpperCase()),
+      }),
+    // Prefix up to the closing quote: proves the conflict message, not just any validation error.
+    {
+      status: 302,
+      location: "/ingredients/edit-ingredient?",
+      locationIncludes: `${new URLSearchParams({ error: `Składnik „${`smoke-ingredient-${runId}`.toUpperCase()}”` })}`,
+    },
+  ],
+  [
     "signup creates account B",
     () => request("/api/auth/signup", { method: "POST", cookies: jarB, form: { email: emailB, password } }),
     { status: 302, location: "/auth/confirm-email" },
@@ -494,6 +543,21 @@ const steps = [
     "account B edit page for account A's substitute shows not found",
     () => request(`/ingredients/edit-substitute?substitute=${firstSubstituteId}`, { cookies: jarB }),
     { status: 200, bodyIncludes: "Nie znaleziono zamiennika", bodyExcludes: `value="${substituteMarker}"` },
+  ],
+  [
+    // RLS hides A's row from B, so the update changes no row and the service reports "not found".
+    "account B cannot rename account A's ingredient",
+    () =>
+      request("/api/ingredients/rename", {
+        method: "POST",
+        cookies: jarB,
+        form: renameForm(searchIngredientId, `smoke-taken-${runId}`),
+      }),
+    {
+      status: 302,
+      location: "/ingredients/edit-ingredient?",
+      locationIncludes: "error=Nie+znaleziono+sk%C5%82adnika.",
+    },
   ],
   [
     // B needs its own ingredient, otherwise the list page short-circuits to "no ingredients" and never queries substitutes.
@@ -545,8 +609,10 @@ const steps = [
   ],
   [
     // Not bodyExcludes: substituteMarker, which is a prefix of B's own substitute name.
+    // By searchFragment, which the renamed ingredient still contains: the old full name would find nothing even
+    // without isolation.
     "account B search does not find account A's ingredient",
-    () => request(`/ingredients?q=${searchIngredient}`, { cookies: jarB }),
+    () => request(`/ingredients?q=${searchFragment}`, { cookies: jarB }),
     () => ({ status: 200, bodyIncludes: "Nie znaleziono składnika", bodyExcludes: searchIngredientId }),
   ],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],

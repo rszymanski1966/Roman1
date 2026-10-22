@@ -12,6 +12,7 @@ import { focusRing } from "@/components/ui/focus";
 import EmptyState from "@/components/ingredients/EmptyState.astro";
 import IngredientsFooter from "@/components/ingredients/IngredientsFooter.astro";
 import IngredientsHeader from "@/components/ingredients/IngredientsHeader.astro";
+import IngredientRenameForm from "@/components/ingredients/IngredientRenameForm.astro";
 import LookupForms from "@/components/ingredients/LookupForms.astro";
 import SubstituteCard from "@/components/ingredients/SubstituteCard.astro";
 import SubstituteEditForm from "@/components/ingredients/SubstituteEditForm.astro";
@@ -90,6 +91,10 @@ const fixtureEditSaved = { name: fixtureEdit.name, ratio: fixtureEdit.ratio, not
 // Echo after a validation error: the ratio and the notes were cleared before saving.
 const fixtureEditEcho = { name: fixtureEdit.name, ratio: "", notes: "" };
 const editTitleClass = "mb-6 text-2xl font-bold text-foreground";
+// The rename page (/ingredients/edit-ingredient), opened from the same category view as the edit page.
+// Error with echo: another ingredient's name typed in, rejected with the service's duplicate message.
+const fixtureRenameEcho = "Mąka ziemniaczana";
+const fixtureRenameError = `Składnik „${fixtureRenameEcho}” jest już zapisany.`;
 // Same text-link classes as src/pages/ingredients/index.astro (the matches list lives in the page).
 const textLinkClass = cn(buttonVariants({ variant: "link" }), focusRing, "h-auto p-0 whitespace-normal");
 const viewFrameClass = "bg-kitchen rounded-2xl p-4";
@@ -355,11 +360,19 @@ const stateMatrix = [
           </Card>
         </div>
 
-        <p class:list={stateClass}>Karta zwykła i karta najlepszego (z linkiem „Edytuj”)</p>
+        <p class:list={stateClass}>
+          Nagłówek składnika z linkiem „Zmień nazwę”, karta zwykła i karta najlepszego (z linkiem „Edytuj”)
+        </p>
         <div class:list={viewFrameClass}>
           <Card class:list={viewCardClass}>
             <div class="space-y-4">
-              <h2 class:list={headingClass}>{fixtureIngredient.name}</h2>
+              {/* Same markup as the ingredient heading in src/pages/ingredients/index.astro. */}
+              <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <h2 class:list={headingClass}>{fixtureIngredient.name}</h2>
+                <a href="#ks-view" class:list={textLinkClass} aria-label={`Zmień nazwę: ${fixtureIngredient.name}`}>
+                  Zmień nazwę
+                </a>
+              </div>
               <section class="space-y-3">
                 <h3 class:list={headingClass}>{fixtureCategories[0].name}</h3>
                 <ul class="space-y-3">
@@ -533,6 +546,49 @@ const stateMatrix = [
           <Card class:list={viewCardClass}>
             <h3 class:list={editTitleClass}>Edytuj zamiennik</h3>
             <SubstituteEditForm substitute={null} view={fixtureEditView} values={fixtureEditEcho} />
+          </Card>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Widok /ingredients/edit-ingredient</h2>
+        <p class:list={stateClass}>
+          Formularz zmiany nazwy z <code>IngredientRenameForm</code> na fixturach (bez bazy). Zapis prowadzi do
+          prawdziwego endpointu.
+        </p>
+
+        <p class:list={stateClass}>Wartość z bazy</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Zmień nazwę składnika</h3>
+            <IngredientRenameForm
+              ingredient={fixtureIngredient}
+              view={fixtureEditView}
+              name={fixtureIngredient.name}
+              idPrefix="ks-rename-saved"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Błąd z echem (nazwa innego składnika)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Zmień nazwę składnika</h3>
+            <IngredientRenameForm
+              ingredient={fixtureIngredient}
+              view={fixtureEditView}
+              name={fixtureRenameEcho}
+              error={fixtureRenameError}
+              idPrefix="ks-rename-error"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Nie znaleziono składnika (nieznane, cudze lub niepoprawne id)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Zmień nazwę składnika</h3>
+            <IngredientRenameForm ingredient={null} view={fixtureEditView} name={fixtureRenameEcho} />
           </Card>
         </div>
       </section>

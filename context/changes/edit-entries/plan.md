@@ -442,33 +442,33 @@ Każda akcja to jeden UPDATE po kluczu głównym oraz jeden odczyt przy wejściu
 
 #### Automated
 
-- [x] 2.1 Lint przechodzi: `npm run lint`
-- [x] 2.2 Skan literałów UI przechodzi z nowymi plikami na liście `GUARDED`: `npm run lint:ui`
-- [x] 2.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check`
-- [x] 2.4 Smoke przechodzi z nowymi krokami fazy 2 i bez zmian w istniejących krokach `/api/substitutes/best`
-- [x] 2.5 Testy bazy dalej przechodzą: `npx supabase test db`
+- [x] 2.1 Lint przechodzi: `npm run lint` — 2b98d20
+- [x] 2.2 Skan literałów UI przechodzi z nowymi plikami na liście `GUARDED`: `npm run lint:ui` — 2b98d20
+- [x] 2.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check` — 2b98d20
+- [x] 2.4 Smoke przechodzi z nowymi krokami fazy 2 i bez zmian w istniejących krokach `/api/substitutes/best` — 2b98d20
+- [x] 2.5 Testy bazy dalej przechodzą: `npx supabase test db` — 2b98d20
 
 #### Manual
 
-- [x] 2.6 Każdy nowy krok smoke fazy 2 został raz celowo zepsuty i wtedy zawiódł
-- [x] 2.7 „Edytuj” z widoku bez kategorii, z kategorią i z wyników wyszukiwania wraca po zapisie i po „Anuluj” do tego samego widoku
-- [x] 2.8 Wyczyszczenie uwag z jednoczesnym błędem walidacji zostawia uwagi puste; po poprawnym zapisie uwagi znikają z karty
-- [x] 2.9 Edycja najlepszego zamiennika zostawia znaczek „Najlepszy”
+- [x] 2.6 Każdy nowy krok smoke fazy 2 został raz celowo zepsuty i wtedy zawiódł — 2b98d20
+- [x] 2.7 „Edytuj” z widoku bez kategorii, z kategorią i z wyników wyszukiwania wraca po zapisie i po „Anuluj” do tego samego widoku — 2b98d20
+- [x] 2.8 Wyczyszczenie uwag z jednoczesnym błędem walidacji zostawia uwagi puste; po poprawnym zapisie uwagi znikają z karty — 2b98d20
+- [x] 2.9 Edycja najlepszego zamiennika zostawia znaczek „Najlepszy” — 2b98d20
 
 ### Phase 3: Zmiana nazwy składnika end-to-end
 
 #### Automated
 
-- [ ] 3.1 Lint przechodzi: `npm run lint`
-- [ ] 3.2 Skan literałów UI przechodzi z `edit-ingredient.astro` na liście `GUARDED`: `npm run lint:ui`
-- [ ] 3.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check`
-- [ ] 3.4 Smoke przechodzi ze wszystkimi nowymi krokami
-- [ ] 3.5 Testy bazy dalej przechodzą: `npx supabase test db`
-- [ ] 3.6 Build przechodzi przy zatrzymanym dev: `npm run build`
+- [x] 3.1 Lint przechodzi: `npm run lint`
+- [x] 3.2 Skan literałów UI przechodzi z `edit-ingredient.astro` na liście `GUARDED`: `npm run lint:ui`
+- [x] 3.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check`
+- [x] 3.4 Smoke przechodzi ze wszystkimi nowymi krokami
+- [x] 3.5 Testy bazy dalej przechodzą: `npx supabase test db`
+- [x] 3.6 Build przechodzi przy zatrzymanym dev: `npm run build`
 
 #### Manual
 
-- [ ] 3.7 Każdy nowy lub zmieniony krok smoke fazy 3 został raz celowo zepsuty i wtedy zawiódł
-- [ ] 3.8 Zmiana nazwy składnika z wyników wyszukiwania wraca do widoku z kontekstem, a nowa nazwa jest widoczna we wszystkich kategoriach
-- [ ] 3.9 Zmiana „Masło” na „masło” przechodzi, a zmiana na nazwę innego składnika daje komunikat i zostawia wpisaną nazwę
+- [x] 3.7 Każdy nowy lub zmieniony krok smoke fazy 3 został raz celowo zepsuty i wtedy zawiódł
+- [x] 3.8 Zmiana nazwy składnika z wyników wyszukiwania wraca do widoku z kontekstem, a nowa nazwa jest widoczna we wszystkich kategoriach
+- [x] 3.9 Zmiana „Masło” na „masło” przechodzi, a zmiana na nazwę innego składnika daje komunikat i zostawia wpisaną nazwę
 - [ ] 3.10 Migracja wypchnięta na prod przed merge (`npx supabase db push`); po deployu edycja działa na prod

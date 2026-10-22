@@ -364,3 +364,49 @@ export async function updateSubstitute(
   if (!data) return fail("Nie znaleziono zamiennika.");
   return ok({ name: data.name });
 }
+
+/**
+ * An ingredient by id, for the rename page.
+ * null = no such ingredient or one hidden by RLS (another account's row): the caller shows "not found".
+ * The caller checks the id with isUuid first (otherwise Postgres fails with 22P02).
+ */
+export async function getIngredient(
+  client: SupabaseClient,
+  ingredientId: string,
+): Promise<ServiceResult<IngredientListItem | null>> {
+  const { data, error } = await client
+    .from("ingredients")
+    .select("id, name")
+    .eq("id", ingredientId)
+    .maybeSingle<IngredientListItem>();
+  if (error) return fail();
+  return ok(data ?? null);
+}
+
+/**
+ * Renames an ingredient in every category at once (the categories hang off the one ingredients row).
+ * name_key is computed in the app (the S-01 exception, see lessons.md), so it is updated together with the name.
+ * A missing or foreign ingredient (RLS hides it, so no row is updated) is "not found"; a name already taken by
+ * another of the user's ingredients (case-insensitive) is rejected, not merged. The same name in another case
+ * passes: the unique (user_id, name_key) constraint does not compare a row with itself.
+ */
+export async function renameIngredient(
+  client: SupabaseClient,
+  ingredientId: string,
+  name: string,
+): Promise<ServiceResult<{ name: string }>> {
+  const normalized = normalizeName(name);
+  const { data, error } = await client
+    .from("ingredients")
+    .update({ name: normalized, name_key: toNameKey(normalized) })
+    .eq("id", ingredientId)
+    .select("name")
+    .maybeSingle<{ name: string }>();
+  if (error) {
+    // 23505 = unique_violation on (user_id, name_key): another ingredient of this account has the name.
+    if (error.code === "23505") return fail(`Składnik „${normalized}” jest już zapisany.`);
+    return fail();
+  }
+  if (!data) return fail("Nie znaleziono składnika.");
+  return ok({ name: data.name });
+}
