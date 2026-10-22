@@ -1,26 +1,13 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
+import { MAX_NAME, MAX_NOTES, MAX_RATIO, charLength, truncate } from "@/lib/entry-fields";
 import { addSubstitute, bestSwapNotice, isUuid, normalizeName } from "@/lib/services/substitutes";
 
 const FORM_PAGE = "/ingredients/new";
 
-// Limits mirror the check constraints in supabase/migrations/20261004120000_substitute_database.sql.
-const MAX_NAME = 100;
-const MAX_RATIO = 100;
-const MAX_NOTES = 500;
-
 function field(form: FormData, name: string): string {
   const value = form.get(name);
   return typeof value === "string" ? value : "";
-}
-
-// Postgres char_length counts code points, not UTF-16 units.
-function charLength(value: string): number {
-  return Array.from(value).length;
-}
-
-function truncate(value: string, max: number): string {
-  return Array.from(value).slice(0, max).join("");
 }
 
 // Submitted values are echoed back so a validation error does not clear the form (prefilled by new.astro).

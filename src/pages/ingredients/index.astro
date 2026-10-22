@@ -168,6 +168,17 @@ const backHref =
     : null;
 const matchHref = (ingredientId: string) =>
   withParams("/ingredients", { ingredient: ingredientId, category: viewCategory, q: query, match: mode });
+// The rename page with this view, so saving or cancelling returns to it (also from a one-hit search, where the
+// ingredient is not in the URL yet).
+const renameHref = shownIngredient
+  ? withParams("/ingredients/edit-ingredient", {
+      ingredient_id: shownIngredient.id,
+      ingredient: shownIngredient.id,
+      category: viewCategory,
+      q: query,
+      match: mode,
+    })
+  : null;
 
 // The error goes into the card it names when that card is on screen; otherwise it stays at the top of the page.
 const cardErrorId =
@@ -179,7 +190,7 @@ const cardErrorId =
     : null;
 const topError = cardErrorId === null ? error : null;
 
-// Text links (back to results, matches): the link variant without the button box, with the full-opacity focus ring.
+// Text links (back to results, matches, rename): the link variant without the button box, with the full-opacity focus ring.
 const textLinkClass = cn(buttonVariants({ variant: "link" }), focusRing, "h-auto p-0 whitespace-normal");
 const headingClass = "text-lg font-semibold text-foreground";
 ---
@@ -256,7 +267,17 @@ const headingClass = "text-lg font-semibold text-foreground";
                   </a>
                 </p>
               )}
-              {view.ingredient && <h2 class:list={headingClass}>{view.ingredient.name}</h2>}
+              {view.ingredient && (
+                <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  {/* smoke.mjs relies on the name alone in the heading (>name<); the link names it only in aria-label. */}
+                  <h2 class:list={headingClass}>{view.ingredient.name}</h2>
+                  {renameHref && (
+                    <a href={renameHref} class:list={textLinkClass} aria-label={`Zmień nazwę: ${view.ingredient.name}`}>
+                      Zmień nazwę
+                    </a>
+                  )}
+                </div>
+              )}
               {view.groups.length === 0 ? (
                 <EmptyState href={addSubstituteHref} label="Dodaj zamiennik">
                   <p>

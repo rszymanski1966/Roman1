@@ -1,0 +1,105 @@
+---
+import EmptyState from "@/components/ingredients/EmptyState.astro";
+import Alert from "@/components/ui/Alert.astro";
+import Input from "@/components/ui/Input.astro";
+import Label from "@/components/ui/Label.astro";
+import Textarea from "@/components/ui/Textarea.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { focusRing } from "@/components/ui/focus";
+import { MAX_NAME, MAX_NOTES, MAX_RATIO } from "@/lib/entry-fields";
+import { type ListView, listRedirect } from "@/lib/list-view";
+import { cn } from "@/lib/utils";
+import type { SubstituteForEdit } from "@/types";
+
+// The edit form of /ingredients/edit-substitute (POST /api/substitutes/update), or its not-found state.
+// smoke.mjs relies on this markup: the field values as value="<name>", and "Nie znaleziono zamiennika" in the
+// not-found state.
+interface Props {
+  // null = unknown, foreign or malformed id: the not-found state with a link to the list, no form and no error.
+  substitute: SubstituteForEdit | null;
+  // The list view to return to (hidden fields and the cancel link); null = the bare list.
+  view: ListView | null;
+  // Field values: the echo after an error, otherwise the saved ones.
+  values: { name: string; ratio: string; notes: string };
+  // Error of the last save, shown above the form.
+  error?: string | null;
+  // Prefix of the field ids, so several forms can share a page (kitchen sink).
+  idPrefix?: string;
+}
+
+const { substitute, view, values, error = null, idPrefix = "edit" } = Astro.props;
+const listHref = listRedirect(view);
+const ids = { name: `${idPrefix}-name`, ratio: `${idPrefix}-ratio`, notes: `${idPrefix}-notes` };
+---
+
+{substitute === null ? (
+  <EmptyState href={listHref} label="Wróć do listy">
+    <p>Nie znaleziono zamiennika.</p>
+  </EmptyState>
+) : (
+  <div class="space-y-6">
+    {error && (
+      <Alert role="alert" variant="destructive">
+        {error}
+      </Alert>
+    )}
+
+    {/* The pair is shown, not edited: a substitute never moves to another ingredient or category. */}
+    <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+      <dt class="text-muted-foreground">Składnik</dt>
+      <dd class="font-medium text-foreground">{substitute.ingredientName}</dd>
+      <dt class="text-muted-foreground">Kategoria</dt>
+      <dd class="font-medium text-foreground">{substitute.categoryName}</dd>
+    </dl>
+    {substitute.is_best && <p class="text-sm text-muted-foreground">Najlepszy w tej kategorii — oznaczenie zostaje.</p>}
+
+    <form method="POST" action="/api/substitutes/update" class="space-y-4">
+      <input type="hidden" name="substitute_id" value={substitute.id} />
+      <input type="hidden" name="ingredient" value={view?.ingredient ?? ""} />
+      <input type="hidden" name="category" value={view?.category ?? ""} />
+      <input type="hidden" name="q" value={view?.q ?? ""} />
+      <input type="hidden" name="match" value={view?.match ?? ""} />
+
+      <div class="space-y-2">
+        <Label for={ids.name}>Nazwa zamiennika</Label>
+        <Input
+          id={ids.name}
+          name="name"
+          type="text"
+          autocomplete="off"
+          required
+          maxlength={MAX_NAME}
+          value={values.name}
+        />
+      </div>
+
+      <div class="space-y-2">
+        <Label for={ids.ratio}>Proporcja</Label>
+        <Input
+          id={ids.ratio}
+          name="ratio"
+          type="text"
+          autocomplete="off"
+          required
+          maxlength={MAX_RATIO}
+          value={values.ratio}
+          placeholder="np. 1:1"
+        />
+      </div>
+
+      <div class="space-y-2">
+        <Label for={ids.notes}>Uwagi (opcjonalnie)</Label>
+        <Textarea id={ids.notes} name="notes" autocomplete="off" rows={3} maxlength={MAX_NOTES} value={values.notes} />
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 pt-2">
+        <button type="submit" class:list={cn(buttonVariants(), focusRing)}>
+          Zapisz zmiany
+        </button>
+        <a href={listHref} class:list={cn(buttonVariants({ variant: "outline" }), focusRing)}>
+          Anuluj
+        </a>
+      </div>
+    </form>
+  </div>
+)}

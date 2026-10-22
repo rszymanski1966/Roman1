@@ -28,6 +28,11 @@ const searchFragment = `search-${runId}`;
 const foundSubstitute = `smoke-found-${runId}`;
 // Second substitute of the search ingredient, in the other category (the view without a category shows two sections).
 const otherSubstitute = `smoke-other-${runId}`;
+// New name of the third substitute after the edit steps (not a prefix of any other name).
+const editedSubstitute = `smoke-edited-${runId}`;
+// New name of the search ingredient after the rename steps. It still contains searchFragment, so the search
+// context the rename returns to stays valid.
+const renamedIngredient = `smoke-renamed-search-${runId}`;
 
 // Values captured by earlier steps and used by later ones.
 let categoryId = "";
@@ -40,6 +45,7 @@ let cardErrorPath = "";
 let topErrorPathB = "";
 let firstSubstituteId = "";
 let secondSubstituteId = "";
+let thirdSubstituteId = "";
 let searchIngredientId = "";
 let foundSubstituteId = "";
 
@@ -60,6 +66,18 @@ function bestForm(substituteId, isBest, path = listPath) {
     ingredient: params.get("ingredient") ?? "",
     category: params.get("category") ?? "",
   };
+}
+
+// Form fields for /api/substitutes/update: the edited values plus the same list context as bestForm.
+function editForm(substituteId, values, path = listPath) {
+  const { ingredient, category } = bestForm(substituteId, "", path);
+  return { substitute_id: substituteId, ingredient, category, ...values };
+}
+
+// Form fields for /api/ingredients/rename: the new name plus the list context of the ingredient's own view
+// (all categories); `context` adds or overrides q and match.
+function renameForm(ingredientId, name, context = {}) {
+  return { ingredient_id: ingredientId, name, ingredient: ingredientId, category: "", ...context };
 }
 
 function cookieHeader(cookies) {
@@ -391,6 +409,110 @@ const steps = [
     { status: 200, bodyIncludes: otherSubstitute },
   ],
   [
+    // The third substitute is the current best of A's pair; the edit page opens with A's list view.
+    "edit substitute form shows the current values",
+    async () => {
+      const list = await request(listPath);
+      thirdSubstituteId = substituteIdFor(list.body, thirdSubstitute);
+      // Fail the step if the id could not be parsed, instead of posting an empty id later.
+      if (!thirdSubstituteId) return { ...list, status: 0 };
+      const view = new URLSearchParams(listPath.split("?")[1] ?? "");
+      return request(`/ingredients/edit-substitute?substitute=${thirdSubstituteId}&${view}`);
+    },
+    { status: 200, bodyIncludes: `value="${thirdSubstitute}"` },
+  ],
+  [
+    "account A edits the best substitute",
+    () =>
+      request("/api/substitutes/update", {
+        method: "POST",
+        form: editForm(thirdSubstituteId, { name: editedSubstitute, ratio: "4:1", notes: "smoke edited" }),
+      }),
+    () => ({ status: 302, location: listPath, locationIncludes: "notice=Zapisano+zmiany." }),
+  ],
+  [
+    // The edit never touches is_best: the renamed card still carries the badge, and the old name is gone.
+    "edited substitute keeps the best badge",
+    async () => {
+      const actual = await request(listPath);
+      const start = actual.body.indexOf(`>${editedSubstitute}<`);
+      if (start === -1) return { ...actual, status: 0 };
+      // The badge must sit in the same card: after the name and before the card's closing </li>.
+      const badge = actual.body.indexOf("data-best-badge", start);
+      const cardEnd = actual.body.indexOf("</li>", start);
+      return badge !== -1 && badge < cardEnd ? actual : { ...actual, status: 0 };
+    },
+    { status: 200, bodyIncludes: editedSubstitute, bodyExcludes: `>${thirdSubstitute}<` },
+  ],
+  [
+    // Empty ratio: back to the form with the error and the echo; the cleared notes come back as an empty key.
+    "edit form echoes values after a validation error",
+    async () => {
+      const actual = await request("/api/substitutes/update", {
+        method: "POST",
+        form: editForm(thirdSubstituteId, { name: editedSubstitute, ratio: "", notes: "" }),
+      });
+      const echo = new URLSearchParams(actual.location.split("?")[1] ?? "");
+      return echo.get("name") === editedSubstitute && echo.has("notes") ? actual : { ...actual, status: 0 };
+    },
+    { status: 302, location: "/ingredients/edit-substitute?", locationIncludes: "error=Podaj+proporcj" },
+  ],
+  [
+    // Another substitute's name in a different case: the unique (pair, name_key) constraint rejects the rename.
+    "account A cannot rename a substitute to a name already in the pair",
+    () =>
+      request("/api/substitutes/update", {
+        method: "POST",
+        form: editForm(thirdSubstituteId, { name: secondSubstitute.toUpperCase(), ratio: "4:1" }),
+      }),
+    // Prefix up to the closing quote: proves the conflict message, not just any validation error.
+    {
+      status: 302,
+      location: "/ingredients/edit-substitute?",
+      locationIncludes: `${new URLSearchParams({ error: `Zamiennik „${secondSubstitute.toUpperCase()}”` })}`,
+    },
+  ],
+  [
+    // Back to the search context: ingredient, q and match in listRedirect order, the empty category left out.
+    // Runs after every step that looks the search ingredient up by its old name.
+    "account A renames the search ingredient from a search",
+    () =>
+      request("/api/ingredients/rename", {
+        method: "POST",
+        form: renameForm(searchIngredientId, renamedIngredient, { q: searchFragment, match: "contains" }),
+      }),
+    () => ({
+      status: 302,
+      location: `/ingredients?${new URLSearchParams([
+        ["ingredient", searchIngredientId],
+        ["q", searchFragment],
+        ["match", "contains"],
+        ["notice", "Zapisano zmiany."],
+      ])}`,
+    }),
+  ],
+  [
+    // The heading renders the name alone (>name<, the "Zmień nazwę" link only in aria-label); the old name is gone.
+    "renamed ingredient shows its new name",
+    () => request(`/ingredients?ingredient=${searchIngredientId}`),
+    { status: 200, bodyIncludes: `>${renamedIngredient}<`, bodyExcludes: `>${searchIngredient}<` },
+  ],
+  [
+    // A's first ingredient in a different case: the unique (user_id, name_key) constraint rejects the rename.
+    "account A cannot rename an ingredient to an existing name",
+    () =>
+      request("/api/ingredients/rename", {
+        method: "POST",
+        form: renameForm(searchIngredientId, `smoke-ingredient-${runId}`.toUpperCase()),
+      }),
+    // Prefix up to the closing quote: proves the conflict message, not just any validation error.
+    {
+      status: 302,
+      location: "/ingredients/edit-ingredient?",
+      locationIncludes: `${new URLSearchParams({ error: `Składnik „${`smoke-ingredient-${runId}`.toUpperCase()}”` })}`,
+    },
+  ],
+  [
     "signup creates account B",
     () => request("/api/auth/signup", { method: "POST", cookies: jarB, form: { email: emailB, password } }),
     { status: 302, location: "/auth/confirm-email" },
@@ -405,6 +527,37 @@ const steps = [
     "account B cannot mark account A's substitute",
     () => request("/api/substitutes/best", { method: "POST", cookies: jarB, form: bestForm(firstSubstituteId, "1") }),
     () => ({ status: 302, location: listPath, locationIncludes: "error=" }),
+  ],
+  [
+    // RLS hides A's row from B, so the update changes no row and the service reports "not found".
+    "account B cannot edit account A's substitute",
+    () =>
+      request("/api/substitutes/update", {
+        method: "POST",
+        cookies: jarB,
+        form: editForm(firstSubstituteId, { name: `smoke-taken-${runId}`, ratio: "1:1" }),
+      }),
+    { status: 302, location: "/ingredients/edit-substitute?", locationIncludes: "error=Nie+znaleziono+zamiennika." },
+  ],
+  [
+    "account B edit page for account A's substitute shows not found",
+    () => request(`/ingredients/edit-substitute?substitute=${firstSubstituteId}`, { cookies: jarB }),
+    { status: 200, bodyIncludes: "Nie znaleziono zamiennika", bodyExcludes: `value="${substituteMarker}"` },
+  ],
+  [
+    // RLS hides A's row from B, so the update changes no row and the service reports "not found".
+    "account B cannot rename account A's ingredient",
+    () =>
+      request("/api/ingredients/rename", {
+        method: "POST",
+        cookies: jarB,
+        form: renameForm(searchIngredientId, `smoke-taken-${runId}`),
+      }),
+    {
+      status: 302,
+      location: "/ingredients/edit-ingredient?",
+      locationIncludes: "error=Nie+znaleziono+sk%C5%82adnika.",
+    },
   ],
   [
     // B needs its own ingredient, otherwise the list page short-circuits to "no ingredients" and never queries substitutes.
@@ -456,8 +609,10 @@ const steps = [
   ],
   [
     // Not bodyExcludes: substituteMarker, which is a prefix of B's own substitute name.
+    // By searchFragment, which the renamed ingredient still contains: the old full name would find nothing even
+    // without isolation.
     "account B search does not find account A's ingredient",
-    () => request(`/ingredients?q=${searchIngredient}`, { cookies: jarB }),
+    () => request(`/ingredients?q=${searchFragment}`, { cookies: jarB }),
     () => ({ status: 200, bodyIncludes: "Nie znaleziono składnika", bodyExcludes: searchIngredientId }),
   ],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],

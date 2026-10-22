@@ -7,10 +7,12 @@ import { focusRing } from "@/components/ui/focus";
 import { cn } from "@/lib/utils";
 import type { MatchMode, SubstituteListItem } from "@/types";
 
-// One substitute card (a list item) with the mark-as-best form.
+// One substitute card (a list item) with the mark-as-best form and the edit link.
 // smoke.mjs relies on this markup: the name alone in its element (>name<), followed in the HTML by
 // the hidden name="substitute_id" field, the data-best-badge attribute on the badge, and data-substitute-error
-// on the card's error. The root id (substitute-<id>) is the anchor of /api/substitutes/best error redirects.
+// on the card's error. The edit link keeps that intact: it never renders the name as text (only in aria-label)
+// and carries no name="substitute_id" field. The root id (substitute-<id>) is the anchor of
+// /api/substitutes/best error redirects.
 interface Props {
   substitute: SubstituteListItem;
   // The view to return to after the POST: shown ingredient id, the view's category (or ""), q and match.
@@ -26,6 +28,21 @@ const { substitute, ingredient, category, q, match, error = null } = Astro.props
 const actionLabel = substitute.is_best ? "Usuń wyróżnienie" : "Oznacz jako najlepszy";
 // The button points at its error, so a screen reader reads it with the button on focus.
 const errorId = `substitute-${substitute.id}-error`;
+
+// The edit page with this card's view, so saving or cancelling returns to it. Params in the order
+// substitute, ingredient, category, q, match; empty values are left out (like withParams in index.astro).
+const editParams = new URLSearchParams();
+const editValues: [string, string][] = [
+  ["substitute", substitute.id],
+  ["ingredient", ingredient],
+  ["category", category],
+  ["q", q],
+  ["match", match],
+];
+for (const [name, value] of editValues) {
+  if (value) editParams.set(name, value);
+}
+const editHref = `/ingredients/edit-substitute?${editParams.toString()}`;
 ---
 
 {/* scroll-mt keeps the anchored card off the very edge of the viewport. */}
@@ -44,23 +61,33 @@ const errorId = `substitute-${substitute.id}-error`;
       Proporcja: <span class="font-medium">{substitute.ratio}</span>
     </p>
     {substitute.notes !== null && <p class="mt-1 text-sm text-muted-foreground">{substitute.notes}</p>}
-    <form method="POST" action="/api/substitutes/best">
-      <input type="hidden" name="substitute_id" value={substitute.id} />
-      <input type="hidden" name="is_best" value={substitute.is_best ? "0" : "1"} />
-      <input type="hidden" name="ingredient" value={ingredient} />
-      <input type="hidden" name="category" value={category} />
-      <input type="hidden" name="q" value={q} />
-      <input type="hidden" name="match" value={match} />
-      {/* aria-label starts with the visible text and names the substitute, since every card has this button. */}
-      <button
-        type="submit"
-        class:list={cn(buttonVariants({ variant: "outline", size: "sm" }), focusRing, "mt-2")}
-        aria-label={`${actionLabel}: ${substitute.name}`}
-        aria-describedby={error ? errorId : undefined}
+    <div class="mt-2 flex flex-wrap items-center gap-2">
+      <form method="POST" action="/api/substitutes/best">
+        <input type="hidden" name="substitute_id" value={substitute.id} />
+        <input type="hidden" name="is_best" value={substitute.is_best ? "0" : "1"} />
+        <input type="hidden" name="ingredient" value={ingredient} />
+        <input type="hidden" name="category" value={category} />
+        <input type="hidden" name="q" value={q} />
+        <input type="hidden" name="match" value={match} />
+        {/* aria-label starts with the visible text and names the substitute, since every card has this button. */}
+        <button
+          type="submit"
+          class:list={cn(buttonVariants({ variant: "outline", size: "sm" }), focusRing)}
+          aria-label={`${actionLabel}: ${substitute.name}`}
+          aria-describedby={error ? errorId : undefined}
+        >
+          {actionLabel}
+        </button>
+      </form>
+      {/* Same aria-label pattern as the button: every card has this link. */}
+      <a
+        href={editHref}
+        class:list={cn(buttonVariants({ variant: "outline", size: "sm" }), focusRing)}
+        aria-label={`Edytuj: ${substitute.name}`}
       >
-        {actionLabel}
-      </button>
-    </form>
+        Edytuj
+      </a>
+    </div>
     {error && (
       <Alert id={errorId} role="alert" variant="destructive" class="mt-2" data-substitute-error>
         {error}
