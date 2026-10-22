@@ -483,4 +483,4 @@ Adaptacje w trakcie implementacji, spoza planu i nieszkodliwe (impl-review F2, 2
 - [x] 3.7 Każdy nowy lub zmieniony krok smoke fazy 3 został raz celowo zepsuty i wtedy zawiódł — da67a20
 - [x] 3.8 Zmiana nazwy składnika z wyników wyszukiwania wraca do widoku z kontekstem, a nowa nazwa jest widoczna we wszystkich kategoriach — da67a20
 - [x] 3.9 Zmiana „Masło” na „masło” przechodzi, a zmiana na nazwę innego składnika daje komunikat i zostawia wpisaną nazwę — da67a20
-- [ ] 3.10 Migracja wypchnięta na prod przed merge (`npx supabase db push`); po deployu edycja działa na prod
+- [x] 3.10 Migracja wypchnięta na prod przed merge (`npx supabase db push`); po deployu edycja działa na prod — b8d7371
