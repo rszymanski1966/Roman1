@@ -28,6 +28,8 @@ const { ingredient, view, name, error = null, idPrefix = "rename" } = Astro.prop
 const listHref = listRedirect(view);
 const nameId = `${idPrefix}-name`;
 const hintId = `${idPrefix}-hint`;
+// One field, so a save error is always about the name.
+const errorId = `${idPrefix}-error`;
 ---
 
 {ingredient === null ? (
@@ -37,7 +39,7 @@ const hintId = `${idPrefix}-hint`;
 ) : (
   <div class="space-y-6">
     {error && (
-      <Alert role="alert" variant="destructive">
+      <Alert id={errorId} role="alert" variant="destructive">
         {error}
       </Alert>
     )}
@@ -59,7 +61,8 @@ const hintId = `${idPrefix}-hint`;
           required
           maxlength={MAX_NAME}
           value={name}
-          aria-describedby={hintId}
+          aria-invalid={error ? "true" : undefined}
+          aria-describedby={error ? `${hintId} ${errorId}` : hintId}
         />
         {/* One ingredients row serves every category, so the rename is never per category. */}
         <p id={hintId} class="text-sm text-muted-foreground">

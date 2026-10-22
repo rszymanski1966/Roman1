@@ -422,6 +422,18 @@ Każda akcja to jeden UPDATE po kluczu głównym oraz jeden odczyt przy wejściu
 - Wzorzec pgTAP: `supabase/tests/best-substitute.sql`, `supabase/tests/rls-isolation.sql`
 - Lekcje: `context/foundation/lessons.md` (null z klienta Supabase, `class:list` vs `cn()`, `name_key`, Backlog Handoff)
 
+## Deviations
+
+Adaptacje w trakcie implementacji, spoza planu i nieszkodliwe (impl-review F2, 2026-10-22):
+
+- **pgTAP (Faza 1, 6125368).** UPDATE `substitutes.name_key` kończy się `428C9`, nie `42501`: rewriter odrzuca zapis do kolumny generowanej przed sprawdzeniem uprawnień. Test oczekuje `428C9` (`supabase/tests/edit-entries.sql:68-72`); plan dopuszczał oba kody.
+- **Formularze jako komponenty (Faza 2, 2b98d20; Faza 3, da67a20).** Formularz edycji zamiennika i formularz zmiany nazwy żyją w `src/components/ingredients/SubstituteEditForm.astro` i `IngredientRenameForm.astro`, a strony tylko ładują dane. Dzięki temu kitchen-sink pokazuje ich stany (puste, błąd, not-found). Kitchen-sink ma też osobną sekcję stanów `Textarea`.
+- **Widok listy (Faza 2, 2b98d20).** `src/lib/list-view.ts` eksportuje `setListViewParams` (wspólny dla `listRedirect` i linków „Edytuj”), a `parseListView` przyjmuje także `URLSearchParams`, nie tylko `FormData`.
+- **Widok zapasowy (Fazy 2–3).** Gdy w URL strony edycji brakuje kontekstu listy, strona bierze `ingredientId` z bazy (F3 z plan-review), a `q`/`match` z URL zachowuje.
+- **Uszkodzony wiersz (Faza 2, 2b98d20).** `getSubstituteForEdit` zwraca błąd ogólny, gdy brakuje embedu pary, składnika albo kategorii (`src/lib/services/substitutes.ts:325`), zamiast traktować to jak not-found.
+- **Typy (Faza 3, da67a20).** `src/types.ts` bez zmian: zmiana nazwy korzysta z istniejącego `IngredientListItem`.
+- **Błąd przy polu (impl-review F1).** `IngredientRenameForm.astro` wiąże komunikat błędu z polem nazwy (`aria-invalid`, `aria-describedby`). Formularz zamiennika czeka na follow-up (`follow-ups/review-fixes.md`).
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
@@ -459,16 +471,16 @@ Każda akcja to jeden UPDATE po kluczu głównym oraz jeden odczyt przy wejściu
 
 #### Automated
 
-- [x] 3.1 Lint przechodzi: `npm run lint`
-- [x] 3.2 Skan literałów UI przechodzi z `edit-ingredient.astro` na liście `GUARDED`: `npm run lint:ui`
-- [x] 3.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check`
-- [x] 3.4 Smoke przechodzi ze wszystkimi nowymi krokami
-- [x] 3.5 Testy bazy dalej przechodzą: `npx supabase test db`
-- [x] 3.6 Build przechodzi przy zatrzymanym dev: `npm run build`
+- [x] 3.1 Lint przechodzi: `npm run lint` — da67a20
+- [x] 3.2 Skan literałów UI przechodzi z `edit-ingredient.astro` na liście `GUARDED`: `npm run lint:ui` — da67a20
+- [x] 3.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke (przy działającym dev psuje `deps_ssr`): `npx astro check` — da67a20
+- [x] 3.4 Smoke przechodzi ze wszystkimi nowymi krokami — da67a20
+- [x] 3.5 Testy bazy dalej przechodzą: `npx supabase test db` — da67a20
+- [x] 3.6 Build przechodzi przy zatrzymanym dev: `npm run build` — da67a20
 
 #### Manual
 
-- [x] 3.7 Każdy nowy lub zmieniony krok smoke fazy 3 został raz celowo zepsuty i wtedy zawiódł
-- [x] 3.8 Zmiana nazwy składnika z wyników wyszukiwania wraca do widoku z kontekstem, a nowa nazwa jest widoczna we wszystkich kategoriach
-- [x] 3.9 Zmiana „Masło” na „masło” przechodzi, a zmiana na nazwę innego składnika daje komunikat i zostawia wpisaną nazwę
+- [x] 3.7 Każdy nowy lub zmieniony krok smoke fazy 3 został raz celowo zepsuty i wtedy zawiódł — da67a20
+- [x] 3.8 Zmiana nazwy składnika z wyników wyszukiwania wraca do widoku z kontekstem, a nowa nazwa jest widoczna we wszystkich kategoriach — da67a20
+- [x] 3.9 Zmiana „Masło” na „masło” przechodzi, a zmiana na nazwę innego składnika daje komunikat i zostawia wpisaną nazwę — da67a20
 - [ ] 3.10 Migracja wypchnięta na prod przed merge (`npx supabase db push`); po deployu edycja działa na prod

@@ -1,9 +1,9 @@
 ---
 change_id: edit-entries
 title: Edit entries
-status: implementing
+status: impl_reviewed
 created: 2026-10-17
-updated: 2026-10-21
+updated: 2026-10-22
 archived_at: null
 ---
 
