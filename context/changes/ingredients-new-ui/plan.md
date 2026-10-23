@@ -319,33 +319,33 @@ Brak zmian w bazie i w danych.
 
 #### Automated
 
-- [x] 1.1 Lint przechodzi: `npm run lint`
-- [x] 1.2 Skan literałów przechodzi z `new.astro` na liście `GUARDED`: `npm run lint:ui`
-- [x] 1.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
-- [x] 1.4 Smoke przechodzi bez zmian w istniejących krokach (w tym GET `/ingredients/new` z `<option value=` i wszystkie POST `/api/ingredients`)
-- [x] 1.5 Smoke przechodzi z dwoma nowymi krokami listy składników (A widzi swój składnik, B go nie widzi)
+- [x] 1.1 Lint przechodzi: `npm run lint` — 53b5df3
+- [x] 1.2 Skan literałów przechodzi z `new.astro` na liście `GUARDED`: `npm run lint:ui` — 53b5df3
+- [x] 1.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check` — 53b5df3
+- [x] 1.4 Smoke przechodzi bez zmian w istniejących krokach (w tym GET `/ingredients/new` z `<option value=` i wszystkie POST `/api/ingredients`) — 53b5df3
+- [x] 1.5 Smoke przechodzi z dwoma nowymi krokami listy składników (A widzi swój składnik, B go nie widzi) — 53b5df3
 
 #### Manual
 
-- [x] 1.6 Zrzuty `/ingredients/new` i sekcji kitchen-sink na desktopie i 375 px: karta, pola, checkbox i przyciski w motywie kitchen, wygląd spójny ze stronami edycji
-- [x] 1.7 Fokus z klawiatury widoczny na każdym polu, checkboxie, „Zapisz”, „Anuluj” i linkach stopki; po kliknięciu myszą pole nie pokazuje pierścienia
-- [x] 1.8 „Anuluj” z pustego stanu składnika (z kategorią i z wyników wyszukiwania) wraca do tego samego widoku; z „Dodaj składnik” w nagłówku wraca na `/ingredients`
-- [x] 1.9 Echo po błędzie walidacji zachowuje wszystkie pola, w tym uwagi i zaznaczony checkbox
-- [x] 1.10 Lista składników: klik lub ↓ w polu „Składnik” rozwija zapisane składniki, pisanie zawęża listę, wybór myszą i ↓ + Enter wpisuje nazwę (Chrome/Edge; Firefox: dwuklik lub ↓); na telefonie podpowiedzi są dostępne
-- [x] 1.11 Etykieta istniejący/nowy zgodna z `name_key` (wielkość liter, spacje); zapis nazwy istniejącej inną wielkością liter nie tworzy duplikatu; bez JS zostaje tekst pomocniczy, a zapis działa
+- [x] 1.6 Zrzuty `/ingredients/new` i sekcji kitchen-sink na desktopie i 375 px: karta, pola, checkbox i przyciski w motywie kitchen, wygląd spójny ze stronami edycji — 53b5df3
+- [x] 1.7 Fokus z klawiatury widoczny na każdym polu, checkboxie, „Zapisz”, „Anuluj” i linkach stopki; po kliknięciu myszą pole nie pokazuje pierścienia — 53b5df3
+- [x] 1.8 „Anuluj” z pustego stanu składnika (z kategorią i z wyników wyszukiwania) wraca do tego samego widoku; z „Dodaj składnik” w nagłówku wraca na `/ingredients` — 53b5df3
+- [x] 1.9 Echo po błędzie walidacji zachowuje wszystkie pola, w tym uwagi i zaznaczony checkbox — 53b5df3
+- [x] 1.10 Lista składników: klik lub ↓ w polu „Składnik” rozwija zapisane składniki, pisanie zawęża listę, wybór myszą i ↓ + Enter wpisuje nazwę (Chrome/Edge; Firefox: dwuklik lub ↓); na telefonie podpowiedzi są dostępne — 53b5df3
+- [x] 1.11 Etykieta istniejący/nowy zgodna z `name_key` (wielkość liter, spacje); zapis nazwy istniejącej inną wielkością liter nie tworzy duplikatu; bez JS zostaje tekst pomocniczy, a zapis działa — 53b5df3
 
 ### Phase 2: Stan błędu przy polu (F1)
 
 #### Automated
 
-- [ ] 2.1 Lint przechodzi: `npm run lint`
-- [ ] 2.2 Skan literałów przechodzi: `npm run lint:ui`
-- [ ] 2.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
-- [ ] 2.4 Smoke przechodzi z nowymi krokami `error_field` i bez zmian w istniejących krokach
+- [x] 2.1 Lint przechodzi: `npm run lint`
+- [x] 2.2 Skan literałów przechodzi: `npm run lint:ui`
+- [x] 2.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
+- [x] 2.4 Smoke przechodzi z nowymi krokami `error_field` i bez zmian w istniejących krokach
 
 #### Manual
 
-- [ ] 2.5 Każdy nowy krok smoke został raz celowo zepsuty i wtedy zawiódł
-- [ ] 2.6 Pusta proporcja w obu formularzach: pole „Proporcja” ma czerwoną ramkę, a czytnik ekranu (albo inspektor dostępności) podaje komunikat przy tym polu
-- [ ] 2.7 Duplikat nazwy oznacza pole nazwy zamiennika w obu formularzach; błąd ogólny nie oznacza żadnego pola
-- [ ] 2.8 Zrzuty stanów błędu w kitchen-sink na desktopie i 375 px
+- [x] 2.5 Każdy nowy krok smoke został raz celowo zepsuty i wtedy zawiódł
+- [x] 2.6 Pusta proporcja w obu formularzach: pole „Proporcja” ma czerwoną ramkę, a czytnik ekranu (albo inspektor dostępności) podaje komunikat przy tym polu
+- [x] 2.7 Duplikat nazwy oznacza pole nazwy zamiennika w obu formularzach; błąd ogólny nie oznacza żadnego pola
+- [x] 2.8 Zrzuty stanów błędu w kitchen-sink na desktopie i 375 px

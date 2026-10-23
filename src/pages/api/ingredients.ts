@@ -1,7 +1,21 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
-import { MAX_NAME, MAX_NOTES, MAX_RATIO, charLength, truncate } from "@/lib/entry-fields";
-import { addSubstitute, bestSwapNotice, isUuid, normalizeName } from "@/lib/services/substitutes";
+import {
+  type AddErrorField,
+  ERROR_FIELD_PARAM,
+  MAX_NAME,
+  MAX_NOTES,
+  MAX_RATIO,
+  charLength,
+  truncate,
+} from "@/lib/entry-fields";
+import {
+  addSubstitute,
+  bestSwapNotice,
+  duplicateSubstituteMessage,
+  isUuid,
+  normalizeName,
+} from "@/lib/services/substitutes";
 
 const FORM_PAGE = "/ingredients/new";
 
@@ -20,7 +34,9 @@ interface FormValues {
   isBest: boolean;
 }
 
-function errorRedirect(message: string, values?: FormValues): string {
+// Order: the error first, then the echo, then error_field (smoke.mjs checks the error as the first param).
+// errorField = the input the error is about; without it the error is about the whole form.
+function errorRedirect(message: string, values?: FormValues, errorField?: AddErrorField): string {
   const params = new URLSearchParams({ error: message });
   if (values) {
     const echoed: [string, string][] = [
@@ -35,6 +51,7 @@ function errorRedirect(message: string, values?: FormValues): string {
       if (value) params.set(name, value);
     }
   }
+  if (errorField) params.set(ERROR_FIELD_PARAM, errorField);
   return `${FORM_PAGE}?${params.toString()}`;
 }
 
@@ -64,22 +81,26 @@ export const POST: APIRoute = async (context) => {
   const isBest = field(form, "is_best") === "1";
   const values: FormValues = { ingredient, categoryId, substitute, ratio, notes, isBest };
 
-  if (!ingredient) return context.redirect(errorRedirect("Podaj nazwę składnika.", values));
+  // Each validation error names its field (error_field), so the form marks that field.
+  const back = (message: string, errorField: AddErrorField) =>
+    context.redirect(errorRedirect(message, values, errorField));
+
+  if (!ingredient) return back("Podaj nazwę składnika.", "ingredient");
   if (charLength(ingredient) > MAX_NAME) {
-    return context.redirect(errorRedirect(`Nazwa składnika może mieć najwyżej ${MAX_NAME} znaków.`, values));
+    return back(`Nazwa składnika może mieć najwyżej ${MAX_NAME} znaków.`, "ingredient");
   }
-  if (!categoryId) return context.redirect(errorRedirect("Wybierz kategorię.", values));
-  if (!isUuid(categoryId)) return context.redirect(errorRedirect("Wybrana kategoria jest nieprawidłowa.", values));
-  if (!substitute) return context.redirect(errorRedirect("Podaj nazwę zamiennika.", values));
+  if (!categoryId) return back("Wybierz kategorię.", "category_id");
+  if (!isUuid(categoryId)) return back("Wybrana kategoria jest nieprawidłowa.", "category_id");
+  if (!substitute) return back("Podaj nazwę zamiennika.", "substitute");
   if (charLength(substitute) > MAX_NAME) {
-    return context.redirect(errorRedirect(`Nazwa zamiennika może mieć najwyżej ${MAX_NAME} znaków.`, values));
+    return back(`Nazwa zamiennika może mieć najwyżej ${MAX_NAME} znaków.`, "substitute");
   }
-  if (!ratio) return context.redirect(errorRedirect("Podaj proporcję.", values));
+  if (!ratio) return back("Podaj proporcję.", "ratio");
   if (charLength(ratio) > MAX_RATIO) {
-    return context.redirect(errorRedirect(`Proporcja może mieć najwyżej ${MAX_RATIO} znaków.`, values));
+    return back(`Proporcja może mieć najwyżej ${MAX_RATIO} znaków.`, "ratio");
   }
   if (charLength(notes) > MAX_NOTES) {
-    return context.redirect(errorRedirect(`Uwagi mogą mieć najwyżej ${MAX_NOTES} znaków.`, values));
+    return back(`Uwagi mogą mieć najwyżej ${MAX_NOTES} znaków.`, "notes");
   }
 
   // The service returns a short, user-safe message on failure (no SQL details).
@@ -92,7 +113,9 @@ export const POST: APIRoute = async (context) => {
     isBest,
   });
   if (result.error !== null) {
-    return context.redirect(errorRedirect(result.error, values));
+    // A duplicate name is about the substitute field; any other database error is about the whole form.
+    const errorField = result.error === duplicateSubstituteMessage(substitute) ? "substitute" : undefined;
+    return context.redirect(errorRedirect(result.error, values, errorField));
   }
 
   const params = new URLSearchParams({ ingredient: result.data.ingredientId, category: result.data.categoryId });

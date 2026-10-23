@@ -6,6 +6,7 @@ import Alert from "@/components/ui/Alert.astro";
 import Card from "@/components/ui/Card.astro";
 import { buttonVariants } from "@/components/ui/button";
 import { focusRing } from "@/components/ui/focus";
+import { ADD_ERROR_FIELDS, readErrorField } from "@/lib/entry-fields";
 import { listRedirect, parseListView } from "@/lib/list-view";
 import { createClient } from "@/lib/supabase";
 import { listCategories, listIngredients } from "@/lib/services/substitutes";
@@ -14,6 +15,8 @@ import type { Category } from "@/types";
 
 const params = Astro.url.searchParams;
 const error = params.get("error");
+// The field the error is about (error_field from /api/ingredients); only this form's fields, otherwise null.
+const errorField = readErrorField(params, ADD_ERROR_FIELDS);
 // Prefill from the list page's empty-state link: ?ingredient=<ingredient id>&category=<category id>[&q&match].
 const prefillIngredientId = params.get("ingredient");
 // Echoed back by /api/ingredients after a validation error too, so the select keeps the chosen category.
@@ -87,6 +90,7 @@ const values = {
           values={values}
           cancelHref={cancelHref}
           error={error}
+          errorField={errorField}
         />
       )}
 

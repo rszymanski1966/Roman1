@@ -30,12 +30,23 @@ interface Props {
   cancelHref: string;
   // Error of the last save, shown above the form.
   error?: string | null;
+  // The input name the error is about (error_field, already checked by the page); null = about the whole form.
+  errorField?: string | null;
   // Prefix of the field ids, so several forms can share a page (kitchen sink).
   idPrefix?: string;
 }
 
-const { categories, ingredientNames, values, cancelHref, error = null, idPrefix = "add" } = Astro.props;
+const {
+  categories,
+  ingredientNames,
+  values,
+  cancelHref,
+  error = null,
+  errorField = null,
+  idPrefix = "add",
+} = Astro.props;
 const ids = {
+  error: `${idPrefix}-error`,
   ingredient: `${idPrefix}-ingredient`,
   ingredientOptions: `${idPrefix}-ingredient-options`,
   ingredientHint: `${idPrefix}-ingredient-hint`,
@@ -46,11 +57,17 @@ const ids = {
   isBest: `${idPrefix}-is-best`,
 };
 const hasSuggestions = ingredientNames.length > 0;
+// Only the field named by errorField is marked (red border, the error read at the field); a form error marks none.
+const isInvalid = (field: string) => Boolean(error) && errorField === field;
+const invalid = (field: string) => (isInvalid(field) ? "true" : undefined);
+// The error id first, then the field's own hint (if any); undefined when there is neither.
+const describedBy = (field: string, hintId?: string) =>
+  [isInvalid(field) ? ids.error : "", hintId ?? ""].filter(Boolean).join(" ") || undefined;
 ---
 
 <div class="space-y-6">
   {error && (
-    <Alert role="alert" variant="destructive">
+    <Alert id={ids.error} role="alert" variant="destructive">
       {error}
     </Alert>
   )}
@@ -68,7 +85,8 @@ const hasSuggestions = ingredientNames.length > 0;
         maxlength={MAX_NAME}
         value={values.ingredient}
         list={hasSuggestions ? ids.ingredientOptions : undefined}
-        aria-describedby={hasSuggestions ? ids.ingredientHint : undefined}
+        aria-invalid={invalid("ingredient")}
+        aria-describedby={describedBy("ingredient", hasSuggestions ? ids.ingredientHint : undefined)}
         placeholder={hasSuggestions ? "Wybierz z listy lub wpisz nowy" : "np. masło"}
       />
       {hasSuggestions && (
@@ -88,7 +106,13 @@ const hasSuggestions = ingredientNames.length > 0;
 
     <div class="space-y-2">
       <Label for={ids.category}>Kategoria</Label>
-      <NativeSelect id={ids.category} name="category_id" required>
+      <NativeSelect
+        id={ids.category}
+        name="category_id"
+        required
+        aria-invalid={invalid("category_id")}
+        aria-describedby={describedBy("category_id")}
+      >
         <option value="" selected={!values.categoryId}>
           Wybierz kategorię
         </option>
@@ -111,6 +135,8 @@ const hasSuggestions = ingredientNames.length > 0;
         maxlength={MAX_NAME}
         value={values.substitute}
         placeholder="np. olej kokosowy"
+        aria-invalid={invalid("substitute")}
+        aria-describedby={describedBy("substitute")}
       />
     </div>
 
@@ -125,6 +151,8 @@ const hasSuggestions = ingredientNames.length > 0;
         maxlength={MAX_RATIO}
         value={values.ratio}
         placeholder="np. 1:1"
+        aria-invalid={invalid("ratio")}
+        aria-describedby={describedBy("ratio")}
       />
     </div>
 
@@ -138,6 +166,8 @@ const hasSuggestions = ingredientNames.length > 0;
         maxlength={MAX_NOTES}
         value={values.notes}
         placeholder="np. lekki posmak kokosa"
+        aria-invalid={invalid("notes")}
+        aria-describedby={describedBy("notes")}
       />
     </div>
 
@@ -171,7 +201,8 @@ const hasSuggestions = ingredientNames.length > 0;
 
   // Labels the typed ingredient as an existing or a new one, by the same rule as ingredients.name_key on the
   // server. Handles every add form on the page (the kitchen sink renders several): the field is the input that
-  // names the hint in aria-describedby, the names come from that input's datalist.
+  // names the hint in aria-describedby (~= is a word match, so it also finds "<error id> <hint id>" after an
+  // error), the names come from that input's datalist.
   const NEW_INGREDIENT = "Nowy składnik — zostanie utworzony przy zapisie";
 
   document.querySelectorAll<HTMLElement>("[data-ingredient-hint]").forEach((hint) => {

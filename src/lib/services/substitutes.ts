@@ -86,8 +86,9 @@ export async function listIngredients(client: SupabaseClient): Promise<ServiceRe
   return ok(data as IngredientListItem[]);
 }
 
-// Add and edit report a duplicate substitute name with the same text.
-function duplicateSubstituteMessage(name: string): string {
+// Add and edit report a duplicate substitute name with the same text. Exported so the endpoints can tell this
+// error (about the name field) from the generic one by comparing result.error with it.
+export function duplicateSubstituteMessage(name: string): string {
   return `Zamiennik „${name}” jest już zapisany dla tego składnika w tej kategorii.`;
 }
 

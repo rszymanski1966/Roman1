@@ -113,6 +113,9 @@ const fixtureAddEcho = {
   isBest: true,
 };
 const fixtureAddError = "Nie udało się wykonać operacji na bazie danych.";
+// Error at a field: the ratio was left empty, so /api/ingredients sends error_field=ratio with the echo.
+const fixtureAddFieldEcho = { ...fixtureAddEcho, ratio: "" };
+const fixtureRatioError = "Podaj proporcję.";
 // The rename page (/ingredients/edit-ingredient), opened from the same category view as the edit page.
 // Error with echo: another ingredient's name typed in, rejected with the service's duplicate message.
 const fixtureRenameEcho = "Mąka ziemniaczana";
@@ -157,6 +160,45 @@ const stateMatrix = [
   {
     state: "loading",
     view: "N/A: SSR, widok bez <script>, nic nie dociąga się po renderze.",
+    here: "Brak (nic do pokazania).",
+  },
+];
+
+// The 7-state matrix of /ingredients/new, rendered like the one above.
+const addStateMatrix = [
+  {
+    state: "default",
+    view: "Formularz na tokenach motywu kitchen: Input, NativeSelect, Textarea, checkbox, przyciski.",
+    here: "Stan „Puste pola, z listą zapisanych składników” w sekcji „Widok /ingredients/new”.",
+  },
+  {
+    state: "hover",
+    view: "„Zapisz” (default): tło primary/90; „Anuluj” (outline): tło accent; linki stopki: podkreślenie.",
+    here: "Najedź kursorem na przyciski i linki w sekcji „Widok /ingredients/new”.",
+  },
+  {
+    state: "focus-visible",
+    view: "Pierścień ring-3 z tokenu ring przy pełnym kryciu (pola, select, przyciski, linki); checkbox: obrys outline-ring.",
+    here: "Tab po formularzu albo wiersz „Focus-visible (wymuszony do zrzutu)” w sekcji „Widok /ingredients”.",
+  },
+  {
+    state: "error",
+    view: "Błąd pola: Alert destructive z id, a pole z error_field dostaje aria-invalid (czerwona ramka) i aria-describedby na komunikat. Błąd formularza (baza, dane formularza): tylko Alert, żadne pole nie jest oznaczone.",
+    here: "Stany „Błąd przy polu z echem” i „Błąd formularzowy z echem” w sekcji „Widok /ingredients/new”.",
+  },
+  {
+    state: "empty",
+    view: "Błąd ładowania kategorii: Alert i „Wróć do listy” zamiast formularza. Brak zapisanych składników: pole „Składnik” bez listy i tekstu pomocniczego.",
+    here: "Stany „Błąd ładowania kategorii” i „Brak zapisanych składników” w sekcji „Widok /ingredients/new”.",
+  },
+  {
+    state: "disabled",
+    view: "N/A: formularz nie ma kontrolek, które bywają nieaktywne; zapis to pełne przeładowanie strony.",
+    here: "Disabled Button, Input, Textarea i NativeSelect w sekcjach komponentów wyżej.",
+  },
+  {
+    state: "loading",
+    view: "N/A: SSR; jedyny <script> podpisuje pole „Składnik” z danych już w HTML, niczego nie dociąga.",
     here: "Brak (nic do pokazania).",
   },
 ];
@@ -568,7 +610,8 @@ const stateMatrix = [
         </div>
 
         <p class:list={stateClass}>
-          Błąd formularzowy z echem (nazwa spoza listy: etykieta „Nowy”, zaznaczony checkbox)
+          Błąd formularzowy z echem (błąd bazy: żadne pole nie jest oznaczone; nazwa spoza listy: etykieta „Nowy”,
+          zaznaczony checkbox)
         </p>
         <div class:list={viewFrameClass}>
           <Card class:list={viewCardClass}>
@@ -580,6 +623,25 @@ const stateMatrix = [
               cancelHref="/ingredients"
               error={fixtureAddError}
               idPrefix="ks-add-error"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>
+          Błąd przy polu z echem (pusta proporcja, error_field=ratio): czerwona ramka „Proporcja”, komunikat w
+          aria-describedby pola
+        </p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            <SubstituteCreateForm
+              categories={fixtureCategories}
+              ingredientNames={fixtureAddNames}
+              values={fixtureAddFieldEcho}
+              cancelHref="/ingredients"
+              error={fixtureRatioError}
+              errorField="ratio"
+              idPrefix="ks-add-field-error"
             />
           </Card>
         </div>
@@ -635,7 +697,9 @@ const stateMatrix = [
           </Card>
         </div>
 
-        <p class:list={stateClass}>Błąd walidacji z echem (wyczyszczona proporcja i uwagi)</p>
+        <p class:list={stateClass}>
+          Błąd walidacji z echem (wyczyszczona proporcja i uwagi, error_field=ratio): czerwona ramka „Proporcja”
+        </p>
         <div class:list={viewFrameClass}>
           <Card class:list={viewCardClass}>
             <h3 class:list={editTitleClass}>Edytuj zamiennik</h3>
@@ -643,7 +707,8 @@ const stateMatrix = [
               substitute={fixtureEdit}
               view={fixtureEditView}
               values={fixtureEditEcho}
-              error="Podaj proporcję."
+              error={fixtureRatioError}
+              errorField="ratio"
               idPrefix="ks-edit-error"
             />
           </Card>
@@ -724,6 +789,38 @@ const stateMatrix = [
             </thead>
             <tbody>
               {stateMatrix.map((row) => (
+                <tr>
+                  <th scope="row" class:list={cn(matrixCellClass, "font-medium")}>
+                    {row.state}
+                  </th>
+                  <td class:list={matrixCellClass}>{row.view}</td>
+                  <td class:list={cn(matrixCellClass, "text-muted-foreground")}>{row.here}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Macierz 7 stanów widoku /ingredients/new</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr class="text-muted-foreground">
+                <th scope="col" class:list={matrixCellClass}>
+                  Stan
+                </th>
+                <th scope="col" class:list={matrixCellClass}>
+                  W widoku
+                </th>
+                <th scope="col" class:list={matrixCellClass}>
+                  Gdzie na tej stronie
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {addStateMatrix.map((row) => (
                 <tr>
                   <th scope="row" class:list={cn(matrixCellClass, "font-medium")}>
                     {row.state}
