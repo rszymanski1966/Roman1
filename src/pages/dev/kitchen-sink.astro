@@ -15,8 +15,9 @@ import IngredientsHeader from "@/components/ingredients/IngredientsHeader.astro"
 import IngredientRenameForm from "@/components/ingredients/IngredientRenameForm.astro";
 import LookupForms from "@/components/ingredients/LookupForms.astro";
 import SubstituteCard from "@/components/ingredients/SubstituteCard.astro";
+import SubstituteCreateForm from "@/components/ingredients/SubstituteCreateForm.astro";
 import SubstituteEditForm from "@/components/ingredients/SubstituteEditForm.astro";
-import type { ListView } from "@/lib/list-view";
+import { type ListView, listRedirect } from "@/lib/list-view";
 import { cn } from "@/lib/utils";
 import type { Category, IngredientListItem, SubstituteForEdit, SubstituteListItem } from "@/types";
 
@@ -91,6 +92,27 @@ const fixtureEditSaved = { name: fixtureEdit.name, ratio: fixtureEdit.ratio, not
 // Echo after a validation error: the ratio and the notes were cleared before saving.
 const fixtureEditEcho = { name: fixtureEdit.name, ratio: "", notes: "" };
 const editTitleClass = "mb-6 text-2xl font-bold text-foreground";
+// The add page (/ingredients/new): the saved ingredient names behind the datalist. The prefill picks one of them
+// (label "Istniejący"), the echo after an error a name outside them (label "Nowy").
+const fixtureAddNames = ["jajko", "masło", "mleko"];
+const fixtureAddEmpty = { ingredient: "", categoryId: "", substitute: "", ratio: "", notes: "", isBest: false };
+// Opened from the empty state of "masło" in the first category: "Anuluj" returns to that view.
+const fixtureAddPrefill = { ...fixtureAddEmpty, ingredient: "masło", categoryId: fixtureCategories[0].id };
+const fixtureAddPrefillCancel = listRedirect({
+  ingredient: fixtureIngredients[2].id,
+  category: fixtureCategories[0].id,
+  q: "",
+  match: "contains",
+});
+const fixtureAddEcho = {
+  ingredient: "mąka kasztanowa",
+  categoryId: fixtureCategories[1].id,
+  substitute: "mąka ryżowa",
+  ratio: "1:1",
+  notes: "Bez glutenu.",
+  isBest: true,
+};
+const fixtureAddError = "Nie udało się wykonać operacji na bazie danych.";
 // The rename page (/ingredients/edit-ingredient), opened from the same category view as the edit page.
 // Error with echo: another ingredient's name typed in, rejected with the service's duplicate message.
 const fixtureRenameEcho = "Mąka ziemniaczana";
@@ -501,6 +523,92 @@ const stateMatrix = [
               </button>
               <a href="#ks-view" class:list={cn(textLinkClass, forcedRing)}>
                 Wróć do panelu
+              </a>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Widok /ingredients/new</h2>
+        <p class:list={stateClass}>
+          Formularz dodawania z <code>SubstituteCreateForm</code> na fixturach (bez bazy). Zapis prowadzi do prawdziwego
+          endpointu. Kolejność tabulacji: pola → checkbox → „Zapisz” → „Anuluj” → stopka („Wróć do panelu”, „Wyloguj
+          się”). Rozwiniętej listy zapisanych składników (<code>datalist</code>) nie widać na zrzucie, bo rysuje ją
+          przeglądarka: sprawdź ją ręcznie (klik lub ↓ w polu „Składnik”).
+        </p>
+
+        <p class:list={stateClass}>Puste pola, z listą zapisanych składników</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            <SubstituteCreateForm
+              categories={fixtureCategories}
+              ingredientNames={fixtureAddNames}
+              values={fixtureAddEmpty}
+              cancelHref="/ingredients"
+              idPrefix="ks-add-empty"
+            />
+            <IngredientsFooter />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Prefill składnika i kategorii z pustego stanu składnika (etykieta „Istniejący”)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            <SubstituteCreateForm
+              categories={fixtureCategories}
+              ingredientNames={fixtureAddNames}
+              values={fixtureAddPrefill}
+              cancelHref={fixtureAddPrefillCancel}
+              idPrefix="ks-add-prefill"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>
+          Błąd formularzowy z echem (nazwa spoza listy: etykieta „Nowy”, zaznaczony checkbox)
+        </p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            <SubstituteCreateForm
+              categories={fixtureCategories}
+              ingredientNames={fixtureAddNames}
+              values={fixtureAddEcho}
+              cancelHref="/ingredients"
+              error={fixtureAddError}
+              idPrefix="ks-add-error"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Brak zapisanych składników (nowe konto): bez listy i tekstu pomocniczego</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            <SubstituteCreateForm
+              categories={fixtureCategories}
+              ingredientNames={[]}
+              values={fixtureAddEmpty}
+              cancelHref="/ingredients"
+              idPrefix="ks-add-no-ingredients"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Błąd ładowania kategorii (zamiast formularza)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            {/* Same markup as the load-error branch of src/pages/ingredients/new.astro. */}
+            <div class="space-y-4">
+              <Alert role="alert" variant="destructive">
+                {fixtureAddError}
+              </Alert>
+              <a href="/ingredients" class:list={cn(buttonVariants({ variant: "outline" }), focusRing)}>
+                Wróć do listy
               </a>
             </div>
           </Card>

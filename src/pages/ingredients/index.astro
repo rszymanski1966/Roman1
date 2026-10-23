@@ -152,10 +152,13 @@ function withParams(path: string, values: Record<string, string | null>): string
 }
 
 const shownIngredient = view.kind === "ingredient" ? view.ingredient : null;
-// Ingredient empty-state CTA prefills /ingredients/new (it expects the ingredient id and the category id).
+// Ingredient empty-state CTA prefills /ingredients/new (it expects the ingredient id and the category id) and
+// carries the whole list view (q, match), so the form's "Anuluj" returns to this view, search included.
 const addSubstituteHref = withParams("/ingredients/new", {
   ingredient: shownIngredient?.id ?? null,
   category: viewCategory,
+  q: query,
+  match: mode,
 });
 // No-match CTA: the add form with the searched name (and the chosen category).
 const addIngredientHref = withParams("/ingredients/new", { ingredient_name: query, category: viewCategory });

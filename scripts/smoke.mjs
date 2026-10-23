@@ -179,6 +179,13 @@ const steps = [
   ],
   ["account A sees its substitute", () => request(listPath), { status: 200, bodyIncludes: substituteMarker }],
   [
+    // The add form offers A's saved ingredients (datalist options carry names). The closing quote is required:
+    // B's ingredient name (added later) starts with this one.
+    "add form suggests account A's ingredient",
+    () => request("/ingredients/new"),
+    { status: 200, bodyIncludes: `<option value="smoke-ingredient-${runId}"` },
+  ],
+  [
     "account A adds a second substitute in the same pair",
     () =>
       request("/api/ingredients", {
@@ -577,6 +584,17 @@ const steps = [
       return actual;
     },
     { status: 302, location: "/ingredients?ingredient=" },
+  ],
+  [
+    // B's own ingredient proves the list renders (not an empty pass); A's name must not leak to B (RLS).
+    // The closing quote is required: A's ingredient name is a prefix of B's.
+    "add form suggests only account B's own ingredients",
+    () => request("/ingredients/new", { cookies: jarB }),
+    {
+      status: 200,
+      bodyIncludes: `value="smoke-ingredient-${runId}-b"`,
+      bodyExcludes: `value="smoke-ingredient-${runId}"`,
+    },
   ],
   [
     // From B's own list: A's substitute is "not found" for B, and the error still names its id in error_for.
