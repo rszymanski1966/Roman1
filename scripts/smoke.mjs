@@ -294,7 +294,7 @@ const steps = [
       const tied = ratioInput.includes('aria-describedby="add-error"') && actual.body.includes('id="add-error"');
       return ratioInput.includes('aria-invalid="true"') && marked === 1 && tied ? actual : { ...actual, status: 0 };
     },
-    { status: 200, bodyIncludes: 'aria-invalid="true"' },
+    { status: 200, bodyIncludes: 'id="add-error"' },
   ],
   [
     // Adding with the checkbox replaces the current best (the second one) and shows the same notice as the list.

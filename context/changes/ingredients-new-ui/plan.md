@@ -311,6 +311,14 @@ Brak zmian w bazie i w danych.
 - Wiązanie błędu z polem: `src/components/ingredients/IngredientRenameForm.astro:30-70`
 - Poprzednia zmiana UI: `context/archive/2026-10-19-ingredients-list-ui/plan.md`
 
+## Deviations
+
+Z triage impl-review (2026-10-24, `reviews/impl-review.md`):
+
+- Phase 1 #1, tekst pomocniczy: `aria-live="polite"` nie stoi w markupie `<p data-ingredient-hint>`, tylko skrypt ustawia go po pierwszym `update()` (F2), żeby czytnik nie ogłaszał etykiety przy załadowaniu strony ani ponad komunikatem błędu.
+- Phase 2 #5: propy `errorField` są typowane `AddErrorField | null` / `EditErrorField | null` zamiast `string | null` (F4).
+- Phase 1, krok 1.10: Firefox niesprawdzony, ryzyko zaakceptowane (F1); fallback z `autocomplete="off"` przeniesiony do `follow-ups/review-fixes.md`.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
@@ -338,14 +346,14 @@ Brak zmian w bazie i w danych.
 
 #### Automated
 
-- [x] 2.1 Lint przechodzi: `npm run lint`
-- [x] 2.2 Skan literałów przechodzi: `npm run lint:ui`
-- [x] 2.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
-- [x] 2.4 Smoke przechodzi z nowymi krokami `error_field` i bez zmian w istniejących krokach
+- [x] 2.1 Lint przechodzi: `npm run lint` — c8006c1
+- [x] 2.2 Skan literałów przechodzi: `npm run lint:ui` — c8006c1
+- [x] 2.3 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check` — c8006c1
+- [x] 2.4 Smoke przechodzi z nowymi krokami `error_field` i bez zmian w istniejących krokach — c8006c1
 
 #### Manual
 
-- [x] 2.5 Każdy nowy krok smoke został raz celowo zepsuty i wtedy zawiódł
-- [x] 2.6 Pusta proporcja w obu formularzach: pole „Proporcja” ma czerwoną ramkę, a czytnik ekranu (albo inspektor dostępności) podaje komunikat przy tym polu
-- [x] 2.7 Duplikat nazwy oznacza pole nazwy zamiennika w obu formularzach; błąd ogólny nie oznacza żadnego pola
-- [x] 2.8 Zrzuty stanów błędu w kitchen-sink na desktopie i 375 px
+- [x] 2.5 Każdy nowy krok smoke został raz celowo zepsuty i wtedy zawiódł — c8006c1
+- [x] 2.6 Pusta proporcja w obu formularzach: pole „Proporcja” ma czerwoną ramkę, a czytnik ekranu (albo inspektor dostępności) podaje komunikat przy tym polu — c8006c1
+- [x] 2.7 Duplikat nazwy oznacza pole nazwy zamiennika w obu formularzach; błąd ogólny nie oznacza żadnego pola — c8006c1
+- [x] 2.8 Zrzuty stanów błędu w kitchen-sink na desktopie i 375 px — c8006c1

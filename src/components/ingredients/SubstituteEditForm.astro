@@ -6,7 +6,7 @@ import Label from "@/components/ui/Label.astro";
 import Textarea from "@/components/ui/Textarea.astro";
 import { buttonVariants } from "@/components/ui/button";
 import { focusRing } from "@/components/ui/focus";
-import { MAX_NAME, MAX_NOTES, MAX_RATIO } from "@/lib/entry-fields";
+import { type EditErrorField, MAX_NAME, MAX_NOTES, MAX_RATIO } from "@/lib/entry-fields";
 import { type ListView, listRedirect } from "@/lib/list-view";
 import { cn } from "@/lib/utils";
 import type { SubstituteForEdit } from "@/types";
@@ -24,7 +24,7 @@ interface Props {
   // Error of the last save, shown above the form.
   error?: string | null;
   // The input name the error is about (error_field, already checked by the page); null = about the whole form.
-  errorField?: string | null;
+  errorField?: EditErrorField | null;
   // Prefix of the field ids, so several forms can share a page (kitchen sink).
   idPrefix?: string;
 }
@@ -38,9 +38,9 @@ const ids = {
   notes: `${idPrefix}-notes`,
 };
 // Only the field named by errorField is marked (red border, the error read at the field); a form error marks none.
-const isInvalid = (field: string) => Boolean(error) && errorField === field;
-const invalid = (field: string) => (isInvalid(field) ? "true" : undefined);
-const describedBy = (field: string) => (isInvalid(field) ? ids.error : undefined);
+const isInvalid = (field: EditErrorField) => Boolean(error) && errorField === field;
+const invalid = (field: EditErrorField) => (isInvalid(field) ? "true" : undefined);
+const describedBy = (field: EditErrorField) => (isInvalid(field) ? ids.error : undefined);
 ---
 
 {substitute === null ? (
