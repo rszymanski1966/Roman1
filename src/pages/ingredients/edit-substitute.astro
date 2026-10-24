@@ -4,16 +4,20 @@ import IngredientsFooter from "@/components/ingredients/IngredientsFooter.astro"
 import SubstituteEditForm from "@/components/ingredients/SubstituteEditForm.astro";
 import Alert from "@/components/ui/Alert.astro";
 import Card from "@/components/ui/Card.astro";
+import { EDIT_ERROR_FIELDS, readErrorField } from "@/lib/entry-fields";
 import { type ListView, parseListView } from "@/lib/list-view";
 import { createClient } from "@/lib/supabase";
 import { getSubstituteForEdit, isUuid, normalizeQuery, parseMatchMode } from "@/lib/services/substitutes";
 import type { SubstituteForEdit } from "@/types";
 
-// GET ?substitute=<id>[&ingredient=<id>&category=<id>&q=<text>&match=<mode>][&error=<msg>][&name&ratio&notes]:
-// the card's "Edytuj" link carries the list view; /api/substitutes/update sends the echo and the error back here.
+// GET ?substitute=<id>[&ingredient=<id>&category=<id>&q=<text>&match=<mode>][&name&ratio&notes]
+// [&error=<msg>[&error_field=<field>]]: the card's "Edytuj" link carries the list view; /api/substitutes/update
+// sends the echo and the error back here.
 const params = Astro.url.searchParams;
 const substituteParam = params.get("substitute")?.trim() ?? "";
 const error = params.get("error");
+// The field the error is about; only this form's fields (name, ratio, notes), otherwise null.
+const errorField = readErrorField(params, EDIT_ERROR_FIELDS);
 // The list view the card was on; null when the URL has none or a malformed one (bookmark, cut-off link).
 const urlView = parseListView(params);
 
@@ -64,7 +68,7 @@ const values = {
           {loadError}
         </Alert>
       ) : (
-        <SubstituteEditForm substitute={substitute} view={view} values={values} error={error} />
+        <SubstituteEditForm substitute={substitute} view={view} values={values} error={error} errorField={errorField} />
       )}
 
       <IngredientsFooter />

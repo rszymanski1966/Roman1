@@ -15,8 +15,9 @@ import IngredientsHeader from "@/components/ingredients/IngredientsHeader.astro"
 import IngredientRenameForm from "@/components/ingredients/IngredientRenameForm.astro";
 import LookupForms from "@/components/ingredients/LookupForms.astro";
 import SubstituteCard from "@/components/ingredients/SubstituteCard.astro";
+import SubstituteCreateForm from "@/components/ingredients/SubstituteCreateForm.astro";
 import SubstituteEditForm from "@/components/ingredients/SubstituteEditForm.astro";
-import type { ListView } from "@/lib/list-view";
+import { type ListView, listRedirect } from "@/lib/list-view";
 import { cn } from "@/lib/utils";
 import type { Category, IngredientListItem, SubstituteForEdit, SubstituteListItem } from "@/types";
 
@@ -91,6 +92,30 @@ const fixtureEditSaved = { name: fixtureEdit.name, ratio: fixtureEdit.ratio, not
 // Echo after a validation error: the ratio and the notes were cleared before saving.
 const fixtureEditEcho = { name: fixtureEdit.name, ratio: "", notes: "" };
 const editTitleClass = "mb-6 text-2xl font-bold text-foreground";
+// The add page (/ingredients/new): the saved ingredient names behind the datalist. The prefill picks one of them
+// (label "Istniejący"), the echo after an error a name outside them (label "Nowy").
+const fixtureAddNames = ["jajko", "masło", "mleko"];
+const fixtureAddEmpty = { ingredient: "", categoryId: "", substitute: "", ratio: "", notes: "", isBest: false };
+// Opened from the empty state of "masło" in the first category: "Anuluj" returns to that view.
+const fixtureAddPrefill = { ...fixtureAddEmpty, ingredient: "masło", categoryId: fixtureCategories[0].id };
+const fixtureAddPrefillCancel = listRedirect({
+  ingredient: fixtureIngredients[2].id,
+  category: fixtureCategories[0].id,
+  q: "",
+  match: "contains",
+});
+const fixtureAddEcho = {
+  ingredient: "mąka kasztanowa",
+  categoryId: fixtureCategories[1].id,
+  substitute: "mąka ryżowa",
+  ratio: "1:1",
+  notes: "Bez glutenu.",
+  isBest: true,
+};
+const fixtureAddError = "Nie udało się wykonać operacji na bazie danych.";
+// Error at a field: the ratio was left empty, so /api/ingredients sends error_field=ratio with the echo.
+const fixtureAddFieldEcho = { ...fixtureAddEcho, ratio: "" };
+const fixtureRatioError = "Podaj proporcję.";
 // The rename page (/ingredients/edit-ingredient), opened from the same category view as the edit page.
 // Error with echo: another ingredient's name typed in, rejected with the service's duplicate message.
 const fixtureRenameEcho = "Mąka ziemniaczana";
@@ -135,6 +160,45 @@ const stateMatrix = [
   {
     state: "loading",
     view: "N/A: SSR, widok bez <script>, nic nie dociąga się po renderze.",
+    here: "Brak (nic do pokazania).",
+  },
+];
+
+// The 7-state matrix of /ingredients/new, rendered like the one above.
+const addStateMatrix = [
+  {
+    state: "default",
+    view: "Formularz na tokenach motywu kitchen: Input, NativeSelect, Textarea, checkbox, przyciski.",
+    here: "Stan „Puste pola, z listą zapisanych składników” w sekcji „Widok /ingredients/new”.",
+  },
+  {
+    state: "hover",
+    view: "„Zapisz” (default): tło primary/90; „Anuluj” (outline): tło accent; linki stopki: podkreślenie.",
+    here: "Najedź kursorem na przyciski i linki w sekcji „Widok /ingredients/new”.",
+  },
+  {
+    state: "focus-visible",
+    view: "Pierścień ring-3 z tokenu ring przy pełnym kryciu (pola, select, przyciski, linki); checkbox: obrys outline-ring.",
+    here: "Tab po formularzu albo wiersz „Focus-visible (wymuszony do zrzutu)” w sekcji „Widok /ingredients”.",
+  },
+  {
+    state: "error",
+    view: "Błąd pola: Alert destructive z id, a pole z error_field dostaje aria-invalid (czerwona ramka) i aria-describedby na komunikat. Błąd formularza (baza, dane formularza): tylko Alert, żadne pole nie jest oznaczone.",
+    here: "Stany „Błąd przy polu z echem” i „Błąd formularzowy z echem” w sekcji „Widok /ingredients/new”.",
+  },
+  {
+    state: "empty",
+    view: "Błąd ładowania kategorii: Alert i „Wróć do listy” zamiast formularza. Brak zapisanych składników: pole „Składnik” bez listy i tekstu pomocniczego.",
+    here: "Stany „Błąd ładowania kategorii” i „Brak zapisanych składników” w sekcji „Widok /ingredients/new”.",
+  },
+  {
+    state: "disabled",
+    view: "N/A: formularz nie ma kontrolek, które bywają nieaktywne; zapis to pełne przeładowanie strony.",
+    here: "Disabled Button, Input, Textarea i NativeSelect w sekcjach komponentów wyżej.",
+  },
+  {
+    state: "loading",
+    view: "N/A: SSR; jedyny <script> podpisuje pole „Składnik” z danych już w HTML, niczego nie dociąga.",
     here: "Brak (nic do pokazania).",
   },
 ];
@@ -508,6 +572,112 @@ const stateMatrix = [
       </section>
 
       <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Widok /ingredients/new</h2>
+        <p class:list={stateClass}>
+          Formularz dodawania z <code>SubstituteCreateForm</code> na fixturach (bez bazy). Zapis prowadzi do prawdziwego
+          endpointu. Kolejność tabulacji: pola → checkbox → „Zapisz” → „Anuluj” → stopka („Wróć do panelu”, „Wyloguj
+          się”). Rozwiniętej listy zapisanych składników (<code>datalist</code>) nie widać na zrzucie, bo rysuje ją
+          przeglądarka: sprawdź ją ręcznie (klik lub ↓ w polu „Składnik”).
+        </p>
+
+        <p class:list={stateClass}>Puste pola, z listą zapisanych składników</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            <SubstituteCreateForm
+              categories={fixtureCategories}
+              ingredientNames={fixtureAddNames}
+              values={fixtureAddEmpty}
+              cancelHref="/ingredients"
+              idPrefix="ks-add-empty"
+            />
+            <IngredientsFooter />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Prefill składnika i kategorii z pustego stanu składnika (etykieta „Istniejący”)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            <SubstituteCreateForm
+              categories={fixtureCategories}
+              ingredientNames={fixtureAddNames}
+              values={fixtureAddPrefill}
+              cancelHref={fixtureAddPrefillCancel}
+              idPrefix="ks-add-prefill"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>
+          Błąd formularzowy z echem (błąd bazy: żadne pole nie jest oznaczone; nazwa spoza listy: etykieta „Nowy”,
+          zaznaczony checkbox)
+        </p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            <SubstituteCreateForm
+              categories={fixtureCategories}
+              ingredientNames={fixtureAddNames}
+              values={fixtureAddEcho}
+              cancelHref="/ingredients"
+              error={fixtureAddError}
+              idPrefix="ks-add-error"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>
+          Błąd przy polu z echem (pusta proporcja, error_field=ratio): czerwona ramka „Proporcja”, komunikat w
+          aria-describedby pola
+        </p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            <SubstituteCreateForm
+              categories={fixtureCategories}
+              ingredientNames={fixtureAddNames}
+              values={fixtureAddFieldEcho}
+              cancelHref="/ingredients"
+              error={fixtureRatioError}
+              errorField="ratio"
+              idPrefix="ks-add-field-error"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Brak zapisanych składników (nowe konto): bez listy i tekstu pomocniczego</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            <SubstituteCreateForm
+              categories={fixtureCategories}
+              ingredientNames={[]}
+              values={fixtureAddEmpty}
+              cancelHref="/ingredients"
+              idPrefix="ks-add-no-ingredients"
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Błąd ładowania kategorii (zamiast formularza)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Dodaj zamiennik</h3>
+            {/* Same markup as the load-error branch of src/pages/ingredients/new.astro. */}
+            <div class="space-y-4">
+              <Alert role="alert" variant="destructive">
+                {fixtureAddError}
+              </Alert>
+              <a href="/ingredients" class:list={cn(buttonVariants({ variant: "outline" }), focusRing)}>
+                Wróć do listy
+              </a>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
         <h2 class:list={headingClass}>Widok /ingredients/edit-substitute</h2>
         <p class:list={stateClass}>
           Formularz edycji z <code>SubstituteEditForm</code> na fixturach (bez bazy). Zapis prowadzi do prawdziwego
@@ -527,7 +697,9 @@ const stateMatrix = [
           </Card>
         </div>
 
-        <p class:list={stateClass}>Błąd walidacji z echem (wyczyszczona proporcja i uwagi)</p>
+        <p class:list={stateClass}>
+          Błąd walidacji z echem (wyczyszczona proporcja i uwagi, error_field=ratio): czerwona ramka „Proporcja”
+        </p>
         <div class:list={viewFrameClass}>
           <Card class:list={viewCardClass}>
             <h3 class:list={editTitleClass}>Edytuj zamiennik</h3>
@@ -535,7 +707,8 @@ const stateMatrix = [
               substitute={fixtureEdit}
               view={fixtureEditView}
               values={fixtureEditEcho}
-              error="Podaj proporcję."
+              error={fixtureRatioError}
+              errorField="ratio"
               idPrefix="ks-edit-error"
             />
           </Card>
@@ -616,6 +789,38 @@ const stateMatrix = [
             </thead>
             <tbody>
               {stateMatrix.map((row) => (
+                <tr>
+                  <th scope="row" class:list={cn(matrixCellClass, "font-medium")}>
+                    {row.state}
+                  </th>
+                  <td class:list={matrixCellClass}>{row.view}</td>
+                  <td class:list={cn(matrixCellClass, "text-muted-foreground")}>{row.here}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Macierz 7 stanów widoku /ingredients/new</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr class="text-muted-foreground">
+                <th scope="col" class:list={matrixCellClass}>
+                  Stan
+                </th>
+                <th scope="col" class:list={matrixCellClass}>
+                  W widoku
+                </th>
+                <th scope="col" class:list={matrixCellClass}>
+                  Gdzie na tej stronie
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {addStateMatrix.map((row) => (
                 <tr>
                   <th scope="row" class:list={cn(matrixCellClass, "font-medium")}>
                     {row.state}

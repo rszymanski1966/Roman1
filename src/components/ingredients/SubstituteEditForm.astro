@@ -6,7 +6,7 @@ import Label from "@/components/ui/Label.astro";
 import Textarea from "@/components/ui/Textarea.astro";
 import { buttonVariants } from "@/components/ui/button";
 import { focusRing } from "@/components/ui/focus";
-import { MAX_NAME, MAX_NOTES, MAX_RATIO } from "@/lib/entry-fields";
+import { type EditErrorField, MAX_NAME, MAX_NOTES, MAX_RATIO } from "@/lib/entry-fields";
 import { type ListView, listRedirect } from "@/lib/list-view";
 import { cn } from "@/lib/utils";
 import type { SubstituteForEdit } from "@/types";
@@ -23,13 +23,24 @@ interface Props {
   values: { name: string; ratio: string; notes: string };
   // Error of the last save, shown above the form.
   error?: string | null;
+  // The input name the error is about (error_field, already checked by the page); null = about the whole form.
+  errorField?: EditErrorField | null;
   // Prefix of the field ids, so several forms can share a page (kitchen sink).
   idPrefix?: string;
 }
 
-const { substitute, view, values, error = null, idPrefix = "edit" } = Astro.props;
+const { substitute, view, values, error = null, errorField = null, idPrefix = "edit" } = Astro.props;
 const listHref = listRedirect(view);
-const ids = { name: `${idPrefix}-name`, ratio: `${idPrefix}-ratio`, notes: `${idPrefix}-notes` };
+const ids = {
+  error: `${idPrefix}-error`,
+  name: `${idPrefix}-name`,
+  ratio: `${idPrefix}-ratio`,
+  notes: `${idPrefix}-notes`,
+};
+// Only the field named by errorField is marked (red border, the error read at the field); a form error marks none.
+const isInvalid = (field: EditErrorField) => Boolean(error) && errorField === field;
+const invalid = (field: EditErrorField) => (isInvalid(field) ? "true" : undefined);
+const describedBy = (field: EditErrorField) => (isInvalid(field) ? ids.error : undefined);
 ---
 
 {substitute === null ? (
@@ -39,7 +50,7 @@ const ids = { name: `${idPrefix}-name`, ratio: `${idPrefix}-ratio`, notes: `${id
 ) : (
   <div class="space-y-6">
     {error && (
-      <Alert role="alert" variant="destructive">
+      <Alert id={ids.error} role="alert" variant="destructive">
         {error}
       </Alert>
     )}
@@ -70,6 +81,8 @@ const ids = { name: `${idPrefix}-name`, ratio: `${idPrefix}-ratio`, notes: `${id
           required
           maxlength={MAX_NAME}
           value={values.name}
+          aria-invalid={invalid("name")}
+          aria-describedby={describedBy("name")}
         />
       </div>
 
@@ -84,12 +97,23 @@ const ids = { name: `${idPrefix}-name`, ratio: `${idPrefix}-ratio`, notes: `${id
           maxlength={MAX_RATIO}
           value={values.ratio}
           placeholder="np. 1:1"
+          aria-invalid={invalid("ratio")}
+          aria-describedby={describedBy("ratio")}
         />
       </div>
 
       <div class="space-y-2">
         <Label for={ids.notes}>Uwagi (opcjonalnie)</Label>
-        <Textarea id={ids.notes} name="notes" autocomplete="off" rows={3} maxlength={MAX_NOTES} value={values.notes} />
+        <Textarea
+          id={ids.notes}
+          name="notes"
+          autocomplete="off"
+          rows={3}
+          maxlength={MAX_NOTES}
+          value={values.notes}
+          aria-invalid={invalid("notes")}
+          aria-describedby={describedBy("notes")}
+        />
       </div>
 
       <div class="flex flex-wrap items-center gap-3 pt-2">

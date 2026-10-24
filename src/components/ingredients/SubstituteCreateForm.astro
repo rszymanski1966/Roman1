@@ -1,0 +1,236 @@
+---
+import Alert from "@/components/ui/Alert.astro";
+import Input from "@/components/ui/Input.astro";
+import Label from "@/components/ui/Label.astro";
+import NativeSelect from "@/components/ui/NativeSelect.astro";
+import Textarea from "@/components/ui/Textarea.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { focusOutline, focusRing } from "@/components/ui/focus";
+import { type AddErrorField, MAX_NAME, MAX_NOTES, MAX_RATIO } from "@/lib/entry-fields";
+import { cn } from "@/lib/utils";
+import type { Category } from "@/types";
+
+// The add form of /ingredients/new (POST /api/ingredients).
+// smoke.mjs relies on this markup: the category options as <option value="<uuid>" (value first), and the saved
+// ingredients as <option value="<name>" in the datalist (names, never ids, so the category regex skips them).
+interface Props {
+  categories: Category[];
+  // The user's saved ingredient names (listIngredients order), offered as suggestions; empty = no suggestions.
+  ingredientNames: string[];
+  // Field values: the prefill from the list's empty state, or the echo after an error.
+  values: {
+    ingredient: string;
+    categoryId: string;
+    substitute: string;
+    ratio: string;
+    notes: string;
+    isBest: boolean;
+  };
+  // Where "Anuluj" leads: the list view the user came from, otherwise the bare list.
+  cancelHref: string;
+  // Error of the last save, shown above the form.
+  error?: string | null;
+  // The input name the error is about (error_field, already checked by the page); null = about the whole form.
+  errorField?: AddErrorField | null;
+  // Prefix of the field ids, so several forms can share a page (kitchen sink).
+  idPrefix?: string;
+}
+
+const {
+  categories,
+  ingredientNames,
+  values,
+  cancelHref,
+  error = null,
+  errorField = null,
+  idPrefix = "add",
+} = Astro.props;
+const ids = {
+  error: `${idPrefix}-error`,
+  ingredient: `${idPrefix}-ingredient`,
+  ingredientOptions: `${idPrefix}-ingredient-options`,
+  ingredientHint: `${idPrefix}-ingredient-hint`,
+  category: `${idPrefix}-category`,
+  substitute: `${idPrefix}-substitute`,
+  ratio: `${idPrefix}-ratio`,
+  notes: `${idPrefix}-notes`,
+  isBest: `${idPrefix}-is-best`,
+};
+const hasSuggestions = ingredientNames.length > 0;
+// Only the field named by errorField is marked (red border, the error read at the field); a form error marks none.
+const isInvalid = (field: AddErrorField) => Boolean(error) && errorField === field;
+const invalid = (field: AddErrorField) => (isInvalid(field) ? "true" : undefined);
+// The error id first, then the field's own hint (if any); undefined when there is neither.
+const describedBy = (field: AddErrorField, hintId?: string) =>
+  [isInvalid(field) ? ids.error : "", hintId ?? ""].filter(Boolean).join(" ") || undefined;
+---
+
+<div class="space-y-6">
+  {error && (
+    <Alert id={ids.error} role="alert" variant="destructive">
+      {error}
+    </Alert>
+  )}
+
+  <form method="POST" action="/api/ingredients" class="space-y-4">
+    <div class="space-y-2">
+      <Label for={ids.ingredient}>Składnik</Label>
+      {/* autocomplete="off" turns off the browser's form history (Chrome/Edge), not the datalist suggestions. */}
+      <Input
+        id={ids.ingredient}
+        name="ingredient"
+        type="text"
+        autocomplete="off"
+        required
+        maxlength={MAX_NAME}
+        value={values.ingredient}
+        list={hasSuggestions ? ids.ingredientOptions : undefined}
+        aria-invalid={invalid("ingredient")}
+        aria-describedby={describedBy("ingredient", hasSuggestions ? ids.ingredientHint : undefined)}
+        placeholder={hasSuggestions ? "Wybierz z listy lub wpisz nowy" : "np. masło"}
+      />
+      {hasSuggestions && (
+        <datalist id={ids.ingredientOptions}>
+          {ingredientNames.map((name) => (
+            <option value={name} />
+          ))}
+        </datalist>
+      )}
+      {/* Without JS this text stays as it is; the script below swaps it for the existing / new label. */}
+      {hasSuggestions && (
+        <p id={ids.ingredientHint} class="mt-1 text-sm text-muted-foreground" data-ingredient-hint>
+          Zacznij pisać, aby zobaczyć zapisane składniki
+        </p>
+      )}
+    </div>
+
+    <div class="space-y-2">
+      <Label for={ids.category}>Kategoria</Label>
+      <NativeSelect
+        id={ids.category}
+        name="category_id"
+        required
+        aria-invalid={invalid("category_id")}
+        aria-describedby={describedBy("category_id")}
+      >
+        <option value="" selected={!values.categoryId}>
+          Wybierz kategorię
+        </option>
+        {categories.map((category) => (
+          <option value={category.id} selected={category.id === values.categoryId}>
+            {category.name}
+          </option>
+        ))}
+      </NativeSelect>
+    </div>
+
+    <div class="space-y-2">
+      <Label for={ids.substitute}>Zamiennik</Label>
+      <Input
+        id={ids.substitute}
+        name="substitute"
+        type="text"
+        autocomplete="off"
+        required
+        maxlength={MAX_NAME}
+        value={values.substitute}
+        placeholder="np. olej kokosowy"
+        aria-invalid={invalid("substitute")}
+        aria-describedby={describedBy("substitute")}
+      />
+    </div>
+
+    <div class="space-y-2">
+      <Label for={ids.ratio}>Proporcja</Label>
+      <Input
+        id={ids.ratio}
+        name="ratio"
+        type="text"
+        autocomplete="off"
+        required
+        maxlength={MAX_RATIO}
+        value={values.ratio}
+        placeholder="np. 1:1"
+        aria-invalid={invalid("ratio")}
+        aria-describedby={describedBy("ratio")}
+      />
+    </div>
+
+    <div class="space-y-2">
+      <Label for={ids.notes}>Uwagi (opcjonalnie)</Label>
+      <Textarea
+        id={ids.notes}
+        name="notes"
+        autocomplete="off"
+        rows={3}
+        maxlength={MAX_NOTES}
+        value={values.notes}
+        placeholder="np. lekki posmak kokosa"
+        aria-invalid={invalid("notes")}
+        aria-describedby={describedBy("notes")}
+      />
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input
+        id={ids.isBest}
+        name="is_best"
+        type="checkbox"
+        value="1"
+        checked={values.isBest}
+        class:list={cn("accent-primary", focusOutline)}
+      />
+      <Label for={ids.isBest} class="font-normal">
+        Najlepszy zamiennik w tej kategorii
+      </Label>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 pt-2">
+      <button type="submit" class:list={cn(buttonVariants(), focusRing)}>
+        Zapisz
+      </button>
+      <a href={cancelHref} class:list={cn(buttonVariants({ variant: "outline" }), focusRing)}>
+        Anuluj
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+  import { normalizeName, toNameKey } from "@/lib/entry-fields";
+
+  // Labels the typed ingredient as an existing or a new one, by the same rule as ingredients.name_key on the
+  // server. Handles every add form on the page (the kitchen sink renders several): the field is the input that
+  // names the hint in aria-describedby (~= is a word match, so it also finds "<error id> <hint id>" after an
+  // error), the names come from that input's datalist.
+  const NEW_INGREDIENT = "Nowy składnik — zostanie utworzony przy zapisie";
+
+  document.querySelectorAll<HTMLElement>("[data-ingredient-hint]").forEach((hint) => {
+    const input = document.querySelector(`input[aria-describedby~="${CSS.escape(hint.id)}"]`);
+    if (!(input instanceof HTMLInputElement)) return;
+    const list = input.list;
+    if (!(list instanceof HTMLDataListElement)) return;
+
+    const initialText = hint.textContent ?? "";
+    // name_key -> saved name; the first spelling wins (keys are unique per account anyway).
+    const savedNames = new Map<string, string>();
+    for (const option of Array.from(list.options)) {
+      const key = toNameKey(normalizeName(option.value));
+      if (key !== "" && !savedNames.has(key)) savedNames.set(key, option.value);
+    }
+
+    const update = () => {
+      const key = toNameKey(normalizeName(input.value));
+      const saved = savedNames.get(key);
+      const text = key === "" ? initialText : saved !== undefined ? `Istniejący składnik „${saved}”` : NEW_INGREDIENT;
+      // Only on a change of text, so aria-live does not announce every keystroke.
+      if (hint.textContent !== text) hint.textContent = text;
+    };
+
+    // On load too: the prefill or the echo after an error already has a value. The region goes live only after
+    // that, so a screen reader does not announce the label on page load (or over the error alert).
+    update();
+    hint.setAttribute("aria-live", "polite");
+    input.addEventListener("input", update);
+  });
+</script>

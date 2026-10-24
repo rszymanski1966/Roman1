@@ -43,6 +43,8 @@ let listPathB = "";
 // Redirects after a mark-as-best error, tied to a card with error_for (the #anchor is stripped before the GET).
 let cardErrorPath = "";
 let topErrorPathB = "";
+// Redirect after an add-form validation error that names its field (error_field=ratio).
+let addFieldErrorPath = "";
 let firstSubstituteId = "";
 let secondSubstituteId = "";
 let thirdSubstituteId = "";
@@ -179,6 +181,13 @@ const steps = [
   ],
   ["account A sees its substitute", () => request(listPath), { status: 200, bodyIncludes: substituteMarker }],
   [
+    // The add form offers A's saved ingredients (datalist options carry names). The closing quote is required:
+    // B's ingredient name (added later) starts with this one.
+    "add form suggests account A's ingredient",
+    () => request("/ingredients/new"),
+    { status: 200, bodyIncludes: `<option value="smoke-ingredient-${runId}"` },
+  ],
+  [
     "account A adds a second substitute in the same pair",
     () =>
       request("/api/ingredients", {
@@ -253,6 +262,41 @@ const steps = [
     { status: 302, location: "/ingredients/new?error=", locationIncludes: "is_best=1" },
   ],
   [
+    // Same empty ratio: the redirect names the field (error_field, after the echo).
+    "add form validation error names the ratio field",
+    async () => {
+      const actual = await request("/api/ingredients", {
+        method: "POST",
+        form: {
+          ingredient: `smoke-ingredient-${runId}`,
+          category_id: categoryId,
+          substitute: thirdSubstitute,
+          ratio: "",
+        },
+      });
+      addFieldErrorPath = actual.location;
+      return actual;
+    },
+    {
+      status: 302,
+      location: `/ingredients/new?${new URLSearchParams({ error: "Podaj proporcję." })}`,
+      locationIncludes: "error_field=ratio",
+    },
+  ],
+  [
+    // Only the ratio input is marked: one aria-invalid on the page, on that input, tied to the error's id.
+    "add form marks the ratio field after the error",
+    async () => {
+      const actual = await request(addFieldErrorPath);
+      const ratioInput = /<input\b[^>]*\bname="ratio"[^>]*>/.exec(actual.body)?.[0] ?? "";
+      // Count attributes in tags only: in dev the page inlines Tailwind CSS with [aria-invalid="true"] selectors.
+      const marked = actual.body.match(/<[a-z][^>]*\baria-invalid="true"/g)?.length ?? 0;
+      const tied = ratioInput.includes('aria-describedby="add-error"') && actual.body.includes('id="add-error"');
+      return ratioInput.includes('aria-invalid="true"') && marked === 1 && tied ? actual : { ...actual, status: 0 };
+    },
+    { status: 200, bodyIncludes: 'id="add-error"' },
+  ],
+  [
     // Adding with the checkbox replaces the current best (the second one) and shows the same notice as the list.
     "account A adds a third substitute marked as best",
     () =>
@@ -289,6 +333,25 @@ const steps = [
     {
       status: 302,
       location: `/ingredients/new?${new URLSearchParams({ error: `Zamiennik „${substituteMarker.toUpperCase()}”` })}`,
+    },
+  ],
+  [
+    // The same duplicate: the conflict is about the substitute field, not the whole form.
+    "add form duplicate error names the substitute field",
+    () =>
+      request("/api/ingredients", {
+        method: "POST",
+        form: {
+          ingredient: `smoke-ingredient-${runId}`,
+          category_id: categoryId,
+          substitute: substituteMarker.toUpperCase(),
+          ratio: "2:1",
+        },
+      }),
+    {
+      status: 302,
+      location: `/ingredients/new?${new URLSearchParams({ error: `Zamiennik „${substituteMarker.toUpperCase()}”` })}`,
+      locationIncludes: "error_field=substitute",
     },
   ],
   [
@@ -458,6 +521,23 @@ const steps = [
     { status: 302, location: "/ingredients/edit-substitute?", locationIncludes: "error=Podaj+proporcj" },
   ],
   [
+    // Same empty ratio: error_field names the field, right after the error (the last of the echo).
+    "edit form validation error names the ratio field",
+    () =>
+      request("/api/substitutes/update", {
+        method: "POST",
+        form: editForm(thirdSubstituteId, { name: editedSubstitute, ratio: "", notes: "" }),
+      }),
+    {
+      status: 302,
+      location: "/ingredients/edit-substitute?",
+      locationIncludes: `${new URLSearchParams([
+        ["error", "Podaj proporcję."],
+        ["error_field", "ratio"],
+      ])}`,
+    },
+  ],
+  [
     // Another substitute's name in a different case: the unique (pair, name_key) constraint rejects the rename.
     "account A cannot rename a substitute to a name already in the pair",
     () =>
@@ -471,6 +551,20 @@ const steps = [
       location: "/ingredients/edit-substitute?",
       locationIncludes: `${new URLSearchParams({ error: `Zamiennik „${secondSubstitute.toUpperCase()}”` })}`,
     },
+  ],
+  [
+    // The same duplicate: the conflict is about the name field, not the whole form.
+    "edit form duplicate error names the name field",
+    async () => {
+      const actual = await request("/api/substitutes/update", {
+        method: "POST",
+        form: editForm(thirdSubstituteId, { name: secondSubstitute.toUpperCase(), ratio: "4:1" }),
+      });
+      const error = new URLSearchParams(actual.location.split("?")[1] ?? "").get("error") ?? "";
+      // Fail the step unless it is the conflict message (not a validation error on the name).
+      return error.startsWith(`Zamiennik „${secondSubstitute.toUpperCase()}”`) ? actual : { ...actual, status: 0 };
+    },
+    { status: 302, location: "/ingredients/edit-substitute?", locationIncludes: "error_field=name" },
   ],
   [
     // Back to the search context: ingredient, q and match in listRedirect order, the empty category left out.
@@ -577,6 +671,17 @@ const steps = [
       return actual;
     },
     { status: 302, location: "/ingredients?ingredient=" },
+  ],
+  [
+    // B's own ingredient proves the list renders (not an empty pass); A's name must not leak to B (RLS).
+    // The closing quote is required: A's ingredient name is a prefix of B's.
+    "add form suggests only account B's own ingredients",
+    () => request("/ingredients/new", { cookies: jarB }),
+    {
+      status: 200,
+      bodyIncludes: `value="smoke-ingredient-${runId}-b"`,
+      bodyExcludes: `value="smoke-ingredient-${runId}"`,
+    },
   ],
   [
     // From B's own list: A's substitute is "not found" for B, and the error still names its id in error_for.

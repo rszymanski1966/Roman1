@@ -10,6 +10,11 @@ import type {
   SubstituteListItem,
   UpdateSubstituteInput,
 } from "@/types";
+import { normalizeName, toNameKey } from "@/lib/entry-fields";
+
+// The name rule lives in the import-free entry-fields module, which the add form's client script also imports;
+// re-exported here so the API routes keep importing it from the service.
+export { normalizeName, toNameKey };
 
 // Callers must pass a client already checked for null (see src/lib/supabase.ts).
 // Errors are returned, not thrown; `error` is a short, user-safe message (no SQL details).
@@ -25,21 +30,11 @@ function fail<T>(error: string = GENERIC_ERROR): ServiceResult<T> {
   return { data: null, error };
 }
 
-/** Trim and collapse internal whitespace. */
-export function normalizeName(value: string): string {
-  return value.trim().replace(/\s+/g, " ");
-}
-
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Format check before using a value as a uuid filter (otherwise Postgres fails with 22P02). */
 export function isUuid(value: string): boolean {
   return UUID_RE.test(value);
-}
-
-/** Case-insensitive comparison key for an already-normalized name. */
-export function toNameKey(normalizedName: string): string {
-  return normalizedName.toLocaleLowerCase("pl");
 }
 
 /** Cookie that remembers the last chosen MatchMode on the ingredients page. */
@@ -91,8 +86,9 @@ export async function listIngredients(client: SupabaseClient): Promise<ServiceRe
   return ok(data as IngredientListItem[]);
 }
 
-// Add and edit report a duplicate substitute name with the same text.
-function duplicateSubstituteMessage(name: string): string {
+// Add and edit report a duplicate substitute name with the same text. Exported so the endpoints can tell this
+// error (about the name field) from the generic one by comparing result.error with it.
+export function duplicateSubstituteMessage(name: string): string {
   return `Zamiennik „${name}” jest już zapisany dla tego składnika w tej kategorii.`;
 }
 
