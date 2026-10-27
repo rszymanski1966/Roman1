@@ -15,6 +15,7 @@ import IngredientsHeader from "@/components/ingredients/IngredientsHeader.astro"
 import IngredientRenameForm from "@/components/ingredients/IngredientRenameForm.astro";
 import LookupForms from "@/components/ingredients/LookupForms.astro";
 import SubstituteCard from "@/components/ingredients/SubstituteCard.astro";
+import SubstituteDeleteConfirm from "@/components/ingredients/SubstituteDeleteConfirm.astro";
 import SubstituteCreateForm from "@/components/ingredients/SubstituteCreateForm.astro";
 import SubstituteEditForm from "@/components/ingredients/SubstituteEditForm.astro";
 import { type ListView, listRedirect } from "@/lib/list-view";
@@ -120,6 +121,15 @@ const fixtureRatioError = "Podaj proporcję.";
 // Error with echo: another ingredient's name typed in, rejected with the service's duplicate message.
 const fixtureRenameEcho = "Mąka ziemniaczana";
 const fixtureRenameError = `Składnik „${fixtureRenameEcho}” jest już zapisany.`;
+// The delete confirmation page (/ingredients/delete-substitute): a regular and the best substitute (fixtureEdit),
+// opened from the same category view.
+const fixtureDeleteRegular: SubstituteForEdit = {
+  ...fixtureRegular,
+  ingredientId: fixtureIngredient.id,
+  ingredientName: fixtureIngredient.name,
+  categoryName: fixtureCategories[0].name,
+};
+const fixtureDeleteError = "Nie udało się wykonać operacji na bazie danych.";
 // Same text-link classes as src/pages/ingredients/index.astro (the matches list lives in the page).
 const textLinkClass = cn(buttonVariants({ variant: "link" }), focusRing, "h-auto p-0 whitespace-normal");
 const viewFrameClass = "bg-kitchen rounded-2xl p-4";
@@ -156,6 +166,46 @@ const stateMatrix = [
     state: "empty",
     view: "4 puste stany: brak składników, stan początkowy, brak dopasowań, brak zamienników.",
     here: "Ramka „Puste stany” niżej.",
+  },
+  {
+    state: "loading",
+    view: "N/A: SSR, widok bez <script>, nic nie dociąga się po renderze.",
+    here: "Brak (nic do pokazania).",
+  },
+];
+
+// The 7-state matrix of the delete confirmation views, rendered like the ones above. Shared by
+// /ingredients/delete-substitute and (phase 4) /ingredients/delete-ingredient.
+const deleteStateMatrix = [
+  {
+    state: "default",
+    view: "Treść potwierdzenia i formularz na tokenach motywu kitchen: „Usuń zamiennik” (destructive) i „Anuluj” (outline).",
+    here: "Stany „Zwykły zamiennik” i „Najlepszy zamiennik” w sekcji „Widok /ingredients/delete-substitute”.",
+  },
+  {
+    state: "hover",
+    view: "„Usuń zamiennik”: tło destructive/90; „Anuluj”: tło accent; link „Usuń” w karcie: tekst nadal w tokenie destructive, tło accent.",
+    here: "Najedź kursorem na przyciski w sekcjach „Przyciski” i „Widok /ingredients/delete-substitute”.",
+  },
+  {
+    state: "focus-visible",
+    view: "Pierścień ring-3 z tokenu ring przy pełnym kryciu (przyciski i linki, focusRing).",
+    here: "Tab po stronie albo wiersz „Focus-visible (wymuszony do zrzutu)” w sekcji „Widok /ingredients”.",
+  },
+  {
+    state: "disabled",
+    view: "N/A: widok nie ma kontrolek, które bywają nieaktywne; usunięcie to pełne przeładowanie strony. Wariant destructive ma styl disabled jak pozostałe.",
+    here: "Disabled destructive w sekcji „Przyciski”.",
+  },
+  {
+    state: "error",
+    view: "Błąd usuwania: Alert destructive nad formularzem; formularz zostaje, można ponowić.",
+    here: "Stan „Błąd usuwania” w sekcji „Widok /ingredients/delete-substitute”.",
+  },
+  {
+    state: "empty",
+    view: "Nie znaleziono zamiennika (nieznane, cudze lub niepoprawne id): EmptyState z „Wróć do listy”, bez formularza i bez Alertu.",
+    here: "Stan „Nie znaleziono zamiennika” w sekcji „Widok /ingredients/delete-substitute”.",
   },
   {
     state: "loading",
@@ -357,6 +407,17 @@ const addStateMatrix = [
             <button type="button" disabled class:list={cn(buttonVariants({ variant: "outline" }), focusRing)}>
               Disabled outline
             </button>
+            <button type="button" disabled class:list={cn(buttonVariants({ variant: "destructive" }), focusRing)}>
+              Disabled destructive
+            </button>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="button" class:list={cn(buttonVariants({ variant: "destructive" }), focusRing)}>
+              Usuń zamiennik (destructive)
+            </button>
+            <button type="button" class:list={cn(buttonVariants({ variant: "destructive", size: "sm" }), focusRing)}>
+              Usuń (destructive sm)
+            </button>
           </div>
           <div class="max-w-xs">
             <button type="button" class:list={cn(buttonVariants(), focusRing, "w-full")}>
@@ -425,7 +486,7 @@ const addStateMatrix = [
         </div>
 
         <p class:list={stateClass}>
-          Nagłówek składnika z linkiem „Zmień nazwę”, karta zwykła i karta najlepszego (z linkiem „Edytuj”)
+          Nagłówek składnika z linkiem „Zmień nazwę”, karta zwykła i karta najlepszego (z linkami „Edytuj” i „Usuń”)
         </p>
         <div class:list={viewFrameClass}>
           <Card class:list={viewCardClass}>
@@ -724,6 +785,50 @@ const addStateMatrix = [
       </section>
 
       <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Widok /ingredients/delete-substitute</h2>
+        <p class:list={stateClass}>
+          Potwierdzenie usunięcia z <code>SubstituteDeleteConfirm</code> na fixturach (bez bazy). Usunięcie prowadzi do
+          prawdziwego endpointu.
+        </p>
+
+        <p class:list={stateClass}>Zwykły zamiennik</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Usuń zamiennik</h3>
+            <SubstituteDeleteConfirm substitute={fixtureDeleteRegular} view={fixtureEditView} />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Najlepszy zamiennik (dodatkowe ostrzeżenie o braku najlepszego)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Usuń zamiennik</h3>
+            <SubstituteDeleteConfirm substitute={fixtureEdit} view={fixtureEditView} />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Błąd usuwania</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Usuń zamiennik</h3>
+            <SubstituteDeleteConfirm
+              substitute={fixtureDeleteRegular}
+              view={fixtureEditView}
+              error={fixtureDeleteError}
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Nie znaleziono zamiennika (nieznane, cudze lub niepoprawne id)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Usuń zamiennik</h3>
+            <SubstituteDeleteConfirm substitute={null} view={fixtureEditView} />
+          </Card>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
         <h2 class:list={headingClass}>Widok /ingredients/edit-ingredient</h2>
         <p class:list={stateClass}>
           Formularz zmiany nazwy z <code>IngredientRenameForm</code> na fixturach (bez bazy). Zapis prowadzi do
@@ -821,6 +926,37 @@ const addStateMatrix = [
             </thead>
             <tbody>
               {addStateMatrix.map((row) => (
+                <tr>
+                  <th scope="row" class:list={cn(matrixCellClass, "font-medium")}>
+                    {row.state}
+                  </th>
+                  <td class:list={matrixCellClass}>{row.view}</td>
+                  <td class:list={cn(matrixCellClass, "text-muted-foreground")}>{row.here}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Macierz 7 stanów widoków potwierdzenia usunięcia</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr class="text-muted-foreground">
+                <th scope="col" class:list={matrixCellClass}>
+                  Stan
+                </th>
+                <th scope="col" class:list={matrixCellClass}>
+                  W widoku
+                </th>
+                <th scope="col" class:list={matrixCellClass}>
+                  Gdzie na tej stronie
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {deleteStateMatrix.map((row) => (
                 <tr>
                   <th scope="row" class:list={cn(matrixCellClass, "font-medium")}>
                     {row.state}

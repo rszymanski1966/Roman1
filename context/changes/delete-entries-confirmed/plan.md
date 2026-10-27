@@ -502,31 +502,31 @@ Usunięcie to jeden DELETE po kluczu głównym. Kaskada idzie po istniejących i
 
 #### Automated
 
-- [x] 2.1 Lint przechodzi: `npm run lint`
-- [x] 2.2 Grep po `src/` nie znajduje porównań `=== duplicateSubstituteMessage(`
-- [x] 2.3 Smoke przechodzi bez zmian w krokach, w tym kroki duplikatu przy dodawaniu i edycji (`error_field`): `BASE_URL=http://localhost:4321 npm run smoke`
-- [x] 2.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
+- [x] 2.1 Lint przechodzi: `npm run lint` — 4044061
+- [x] 2.2 Grep po `src/` nie znajduje porównań `=== duplicateSubstituteMessage(` — 4044061
+- [x] 2.3 Smoke przechodzi bez zmian w krokach, w tym kroki duplikatu przy dodawaniu i edycji (`error_field`): `BASE_URL=http://localhost:4321 npm run smoke` — 4044061
+- [x] 2.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check` — 4044061
 
 #### Manual
 
-- [x] 2.5 Przegląd: każde `fail(...)` z tekstem duplikatu albo „Nie znaleziono …” ma odpowiedni kod, a żaden konsument `ServiceResult` nie porównuje już `result.error` z tekstem
+- [x] 2.5 Przegląd: każde `fail(...)` z tekstem duplikatu albo „Nie znaleziono …” ma odpowiedni kod, a żaden konsument `ServiceResult` nie porównuje już `result.error` z tekstem — 4044061
 
 ### Phase 3: Usuwanie zamiennika end-to-end
 
 #### Automated
 
-- [ ] 3.1 Lint przechodzi: `npm run lint`
-- [ ] 3.2 Skan literałów UI przechodzi z nową stroną w `GUARDED`: `npm run lint:ui`
-- [ ] 3.3 Smoke przechodzi z nowymi krokami fazy 3 i bez zmian w istniejących krokach: `BASE_URL=http://localhost:4321 npm run smoke`
-- [ ] 3.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
-- [ ] 3.5 Testy bazy dalej przechodzą: `npx supabase test db`
+- [x] 3.1 Lint przechodzi: `npm run lint`
+- [x] 3.2 Skan literałów UI przechodzi z nową stroną w `GUARDED`: `npm run lint:ui`
+- [x] 3.3 Smoke przechodzi z nowymi krokami fazy 3 i bez zmian w istniejących krokach: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 3.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
+- [x] 3.5 Testy bazy dalej przechodzą: `npx supabase test db`
 
 #### Manual
 
-- [ ] 3.6 Każdy nowy krok smoke fazy 3 został raz celowo zepsuty (np. zmieniony oczekiwany komunikat) i wtedy zawiódł
-- [ ] 3.7 W przeglądarce: „Usuń” z widoku bez kategorii, z kategorią i z wyników wyszukiwania prowadzi na potwierdzenie, a „Anuluj” i usunięcie wracają do tego samego widoku
-- [ ] 3.8 Usunięcie najlepszego zamiennika: potwierdzenie mówi o utracie najlepszego, a po usunięciu kategoria nie ma znaczka „Najlepszy”
-- [ ] 3.9 Kitchen-sink: przycisk `destructive` ma kontrast tekstu ≥ 4.5:1 i widoczny focus (pełny ring) w motywie jasnym i ciemnym (ciemny przez klasę `dark` na `<html>` w devtools, bo nic jej nie włącza; kontrast można też policzyć z tokenów: `oklch(0.985 0 0)` na `oklch(0.505 0.213 27.518)` i `oklch(0.205 0 0)` na `oklch(0.704 0.191 22.216)`); karta z trzema przyciskami zawija się bez poziomego scrolla przy 360 px
+- [x] 3.6 Każdy nowy krok smoke fazy 3 został raz celowo zepsuty (np. zmieniony oczekiwany komunikat) i wtedy zawiódł
+- [x] 3.7 W przeglądarce: „Usuń” z widoku bez kategorii, z kategorią i z wyników wyszukiwania prowadzi na potwierdzenie, a „Anuluj” i usunięcie wracają do tego samego widoku
+- [x] 3.8 Usunięcie najlepszego zamiennika: potwierdzenie mówi o utracie najlepszego, a po usunięciu kategoria nie ma znaczka „Najlepszy”
+- [x] 3.9 Kitchen-sink: przycisk `destructive` ma kontrast tekstu ≥ 4.5:1 i widoczny focus (pełny ring) w motywie jasnym i ciemnym (ciemny przez klasę `dark` na `<html>` w devtools, bo nic jej nie włącza; kontrast można też policzyć z tokenów: `oklch(0.985 0 0)` na `oklch(0.505 0.213 27.518)` i `oklch(0.205 0 0)` na `oklch(0.704 0.191 22.216)`); karta z trzema przyciskami zawija się bez poziomego scrolla przy 360 px
 
 ### Phase 4: Usuwanie składnika end-to-end
 

@@ -1,0 +1,66 @@
+---
+import EmptyState from "@/components/ingredients/EmptyState.astro";
+import Alert from "@/components/ui/Alert.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { focusRing } from "@/components/ui/focus";
+import { type ListView, listRedirect } from "@/lib/list-view";
+import { cn } from "@/lib/utils";
+import type { SubstituteForEdit } from "@/types";
+
+// The confirmation of /ingredients/delete-substitute (POST /api/substitutes/delete), or its not-found state.
+// smoke.mjs relies on this markup: the substitute name in the text, action="/api/substitutes/delete" on the form,
+// and "Nie znaleziono zamiennika" in the not-found state (which has no form).
+interface Props {
+  // null = unknown, foreign or malformed id: the not-found state with a link to the list, no form and no error.
+  substitute: SubstituteForEdit | null;
+  // The list view to return to (hidden fields and the cancel link); null = the bare list.
+  view: ListView | null;
+  // Error of the last delete attempt, shown above the form.
+  error?: string | null;
+}
+
+const { substitute, view, error = null } = Astro.props;
+const listHref = listRedirect(view);
+const summary = substitute
+  ? `Usuniesz zamiennik „${substitute.name}” składnika „${substitute.ingredientName}” w kategorii „${substitute.categoryName}”.`
+  : "";
+---
+
+{substitute === null ? (
+  <EmptyState href={listHref} label="Wróć do listy">
+    <p>Nie znaleziono zamiennika.</p>
+  </EmptyState>
+) : (
+  <div class="space-y-6">
+    {error && (
+      <Alert role="alert" variant="destructive">
+        {error}
+      </Alert>
+    )}
+
+    <div class="space-y-2 text-sm text-foreground">
+      <p>{summary}</p>
+      {substitute.is_best && (
+        <p>To najlepszy zamiennik w tej kategorii. Po usunięciu kategoria zostanie bez najlepszego.</p>
+      )}
+      <p class="font-medium">Tej operacji nie można cofnąć.</p>
+    </div>
+
+    <form method="POST" action="/api/substitutes/delete" class="space-y-4">
+      <input type="hidden" name="substitute_id" value={substitute.id} />
+      <input type="hidden" name="ingredient" value={view?.ingredient ?? ""} />
+      <input type="hidden" name="category" value={view?.category ?? ""} />
+      <input type="hidden" name="q" value={view?.q ?? ""} />
+      <input type="hidden" name="match" value={view?.match ?? ""} />
+
+      <div class="flex flex-wrap items-center gap-3 pt-2">
+        <button type="submit" class:list={cn(buttonVariants({ variant: "destructive" }), focusRing)}>
+          Usuń zamiennik
+        </button>
+        <a href={listHref} class:list={cn(buttonVariants({ variant: "outline" }), focusRing)}>
+          Anuluj
+        </a>
+      </div>
+    </form>
+  </div>
+)}

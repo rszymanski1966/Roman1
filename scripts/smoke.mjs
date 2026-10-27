@@ -76,6 +76,12 @@ function editForm(substituteId, values, path = listPath) {
   return { substitute_id: substituteId, ingredient, category, ...values };
 }
 
+// Form fields for /api/substitutes/delete: the same list context as bestForm.
+function deleteSubstituteForm(substituteId, path = listPath) {
+  const { ingredient, category } = bestForm(substituteId, "", path);
+  return { substitute_id: substituteId, ingredient, category };
+}
+
 // Form fields for /api/ingredients/rename: the new name plus the list context of the ingredient's own view
 // (all categories); `context` adds or overrides q and match.
 function renameForm(ingredientId, name, context = {}) {
@@ -708,6 +714,27 @@ const steps = [
     { status: 200, bodyIncludes: 'role="alert"', bodyExcludes: "data-substitute-error" },
   ],
   [
+    // RLS hides A's row from B: the confirmation page shows the not-found state, without a form.
+    "account B delete page for account A's substitute shows not found",
+    () => request(`/ingredients/delete-substitute?substitute=${firstSubstituteId}`, { cookies: jarB }),
+    {
+      status: 200,
+      bodyIncludes: "Nie znaleziono zamiennika.",
+      bodyExcludes: "/api/substitutes/delete",
+    },
+  ],
+  [
+    // RLS hides A's row from B, so the delete removes no row: back to B's list with "not found", no error_for.
+    "account B cannot delete account A's substitute",
+    () =>
+      request("/api/substitutes/delete", {
+        method: "POST",
+        cookies: jarB,
+        form: deleteSubstituteForm(firstSubstituteId, listPathB),
+      }),
+    () => ({ status: 302, location: listPathB, locationIncludes: "error=Nie+znaleziono+zamiennika." }),
+  ],
+  [
     "account B sees empty state on account A's URL",
     () => request(listPath, { cookies: jarB }),
     { status: 200, bodyIncludes: "Brak zamienników", bodyExcludes: substituteMarker },
@@ -719,6 +746,34 @@ const steps = [
     "account B search does not find account A's ingredient",
     () => request(`/ingredients?q=${searchFragment}`, { cookies: jarB }),
     () => ({ status: 200, bodyIncludes: "Nie znaleziono składnika", bodyExcludes: searchIngredientId }),
+  ],
+  [
+    "account A delete page shows the substitute and the delete form",
+    () => {
+      const view = new URLSearchParams(listPath.split("?")[1] ?? "");
+      return request(`/ingredients/delete-substitute?substitute=${secondSubstituteId}&${view}`);
+    },
+    { status: 200, bodyIncludes: secondSubstitute },
+  ],
+  [
+    "account A delete page posts to the delete endpoint",
+    () => request(`/ingredients/delete-substitute?substitute=${secondSubstituteId}`),
+    { status: 200, bodyIncludes: 'action="/api/substitutes/delete"' },
+  ],
+  [
+    "account A deletes the second substitute",
+    () => request("/api/substitutes/delete", { method: "POST", form: deleteSubstituteForm(secondSubstituteId) }),
+    () => ({ status: 302, location: listPath, locationIncludes: "notice=Usuni%C4%99to+zamiennik" }),
+  ],
+  [
+    "account A list no longer shows the deleted substitute",
+    () => request(listPath),
+    () => ({ status: 200, bodyIncludes: `>${substituteMarker}<`, bodyExcludes: `>${secondSubstitute}<` }),
+  ],
+  [
+    "account A cannot delete the same substitute twice",
+    () => request("/api/substitutes/delete", { method: "POST", form: deleteSubstituteForm(secondSubstituteId) }),
+    () => ({ status: 302, location: listPath, locationIncludes: "error=Nie+znaleziono+zamiennika." }),
   ],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],

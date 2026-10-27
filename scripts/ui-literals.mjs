@@ -13,6 +13,7 @@ const GUARDED = [
   "src/pages/ingredients/new.astro",
   "src/pages/ingredients/edit-substitute.astro",
   "src/pages/ingredients/edit-ingredient.astro",
+  "src/pages/ingredients/delete-substitute.astro",
   "src/components/ingredients/*.astro",
   "src/components/ui/Input.astro",
   "src/components/ui/Textarea.astro",

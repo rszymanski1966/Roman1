@@ -7,11 +7,11 @@ import { focusRing } from "@/components/ui/focus";
 import { cn } from "@/lib/utils";
 import type { MatchMode, SubstituteListItem } from "@/types";
 
-// One substitute card (a list item) with the mark-as-best form and the edit link.
+// One substitute card (a list item) with the mark-as-best form, the edit link and the delete link.
 // smoke.mjs relies on this markup: the name alone in its element (>name<), followed in the HTML by
 // the hidden name="substitute_id" field, the data-best-badge attribute on the badge, and data-substitute-error
-// on the card's error. The edit link keeps that intact: it never renders the name as text (only in aria-label)
-// and carries no name="substitute_id" field. The root id (substitute-<id>) is the anchor of
+// on the card's error. The edit and delete links keep that intact: they never render the name as text (only in
+// aria-label) and carry no name="substitute_id" field. The root id (substitute-<id>) is the anchor of
 // /api/substitutes/best error redirects.
 interface Props {
   substitute: SubstituteListItem;
@@ -43,6 +43,8 @@ for (const [name, value] of editValues) {
   if (value) editParams.set(name, value);
 }
 const editHref = `/ingredients/edit-substitute?${editParams.toString()}`;
+// The delete confirmation page takes the same view context.
+const deleteHref = `/ingredients/delete-substitute?${editParams.toString()}`;
 ---
 
 {/* scroll-mt keeps the anchored card off the very edge of the viewport. */}
@@ -86,6 +88,18 @@ const editHref = `/ingredients/edit-substitute?${editParams.toString()}`;
         aria-label={`Edytuj: ${substitute.name}`}
       >
         Edytuj
+      </a>
+      {/* The destructive text colour must override the outline variant's hover text, so the classes are merged with cn(). */}
+      <a
+        href={deleteHref}
+        class:list={cn(
+          buttonVariants({ variant: "outline", size: "sm" }),
+          focusRing,
+          "text-destructive hover:text-destructive",
+        )}
+        aria-label={`Usuń: ${substitute.name}`}
+      >
+        Usuń
       </a>
     </div>
     {error && (
