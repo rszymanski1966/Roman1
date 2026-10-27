@@ -9,13 +9,7 @@ import {
   charLength,
   truncate,
 } from "@/lib/entry-fields";
-import {
-  addSubstitute,
-  bestSwapNotice,
-  duplicateSubstituteMessage,
-  isUuid,
-  normalizeName,
-} from "@/lib/services/substitutes";
+import { addSubstitute, bestSwapNotice, isUuid, normalizeName } from "@/lib/services/substitutes";
 
 const FORM_PAGE = "/ingredients/new";
 
@@ -114,7 +108,7 @@ export const POST: APIRoute = async (context) => {
   });
   if (result.error !== null) {
     // A duplicate name is about the substitute field; any other database error is about the whole form.
-    const errorField = result.error === duplicateSubstituteMessage(substitute) ? "substitute" : undefined;
+    const errorField = result.code === "duplicate" ? "substitute" : undefined;
     return context.redirect(errorRedirect(result.error, values, errorField));
   }
 

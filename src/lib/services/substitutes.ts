@@ -18,7 +18,10 @@ export { normalizeName, toNameKey };
 
 // Callers must pass a client already checked for null (see src/lib/supabase.ts).
 // Errors are returned, not thrown; `error` is a short, user-safe message (no SQL details).
-export type ServiceResult<T> = { data: T; error: null } | { data: null; error: string };
+// `code` names the kinds of error a caller reacts to (which field a duplicate is about, where "not found" returns);
+// the text is only for display and is never compared.
+export type ServiceErrorCode = "duplicate" | "not_found";
+export type ServiceResult<T> = { data: T; error: null } | { data: null; error: string; code?: ServiceErrorCode };
 
 const GENERIC_ERROR = "Nie udało się wykonać operacji na bazie danych.";
 
@@ -26,8 +29,8 @@ function ok<T>(data: T): ServiceResult<T> {
   return { data, error: null };
 }
 
-function fail<T>(error: string = GENERIC_ERROR): ServiceResult<T> {
-  return { data: null, error };
+function fail<T>(error: string = GENERIC_ERROR, code?: ServiceErrorCode): ServiceResult<T> {
+  return code ? { data: null, error, code } : { data: null, error };
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -86,9 +89,9 @@ export async function listIngredients(client: SupabaseClient): Promise<ServiceRe
   return ok(data as IngredientListItem[]);
 }
 
-// Add and edit report a duplicate substitute name with the same text. Exported so the endpoints can tell this
-// error (about the name field) from the generic one by comparing result.error with it.
-export function duplicateSubstituteMessage(name: string): string {
+// Add and edit report a duplicate substitute name with the same text and the "duplicate" code (the endpoints
+// read the code, not the text).
+function duplicateSubstituteMessage(name: string): string {
   return `Zamiennik „${name}” jest już zapisany dla tego składnika w tej kategorii.`;
 }
 
@@ -157,7 +160,7 @@ export async function addSubstitute(
     .single<{ id: string }>();
   if (substituteInsert.error) {
     // 23505 = unique_violation on (ingredient_category_id, name_key): the same name is already saved for this pair.
-    if (substituteInsert.error.code === "23505") return fail(duplicateSubstituteMessage(substituteName));
+    if (substituteInsert.error.code === "23505") return fail(duplicateSubstituteMessage(substituteName), "duplicate");
     return fail();
   }
 
@@ -261,7 +264,7 @@ export async function setBestSubstitute(
   const data = result.data as { substitute_name: string; replaced_name: string | null }[] | null;
   if (error) {
     // P0002 = raised by the function when the substitute is missing or hidden by RLS (another account's row).
-    if (error.code === "P0002") return fail("Nie znaleziono zamiennika.");
+    if (error.code === "P0002") return fail("Nie znaleziono zamiennika.", "not_found");
     // 23505 = partial unique index (one best per pair): a concurrent change, e.g. from another tab.
     if (error.code === "23505") {
       return fail("Najlepszy zamiennik właśnie się zmienił. Odśwież listę i spróbuj ponownie.");
@@ -276,6 +279,14 @@ export async function setBestSubstitute(
 /** List notice after the best mark moved from `replacedName` to `substituteName` (list button or add form). */
 export function bestSwapNotice(replacedName: string, substituteName: string): string {
   return `Najlepszy zamiennik zmieniony: ${replacedName} → ${substituteName}.`;
+}
+
+/** "1 zamiennik", "2 zamienniki", "5 zamienników": the Polish plural of a substitute count. */
+export function substituteCount(n: number): string {
+  if (n === 1) return `${n} zamiennik`;
+  const lastTwo = n % 100;
+  const last = n % 10;
+  return last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14) ? `${n} zamienniki` : `${n} zamienników`;
 }
 
 // Row shape of the embedded select in getSubstituteForEdit (no generated DB types, so it is asserted).
@@ -354,10 +365,10 @@ export async function updateSubstitute(
     .maybeSingle<{ name: string }>();
   if (error) {
     // 23505 = unique_violation on (ingredient_category_id, name_key): the same name is already saved for this pair.
-    if (error.code === "23505") return fail(duplicateSubstituteMessage(name));
+    if (error.code === "23505") return fail(duplicateSubstituteMessage(name), "duplicate");
     return fail();
   }
-  if (!data) return fail("Nie znaleziono zamiennika.");
+  if (!data) return fail("Nie znaleziono zamiennika.", "not_found");
   return ok({ name: data.name });
 }
 
@@ -400,9 +411,71 @@ export async function renameIngredient(
     .maybeSingle<{ name: string }>();
   if (error) {
     // 23505 = unique_violation on (user_id, name_key): another ingredient of this account has the name.
-    if (error.code === "23505") return fail(`Składnik „${normalized}” jest już zapisany.`);
+    if (error.code === "23505") return fail(`Składnik „${normalized}” jest już zapisany.`, "duplicate");
     return fail();
   }
-  if (!data) return fail("Nie znaleziono składnika.");
+  if (!data) return fail("Nie znaleziono składnika.", "not_found");
   return ok({ name: data.name });
+}
+
+/**
+ * Deletes a substitute by id. A missing, foreign (RLS hides it) or already deleted substitute deletes no row
+ * and is "not found", never a success. The caller checks the id with isUuid first.
+ */
+export async function deleteSubstitute(
+  client: SupabaseClient,
+  substituteId: string,
+): Promise<ServiceResult<{ name: string }>> {
+  const { data, error } = await client
+    .from("substitutes")
+    .delete()
+    .eq("id", substituteId)
+    .select("name")
+    .maybeSingle<{ name: string }>();
+  if (error) return fail();
+  if (!data) return fail("Nie znaleziono zamiennika.", "not_found");
+  return ok({ name: data.name });
+}
+
+/**
+ * Deletes an ingredient by id. The foreign keys cascade: its category pairs and all their substitutes, in every
+ * category, go with it. A missing, foreign (RLS hides it) or already deleted ingredient deletes no row and is
+ * "not found", never a success. The caller checks the id with isUuid first.
+ */
+export async function deleteIngredient(
+  client: SupabaseClient,
+  ingredientId: string,
+): Promise<ServiceResult<{ name: string }>> {
+  const { data, error } = await client
+    .from("ingredients")
+    .delete()
+    .eq("id", ingredientId)
+    .select("name")
+    .maybeSingle<{ name: string }>();
+  if (error) return fail();
+  if (!data) return fail("Nie znaleziono składnika.", "not_found");
+  return ok({ name: data.name });
+}
+
+/**
+ * Whether the ingredient search still finds something: the same rules as the /ingredients page (name match in
+ * the mode, and with a category only ingredients that have a substitute in it).
+ */
+export async function hasSearchHits(
+  client: SupabaseClient,
+  query: string,
+  mode: MatchMode,
+  categoryId: string | null,
+): Promise<ServiceResult<boolean>> {
+  const [ingredientsResult, filterResult] = await Promise.all([
+    listIngredients(client),
+    categoryId !== null ? listIngredientIdsWithSubstitutes(client, categoryId) : null,
+  ]);
+  if (ingredientsResult.error !== null) return fail();
+  if (filterResult !== null && filterResult.error !== null) return fail();
+  const allowedIds = filterResult?.data ?? null;
+  const hits = matchIngredients(ingredientsResult.data, query, mode).filter(
+    (ingredient) => allowedIds === null || allowedIds.has(ingredient.id),
+  );
+  return ok(hits.length > 0);
 }

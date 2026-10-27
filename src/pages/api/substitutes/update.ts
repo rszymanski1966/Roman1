@@ -10,7 +10,7 @@ import {
   truncate,
 } from "@/lib/entry-fields";
 import { type ListView, listRedirect, parseListView, setListViewParams } from "@/lib/list-view";
-import { duplicateSubstituteMessage, isUuid, normalizeName, updateSubstitute } from "@/lib/services/substitutes";
+import { isUuid, normalizeName, updateSubstitute } from "@/lib/services/substitutes";
 
 const FORM_PAGE = "/ingredients/edit-substitute";
 const INVALID_FORM = "Nieprawidłowe dane formularza.";
@@ -96,7 +96,7 @@ export const POST: APIRoute = async (context) => {
   const result = await updateSubstitute(supabase, substituteId, { name, ratio, notes: notes || null });
   if (result.error !== null) {
     // A duplicate name is about the name field; "not found" and database errors are about the whole form.
-    return back(result.error, result.error === duplicateSubstituteMessage(name) ? "name" : undefined);
+    return back(result.error, result.code === "duplicate" ? "name" : undefined);
   }
 
   return context.redirect(listRedirect(view, { notice: "Zapisano zmiany." }));

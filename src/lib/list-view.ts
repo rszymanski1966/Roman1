@@ -63,3 +63,18 @@ export function listRedirect(view: ListView | null, extra: Record<string, string
   const path = query ? `${LIST_PAGE}?${query}` : LIST_PAGE;
   return errorFor ? `${path}#substitute-${errorFor}` : path;
 }
+
+// Back to the search the user came from, for when the ingredient view no longer exists (the ingredient was deleted).
+// With a query: the results (q, match, category); without one the bare list, where category means nothing.
+// Never sets `ingredient`. Extra params (notice / error) come last; empty values are left out.
+export function searchRedirect(view: ListView | null, extra: Record<string, string> = {}): string {
+  const params = new URLSearchParams();
+  if (view?.q) {
+    params.set("q", view.q);
+    if (view.match) params.set("match", view.match);
+    if (view.category) params.set("category", view.category);
+  }
+  for (const [name, value] of Object.entries(extra)) params.set(name, value);
+  const query = params.toString();
+  return query ? `${LIST_PAGE}?${query}` : LIST_PAGE;
+}

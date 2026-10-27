@@ -502,14 +502,14 @@ Usunięcie to jeden DELETE po kluczu głównym. Kaskada idzie po istniejących i
 
 #### Automated
 
-- [ ] 2.1 Lint przechodzi: `npm run lint`
-- [ ] 2.2 Grep po `src/` nie znajduje porównań `=== duplicateSubstituteMessage(`
-- [ ] 2.3 Smoke przechodzi bez zmian w krokach, w tym kroki duplikatu przy dodawaniu i edycji (`error_field`): `BASE_URL=http://localhost:4321 npm run smoke`
-- [ ] 2.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
+- [x] 2.1 Lint przechodzi: `npm run lint`
+- [x] 2.2 Grep po `src/` nie znajduje porównań `=== duplicateSubstituteMessage(`
+- [x] 2.3 Smoke przechodzi bez zmian w krokach, w tym kroki duplikatu przy dodawaniu i edycji (`error_field`): `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 2.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
 
 #### Manual
 
-- [ ] 2.5 Przegląd: każde `fail(...)` z tekstem duplikatu albo „Nie znaleziono …” ma odpowiedni kod, a żaden konsument `ServiceResult` nie porównuje już `result.error` z tekstem
+- [x] 2.5 Przegląd: każde `fail(...)` z tekstem duplikatu albo „Nie znaleziono …” ma odpowiedni kod, a żaden konsument `ServiceResult` nie porównuje już `result.error` z tekstem
 
 ### Phase 3: Usuwanie zamiennika end-to-end
 
