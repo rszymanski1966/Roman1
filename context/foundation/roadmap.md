@@ -3,7 +3,7 @@ project: "Kuchenny Zamiennik"
 version: 1
 status: draft
 created: 2026-10-02
-updated: 2026-10-22
+updated: 2026-10-26
 prd_version: 1
 main_goal: low-complexity
 top_blocker: time
@@ -45,7 +45,7 @@ Osoba gotująca w domu (na start autor projektu) nie ma wygodnego miejsca ze spr
 | S-02 | best-substitute-highlight  | oznaczyć zamiennik jako „najlepszy" w kategorii i zobaczyć go wyróżnionego na liście           | S-01          | FR-003, US-01            | done |
 | S-03 | ingredient-name-search     | wyszukać zamienniki po nazwie składnika, opcjonalnie zawężając do kategorii                    | S-01          | FR-004, FR-005, US-01    | done |
 | S-04 | edit-entries               | edytować własny wpis składnika lub zamiennika                                                  | S-01          | FR-006                   | done |
-| S-05 | delete-entries-confirmed   | usunąć własny wpis składnika lub zamiennika (kaskadowo, po potwierdzeniu)                      | S-01          | FR-007                   | ready |
+| S-05 | delete-entries-confirmed   | usunąć własny wpis składnika lub zamiennika (kaskadowo, po potwierdzeniu)                      | S-01          | FR-007                   | in-progress |
 
 ## Baseline
 
@@ -124,7 +124,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Utrata ręcznie zbudowanej bazy przy braku potwierdzenia — potwierdzenie jest częścią wymagania, nie ozdobą. Po dodaniu polityki DELETE na `substitutes` funkcja `set_best_substitute` (z S-02) musi czytać wiersz przez `select … for update`, inaczej usunięcie w trakcie zamiany da fałszywy sukces (review S-02, F1).
-- **Status:** ready
+- **Status:** in-progress
 
 ## Backlog Handoff
 
@@ -134,7 +134,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 | S-02       | best-substitute-highlight | Oznaczanie i wyróżnianie najlepszego zamiennika                        | —                     | Done (archived 2026-10-12)             |
 | S-03       | ingredient-name-search    | Wyszukiwanie zamienników po nazwie składnika (+ filtr kategorii)       | —                     | Done (archived 2026-10-16)             |
 | S-04       | edit-entries              | Edycja składników i zamienników                                        | —                     | Done (archived 2026-10-22)             |
-| S-05       | delete-entries-confirmed  | Usuwanie składników i zamienników z potwierdzeniem                     | yes                   | Run `/10x-plan delete-entries-confirmed` |
+| S-05       | delete-entries-confirmed  | Usuwanie składników i zamienników z potwierdzeniem                     | yes                   | Planned |
 
 ## Open Roadmap Questions
 

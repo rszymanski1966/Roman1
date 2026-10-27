@@ -488,15 +488,15 @@ Usunięcie to jeden DELETE po kluczu głównym. Kaskada idzie po istniejących i
 
 #### Automated
 
-- [x] 1.1 Migracja wchodzi na lokalną bazę: `npx supabase migration up`
-- [x] 1.2 Testy bazy przechodzą, w tym nowy `delete-entries.sql` i niezmienione `best-substitute.sql`, `edit-entries.sql`, `rls-isolation.sql`: `npx supabase test db`
-- [x] 1.3 W lokalnej bazie `pg_policies` pokazuje `ingredients_delete_own` i `substitutes_delete_own` (cmd `DELETE`), a `has_table_privilege('anon', …, 'DELETE')` daje `f` na 4 tabelach `public`
+- [x] 1.1 Migracja wchodzi na lokalną bazę: `npx supabase migration up` — 13378a1
+- [x] 1.2 Testy bazy przechodzą, w tym nowy `delete-entries.sql` i niezmienione `best-substitute.sql`, `edit-entries.sql`, `rls-isolation.sql`: `npx supabase test db` — 13378a1
+- [x] 1.3 W lokalnej bazie `pg_policies` pokazuje `ingredients_delete_own` i `substitutes_delete_own` (cmd `DELETE`), a `has_table_privilege('anon', …, 'DELETE')` daje `f` na 4 tabelach `public` — 13378a1
 
 #### Manual
 
-- [x] 1.4 Ręczny test blokady, scenariusz (a) po migracji: usunięcie czeka na commit oznaczenia
-- [x] 1.5 Ręczny test blokady, scenariusz (b): przed migracją oznaczenie po zatwierdzonym usunięciu zwraca fałszywy sukces, po migracji kończy się `P0002`, a poprzedni najlepszy zachowuje wyróżnienie
-- [x] 1.6 Przegląd migracji: nagłówek wyjaśnia, czego nie robimy, i zawiera rollback
+- [x] 1.4 Ręczny test blokady, scenariusz (a) po migracji: usunięcie czeka na commit oznaczenia — 13378a1
+- [x] 1.5 Ręczny test blokady, scenariusz (b): przed migracją oznaczenie po zatwierdzonym usunięciu zwraca fałszywy sukces, po migracji kończy się `P0002`, a poprzedni najlepszy zachowuje wyróżnienie — 13378a1
+- [x] 1.6 Przegląd migracji: nagłówek wyjaśnia, czego nie robimy, i zawiera rollback — 13378a1
 
 ### Phase 2: Serwis i kontrakt błędów
 
