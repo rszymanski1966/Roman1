@@ -1,0 +1,83 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import IngredientDeleteConfirm from "@/components/ingredients/IngredientDeleteConfirm.astro";
+import IngredientsFooter from "@/components/ingredients/IngredientsFooter.astro";
+import Alert from "@/components/ui/Alert.astro";
+import Card from "@/components/ui/Card.astro";
+import { type ListView, parseListView } from "@/lib/list-view";
+import { createClient } from "@/lib/supabase";
+import {
+  getIngredient,
+  isUuid,
+  listIngredientSubstitutes,
+  normalizeQuery,
+  parseMatchMode,
+} from "@/lib/services/substitutes";
+import type { IngredientListItem, SubstituteGroup } from "@/types";
+
+// GET ?ingredient_id=<id>[&ingredient=<id>&category=<id>&q=<text>&match=<mode>][&error=<msg>]: the "Usuń składnik"
+// link by the ingredient heading carries the list view; /api/ingredients/delete sends a failed delete back here
+// with the error.
+const params = Astro.url.searchParams;
+const ingredientParam = params.get("ingredient_id")?.trim() ?? "";
+const error = params.get("error");
+// The list view the heading was on; null when the URL has none or a malformed one (bookmark, cut-off link).
+const urlView = parseListView(params);
+
+let ingredient: IngredientListItem | null = null;
+// The substitutes the delete takes with it, in every category (the view's category does not narrow them).
+let groups: SubstituteGroup[] = [];
+let loadError: string | null = null;
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+if (!supabase) {
+  loadError = "Baza danych nie jest skonfigurowana.";
+} else if (isUuid(ingredientParam)) {
+  // RLS limits this to the current user's ingredients: a foreign id is simply not found (null).
+  const result = await getIngredient(supabase, ingredientParam);
+  if (result.error !== null) {
+    loadError = result.error;
+  } else {
+    ingredient = result.data;
+  }
+  if (ingredient) {
+    // Without the full reach there is no informed confirmation, so a failed read hides the form too.
+    const groupsResult = await listIngredientSubstitutes(supabase, ingredient.id, null);
+    if (groupsResult.error !== null) {
+      loadError = groupsResult.error;
+    } else {
+      groups = groupsResult.data;
+    }
+  }
+}
+// A malformed id never reaches the database (Postgres would fail with 22P02): not found, like a foreign one.
+
+// Without a valid view in the URL the delete would be rejected (parseListView), so the form falls back to the
+// ingredient's own view across all categories.
+const view: ListView | null =
+  urlView ??
+  (ingredient && {
+    ingredient: ingredient.id,
+    category: "",
+    q: normalizeQuery(params.get("q")),
+    match: parseMatchMode(params.get("match")) ?? "",
+  });
+---
+
+<Layout title="Usuń składnik">
+  <div class="bg-kitchen flex min-h-screen items-center justify-center p-4">
+    <Card class="w-full max-w-md rounded-2xl border-border bg-card/70 p-8 text-foreground shadow-sm backdrop-blur-xl">
+      <h1 class="mb-6 text-2xl font-bold text-foreground">Usuń składnik</h1>
+
+      {loadError ? (
+        <Alert role="alert" variant="destructive">
+          {loadError}
+        </Alert>
+      ) : (
+        <IngredientDeleteConfirm ingredient={ingredient} groups={groups} view={view} error={error} />
+      )}
+
+      <IngredientsFooter />
+    </Card>
+  </div>
+</Layout>

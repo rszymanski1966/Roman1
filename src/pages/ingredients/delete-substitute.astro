@@ -1,0 +1,65 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import IngredientsFooter from "@/components/ingredients/IngredientsFooter.astro";
+import SubstituteDeleteConfirm from "@/components/ingredients/SubstituteDeleteConfirm.astro";
+import Alert from "@/components/ui/Alert.astro";
+import Card from "@/components/ui/Card.astro";
+import { type ListView, parseListView } from "@/lib/list-view";
+import { createClient } from "@/lib/supabase";
+import { getSubstituteForEdit, isUuid, normalizeQuery, parseMatchMode } from "@/lib/services/substitutes";
+import type { SubstituteForEdit } from "@/types";
+
+// GET ?substitute=<id>[&ingredient=<id>&category=<id>&q=<text>&match=<mode>][&error=<msg>]: the card's "Usuń" link
+// carries the list view; /api/substitutes/delete sends a failed delete back here with the error.
+const params = Astro.url.searchParams;
+const substituteParam = params.get("substitute")?.trim() ?? "";
+const error = params.get("error");
+// The list view the card was on; null when the URL has none or a malformed one (bookmark, cut-off link).
+const urlView = parseListView(params);
+
+let substitute: SubstituteForEdit | null = null;
+let loadError: string | null = null;
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+if (!supabase) {
+  loadError = "Baza danych nie jest skonfigurowana.";
+} else if (isUuid(substituteParam)) {
+  // RLS limits this to the current user's substitutes: a foreign id is simply not found (null).
+  const result = await getSubstituteForEdit(supabase, substituteParam);
+  if (result.error !== null) {
+    loadError = result.error;
+  } else {
+    substitute = result.data;
+  }
+}
+// A malformed id never reaches the database (Postgres would fail with 22P02): not found, like a foreign one.
+
+// Without a valid view in the URL the delete would be rejected (parseListView), so the form falls back to the
+// substitute's own ingredient across all categories.
+const view: ListView | null =
+  urlView ??
+  (substitute && {
+    ingredient: substitute.ingredientId,
+    category: "",
+    q: normalizeQuery(params.get("q")),
+    match: parseMatchMode(params.get("match")) ?? "",
+  });
+---
+
+<Layout title="Usuń zamiennik">
+  <div class="bg-kitchen flex min-h-screen items-center justify-center p-4">
+    <Card class="w-full max-w-md rounded-2xl border-border bg-card/70 p-8 text-foreground shadow-sm backdrop-blur-xl">
+      <h1 class="mb-6 text-2xl font-bold text-foreground">Usuń zamiennik</h1>
+
+      {loadError ? (
+        <Alert role="alert" variant="destructive">
+          {loadError}
+        </Alert>
+      ) : (
+        <SubstituteDeleteConfirm substitute={substitute} view={view} error={error} />
+      )}
+
+      <IngredientsFooter />
+    </Card>
+  </div>
+</Layout>

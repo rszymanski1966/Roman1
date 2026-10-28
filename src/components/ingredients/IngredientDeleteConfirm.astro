@@ -1,0 +1,79 @@
+---
+import EmptyState from "@/components/ingredients/EmptyState.astro";
+import Alert from "@/components/ui/Alert.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { focusRing } from "@/components/ui/focus";
+import { type ListView, listRedirect } from "@/lib/list-view";
+import { substituteCount } from "@/lib/services/substitutes";
+import { cn } from "@/lib/utils";
+import type { IngredientListItem, SubstituteGroup } from "@/types";
+
+// The confirmation of /ingredients/delete-ingredient (POST /api/ingredients/delete), or its not-found state.
+// smoke.mjs relies on this markup: the substitute count ("2 zamienniki") and the category names in the text,
+// action="/api/ingredients/delete" on the form, and "Nie znaleziono składnika" in the not-found state (no form).
+interface Props {
+  // null = unknown, foreign or malformed id: the not-found state with a link to the list, no form and no error.
+  ingredient: IngredientListItem | null;
+  // The substitutes the delete takes with it, in every category (never narrowed to the view's category).
+  groups: SubstituteGroup[];
+  // The list view to return to (hidden fields and the cancel link); null = the bare list.
+  view: ListView | null;
+  // Error of the last delete attempt, shown above the form.
+  error?: string | null;
+}
+
+const { ingredient, groups, view, error = null } = Astro.props;
+const listHref = listRedirect(view);
+const total = groups.reduce((sum, group) => sum + group.substitutes.length, 0);
+---
+
+{ingredient === null ? (
+  <EmptyState href={listHref} label="Wróć do listy">
+    <p>Nie znaleziono składnika.</p>
+  </EmptyState>
+) : (
+  <div class="space-y-6">
+    {error && (
+      <Alert role="alert" variant="destructive">
+        {error}
+      </Alert>
+    )}
+
+    <div class="space-y-2 text-sm text-foreground">
+      {total > 0 ? (
+        <>
+          <p>
+            Usuniesz składnik „{ingredient.name}” i {substituteCount(total)} we wszystkich kategoriach:
+          </p>
+          <ul class="list-disc space-y-1 pl-5">
+            {groups.map((group) => (
+              <li>
+                {group.category.name}: {group.substitutes.length}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p>Usuniesz składnik „{ingredient.name}”. Nie ma zapisanych zamienników.</p>
+      )}
+      <p class="font-medium">Tej operacji nie można cofnąć.</p>
+    </div>
+
+    <form method="POST" action="/api/ingredients/delete" class="space-y-4">
+      <input type="hidden" name="ingredient_id" value={ingredient.id} />
+      <input type="hidden" name="ingredient" value={view?.ingredient ?? ""} />
+      <input type="hidden" name="category" value={view?.category ?? ""} />
+      <input type="hidden" name="q" value={view?.q ?? ""} />
+      <input type="hidden" name="match" value={view?.match ?? ""} />
+
+      <div class="flex flex-wrap items-center gap-3 pt-2">
+        <button type="submit" class:list={cn(buttonVariants({ variant: "destructive" }), focusRing)}>
+          Usuń składnik
+        </button>
+        <a href={listHref} class:list={cn(buttonVariants({ variant: "outline" }), focusRing)}>
+          Anuluj
+        </a>
+      </div>
+    </form>
+  </div>
+)}

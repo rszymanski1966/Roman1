@@ -16,6 +16,7 @@
  *   --ring                                       orange-600
  *   --success                                    green-800
  *   --destructive                                red-700
+ *   --destructive-foreground                     white (dark: the --primary-foreground step)
  *   --kitchen-from / -via / -to                  hex kept from the previous bg-kitchen gradient
  * --background, --card, --popover and the *-foreground
  * whites stay at the shadcn defaults.
@@ -37,6 +38,7 @@
   --accent: oklch(0.98 0.016 73.684);
   --accent-foreground: oklch(0.553 0.195 38.402);
   --destructive: oklch(0.505 0.213 27.518);
+  --destructive-foreground: oklch(0.985 0 0);
   --success: oklch(0.448 0.119 151.328);
   --success-foreground: oklch(0.985 0 0);
   --border: oklch(0.923 0.003 48.717);
@@ -76,6 +78,7 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.205 0 0);
   /* Placeholder (about green-500), not tuned: dark mode is deferred. */
   --success: oklch(0.723 0.219 149.579);
   --success-foreground: oklch(0.205 0 0);
@@ -118,6 +121,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
