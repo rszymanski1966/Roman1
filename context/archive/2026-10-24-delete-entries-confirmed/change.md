@@ -1,10 +1,10 @@
 ---
 change_id: delete-entries-confirmed
 title: Usuwanie wpisów z potwierdzeniem
-status: impl_reviewed
+status: archived
 created: 2026-10-24
 updated: 2026-10-28
-archived_at: null
+archived_at: 2026-10-28T15:11:06Z
 ---
 
 ## Notes
