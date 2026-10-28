@@ -9,7 +9,7 @@ main_goal: low-complexity
 top_blocker: time
 milestone_id: mvp-substitute-database
 milestone_seq: 1
-milestone_status: open
+milestone_status: done
 ---
 
 # Roadmap: Kuchenny Zamiennik
@@ -20,7 +20,7 @@ milestone_status: open
 
 ## Milestone
 
-**M-01: MVP bazy zamienników** — Status: open
+**M-01: MVP bazy zamienników** — Status: done
 
 - **Intent:** Zalogowany użytkownik buduje własną, prywatną bazę składników i zamienników (z proporcją i uwagami), wyszukuje w niej i widzi wyróżniony najlepszy zamiennik — z pełną izolacją danych między użytkownikami.
 - **Source materials:** `context/foundation/prd.md` (v1)
@@ -152,7 +152,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 
 ## Milestone History
 
-(Pusta — pierwszy milestone.)
+- **M-01: MVP bazy zamienników** (`mvp-substitute-database`) — closed 2026-10-28. Zalogowany użytkownik buduje prywatną bazę składników i zamienników, wyszukuje w niej, wyróżnia najlepszy zamiennik, edytuje i usuwa wpisy (S-01..S-05, FR-001…FR-007).
 
 ## Done
 
