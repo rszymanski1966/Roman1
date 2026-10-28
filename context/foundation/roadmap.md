@@ -139,7 +139,7 @@ Brak. Jedyna brakująca warstwa wymagana przez PRD (dane + RLS) wchodzi do S-01,
 ## Open Roadmap Questions
 
 1. **Czy i jak uwzględnić kontekst przygotowania (np. pieczenie vs smażenie) przy wskazywaniu „najlepszego" zamiennika w danej kategorii?** — Owner: user. Block: — (po MVP, bez sztywnej daty; nie blokuje żadnej historyjki).
-2. **Jaka jest finalna, predefiniowana lista kategorii dań?** — Owner: user. Block: — (S-01 może ruszyć z przykładami z PRD i zmienić listę później).
+2. **Jaka jest finalna, predefiniowana lista kategorii dań?** — Owner: user. Block: —. Rozstrzygnięte 2026-10-28: Ciasta i desery, Dania tradycyjne, Wegetariańskie i wegańskie (migracja `20261028120000_rename_categories.sql`, PR #27; zmiana nazw bez zmiany zakresu).
 
 ## Parked
 
