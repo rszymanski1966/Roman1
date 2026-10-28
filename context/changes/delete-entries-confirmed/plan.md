@@ -480,6 +480,14 @@ Usunięcie to jeden DELETE po kluczu głównym. Kaskada idzie po istniejących i
 - Wzorzec testu pgTAP: `supabase/tests/edit-entries.sql`
 - FR-007: `context/foundation/prd.md:100-105`
 
+## Addendum (impl-review 2026-10-28, F5)
+
+Drobne dodatki spoza planu, zaakceptowane w review:
+
+- `duplicateSubstituteMessage` w `src/lib/services/substitutes.ts` nie jest już eksportowany (brak innych konsumentów po przejściu na `code: "duplicate"`).
+- Dodatkowy krok smoke: konto B widzi „Nie znaleziono składnika.” na stronie potwierdzenia, bez formularza (`scripts/smoke.mjs`).
+- Linki „Zmień nazwę” i „Usuń składnik” w osobnym wrapperze `flex flex-wrap` w `src/pages/ingredients/index.astro` (również w kitchen-sink).
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.

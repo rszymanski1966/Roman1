@@ -889,7 +889,7 @@ const steps = [
     () => ({ status: 302, location: "/ingredients?notice=Usuni%C4%99to+sk%C5%82adnik", locationExcludes: "q=" }),
   ],
   [
-    "account A has no ingredients left",
+    "account A sees the delete notice on the bare list",
     () => request(afterMainDeletePath),
     { status: 200, bodyIncludes: "Usunięto składnik" },
   ],
