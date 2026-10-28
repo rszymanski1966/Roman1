@@ -12,6 +12,7 @@ import { focusRing } from "@/components/ui/focus";
 import EmptyState from "@/components/ingredients/EmptyState.astro";
 import IngredientsFooter from "@/components/ingredients/IngredientsFooter.astro";
 import IngredientsHeader from "@/components/ingredients/IngredientsHeader.astro";
+import IngredientDeleteConfirm from "@/components/ingredients/IngredientDeleteConfirm.astro";
 import IngredientRenameForm from "@/components/ingredients/IngredientRenameForm.astro";
 import LookupForms from "@/components/ingredients/LookupForms.astro";
 import SubstituteCard from "@/components/ingredients/SubstituteCard.astro";
@@ -20,7 +21,7 @@ import SubstituteCreateForm from "@/components/ingredients/SubstituteCreateForm.
 import SubstituteEditForm from "@/components/ingredients/SubstituteEditForm.astro";
 import { type ListView, listRedirect } from "@/lib/list-view";
 import { cn } from "@/lib/utils";
-import type { Category, IngredientListItem, SubstituteForEdit, SubstituteListItem } from "@/types";
+import type { Category, IngredientListItem, SubstituteForEdit, SubstituteGroup, SubstituteListItem } from "@/types";
 
 // Dev-only visual gate for the ui/ components; no database access.
 // The rule crashes on a top-level return in Astro frontmatter (no enclosing function), so it is off for this file.
@@ -130,6 +131,12 @@ const fixtureDeleteRegular: SubstituteForEdit = {
   categoryName: fixtureCategories[0].name,
 };
 const fixtureDeleteError = "Nie udało się wykonać operacji na bazie danych.";
+// The delete confirmation page (/ingredients/delete-ingredient): an ingredient with substitutes in two categories
+// (2 + 1), and the same one without any. The groups are never narrowed to the view's category.
+const fixtureDeleteGroups: SubstituteGroup[] = [
+  { category: fixtureCategories[0], substitutes: [fixtureBest, fixtureRegular] },
+  { category: fixtureCategories[1], substitutes: [fixtureErrorCard] },
+];
 // Same text-link classes as src/pages/ingredients/index.astro (the matches list lives in the page).
 const textLinkClass = cn(buttonVariants({ variant: "link" }), focusRing, "h-auto p-0 whitespace-normal");
 const viewFrameClass = "bg-kitchen rounded-2xl p-4";
@@ -175,17 +182,17 @@ const stateMatrix = [
 ];
 
 // The 7-state matrix of the delete confirmation views, rendered like the ones above. Shared by
-// /ingredients/delete-substitute and (phase 4) /ingredients/delete-ingredient.
+// /ingredients/delete-substitute and /ingredients/delete-ingredient.
 const deleteStateMatrix = [
   {
     state: "default",
-    view: "Treść potwierdzenia i formularz na tokenach motywu kitchen: „Usuń zamiennik” (destructive) i „Anuluj” (outline).",
-    here: "Stany „Zwykły zamiennik” i „Najlepszy zamiennik” w sekcji „Widok /ingredients/delete-substitute”.",
+    view: "Treść potwierdzenia i formularz na tokenach motywu kitchen: „Usuń zamiennik” / „Usuń składnik” (destructive) i „Anuluj” (outline). Składnik: licznik zamienników per kategoria.",
+    here: "Stany „Zwykły zamiennik” i „Najlepszy zamiennik” w sekcji „Widok /ingredients/delete-substitute”; „W dwóch kategoriach” i „Bez zamienników” w sekcji „Widok /ingredients/delete-ingredient”.",
   },
   {
     state: "hover",
     view: "„Usuń zamiennik”: tło destructive/90; „Anuluj”: tło accent; link „Usuń” w karcie: tekst nadal w tokenie destructive, tło accent.",
-    here: "Najedź kursorem na przyciski w sekcjach „Przyciski” i „Widok /ingredients/delete-substitute”.",
+    here: "Najedź kursorem na przyciski w sekcjach „Przyciski”, „Widok /ingredients/delete-substitute” i „Widok /ingredients/delete-ingredient”.",
   },
   {
     state: "focus-visible",
@@ -200,12 +207,12 @@ const deleteStateMatrix = [
   {
     state: "error",
     view: "Błąd usuwania: Alert destructive nad formularzem; formularz zostaje, można ponowić.",
-    here: "Stan „Błąd usuwania” w sekcji „Widok /ingredients/delete-substitute”.",
+    here: "Stan „Błąd usuwania” w sekcjach „Widok /ingredients/delete-substitute” i „Widok /ingredients/delete-ingredient”.",
   },
   {
     state: "empty",
-    view: "Nie znaleziono zamiennika (nieznane, cudze lub niepoprawne id): EmptyState z „Wróć do listy”, bez formularza i bez Alertu.",
-    here: "Stan „Nie znaleziono zamiennika” w sekcji „Widok /ingredients/delete-substitute”.",
+    view: "Nie znaleziono zamiennika / składnika (nieznane, cudze lub niepoprawne id): EmptyState z „Wróć do listy”, bez formularza i bez Alertu.",
+    here: "Stany „Nie znaleziono zamiennika” i „Nie znaleziono składnika” w sekcjach „Widok /ingredients/delete-substitute” i „Widok /ingredients/delete-ingredient”.",
   },
   {
     state: "loading",
@@ -486,7 +493,8 @@ const addStateMatrix = [
         </div>
 
         <p class:list={stateClass}>
-          Nagłówek składnika z linkiem „Zmień nazwę”, karta zwykła i karta najlepszego (z linkami „Edytuj” i „Usuń”)
+          Nagłówek składnika z linkami „Zmień nazwę” i „Usuń składnik”, karta zwykła i karta najlepszego (z linkami
+          „Edytuj” i „Usuń”)
         </p>
         <div class:list={viewFrameClass}>
           <Card class:list={viewCardClass}>
@@ -494,9 +502,18 @@ const addStateMatrix = [
               {/* Same markup as the ingredient heading in src/pages/ingredients/index.astro. */}
               <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                 <h2 class:list={headingClass}>{fixtureIngredient.name}</h2>
-                <a href="#ks-view" class:list={textLinkClass} aria-label={`Zmień nazwę: ${fixtureIngredient.name}`}>
-                  Zmień nazwę
-                </a>
+                <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <a href="#ks-view" class:list={textLinkClass} aria-label={`Zmień nazwę: ${fixtureIngredient.name}`}>
+                    Zmień nazwę
+                  </a>
+                  <a
+                    href="#ks-view"
+                    class:list={cn(textLinkClass, "text-destructive")}
+                    aria-label={`Usuń składnik: ${fixtureIngredient.name}`}
+                  >
+                    Usuń składnik
+                  </a>
+                </div>
               </div>
               <section class="space-y-3">
                 <h3 class:list={headingClass}>{fixtureCategories[0].name}</h3>
@@ -824,6 +841,55 @@ const addStateMatrix = [
           <Card class:list={viewCardClass}>
             <h3 class:list={editTitleClass}>Usuń zamiennik</h3>
             <SubstituteDeleteConfirm substitute={null} view={fixtureEditView} />
+          </Card>
+        </div>
+      </section>
+
+      <section class:list={sectionClass}>
+        <h2 class:list={headingClass}>Widok /ingredients/delete-ingredient</h2>
+        <p class:list={stateClass}>
+          Potwierdzenie usunięcia z <code>IngredientDeleteConfirm</code> na fixturach (bez bazy). Usunięcie prowadzi do
+          prawdziwego endpointu.
+        </p>
+
+        <p class:list={stateClass}>W dwóch kategoriach (2 + 1): licznik per kategoria</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Usuń składnik</h3>
+            <IngredientDeleteConfirm
+              ingredient={fixtureIngredient}
+              groups={fixtureDeleteGroups}
+              view={fixtureEditView}
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Bez zamienników</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Usuń składnik</h3>
+            <IngredientDeleteConfirm ingredient={fixtureIngredient} groups={[]} view={fixtureEditView} />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Błąd usuwania</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Usuń składnik</h3>
+            <IngredientDeleteConfirm
+              ingredient={fixtureIngredient}
+              groups={fixtureDeleteGroups}
+              view={fixtureEditView}
+              error={fixtureDeleteError}
+            />
+          </Card>
+        </div>
+
+        <p class:list={stateClass}>Nie znaleziono składnika (nieznane, cudze lub niepoprawne id)</p>
+        <div class:list={viewFrameClass}>
+          <Card class:list={viewCardClass}>
+            <h3 class:list={editTitleClass}>Usuń składnik</h3>
+            <IngredientDeleteConfirm ingredient={null} groups={[]} view={fixtureEditView} />
           </Card>
         </div>
       </section>

@@ -37,6 +37,9 @@ const renamedIngredient = `smoke-renamed-search-${runId}`;
 // Values captured by earlier steps and used by later ones.
 let categoryId = "";
 let otherCategoryId = "";
+// Names of the two categories (from the add form's options), shown by the ingredient delete confirmation.
+let categoryName = "";
+let otherCategoryName = "";
 let listPath = "";
 // Account B's list with its own ingredient (the redirect after B adds it).
 let listPathB = "";
@@ -50,6 +53,11 @@ let secondSubstituteId = "";
 let thirdSubstituteId = "";
 let searchIngredientId = "";
 let foundSubstituteId = "";
+// Account A's main ingredient (smoke-ingredient-<runId>), taken from the ingredient param of listPath.
+let mainIngredientId = "";
+// Redirects after the ingredient deletes (search with hits left, and the bare list).
+let afterSearchDeletePath = "";
+let afterMainDeletePath = "";
 
 // The substitute id from the mark-as-best form of the card whose name is exactly `name` (the name renders as >name<).
 function substituteIdFor(body, name) {
@@ -80,6 +88,12 @@ function editForm(substituteId, values, path = listPath) {
 function deleteSubstituteForm(substituteId, path = listPath) {
   const { ingredient, category } = bestForm(substituteId, "", path);
   return { substitute_id: substituteId, ingredient, category };
+}
+
+// Form fields for /api/ingredients/delete: the ingredient id plus the list context of the ingredient's own view
+// (all categories); `context` adds or overrides q and match.
+function deleteIngredientForm(ingredientId, context = {}) {
+  return { ingredient_id: ingredientId, ingredient: ingredientId, category: "", ...context };
 }
 
 // Form fields for /api/ingredients/rename: the new name plus the list context of the ingredient's own view
@@ -162,6 +176,14 @@ const steps = [
       const ids = [...actual.body.matchAll(/<option value="([0-9a-f-]{36})"/gi)].map((match) => match[1]);
       categoryId = ids[0] ?? "";
       otherCategoryId = ids[1] ?? "";
+      // The option's text: everything between the end of its opening tag and the closing </option>.
+      const nameOf = (id) => {
+        const from = actual.body.indexOf(`<option value="${id}"`);
+        const open = actual.body.indexOf(">", from) + 1;
+        return from === -1 ? "" : actual.body.slice(open, actual.body.indexOf("</option>", open)).trim();
+      };
+      categoryName = nameOf(categoryId);
+      otherCategoryName = nameOf(otherCategoryId);
       // Fail the step without a second category: the category-filter search step needs one.
       return otherCategoryId ? actual : { ...actual, status: 0 };
     },
@@ -181,6 +203,7 @@ const steps = [
         },
       });
       listPath = actual.location;
+      mainIngredientId = new URLSearchParams(listPath.split("?")[1] ?? "").get("ingredient") ?? "";
       return actual;
     },
     { status: 302, location: "/ingredients?ingredient=" },
@@ -748,6 +771,28 @@ const steps = [
     () => ({ status: 200, bodyIncludes: "Nie znaleziono składnika", bodyExcludes: searchIngredientId }),
   ],
   [
+    // RLS hides A's ingredient from B: the confirmation page shows the not-found state, without a form.
+    "account B delete page for account A's ingredient shows not found",
+    () => request(`/ingredients/delete-ingredient?ingredient_id=${searchIngredientId}`, { cookies: jarB }),
+    { status: 200, bodyIncludes: "Nie znaleziono składnika.", bodyExcludes: "/api/ingredients/delete" },
+  ],
+  [
+    // RLS hides A's row from B, so the delete removes no row: back to the search with "not found", nothing changes.
+    "account B cannot delete account A's ingredient",
+    () =>
+      request("/api/ingredients/delete", {
+        method: "POST",
+        cookies: jarB,
+        form: deleteIngredientForm(searchIngredientId),
+      }),
+    { status: 302, location: "/ingredients?", locationIncludes: "error=Nie+znaleziono+sk%C5%82adnika." },
+  ],
+  [
+    "account A's ingredient survives account B's delete attempt",
+    () => request(`/ingredients?ingredient=${searchIngredientId}`),
+    { status: 200, bodyIncludes: foundSubstitute },
+  ],
+  [
     "account A delete page shows the substitute and the delete form",
     () => {
       const view = new URLSearchParams(listPath.split("?")[1] ?? "");
@@ -774,6 +819,84 @@ const steps = [
     "account A cannot delete the same substitute twice",
     () => request("/api/substitutes/delete", { method: "POST", form: deleteSubstituteForm(secondSubstituteId) }),
     () => ({ status: 302, location: listPath, locationIncludes: "error=Nie+znaleziono+zamiennika." }),
+  ],
+  [
+    // Two categories: the count covers both, and each category is named.
+    "account A ingredient delete page shows the cascade per category",
+    async () => {
+      const actual = await request(
+        `/ingredients/delete-ingredient?ingredient_id=${searchIngredientId}&ingredient=${searchIngredientId}&q=${searchFragment}`,
+      );
+      // Fail the step unless both category names are listed (they could not be parsed from the add form otherwise).
+      const named =
+        categoryName &&
+        otherCategoryName &&
+        actual.body.includes(`${categoryName}: 1`) &&
+        actual.body.includes(`${otherCategoryName}: 1`);
+      return named ? actual : { ...actual, status: 0 };
+    },
+    { status: 200, bodyIncludes: "2 zamienniki" },
+  ],
+  [
+    // The search (by runId) still finds A's main ingredient, so the redirect keeps it, without ingredient=.
+    "account A deletes the search ingredient from a search that still has hits",
+    async () => {
+      const actual = await request("/api/ingredients/delete", {
+        method: "POST",
+        form: deleteIngredientForm(searchIngredientId, { q: String(runId), match: "contains" }),
+      });
+      afterSearchDeletePath = actual.location;
+      return actual;
+    },
+    () => ({
+      status: 302,
+      location: `/ingredients?q=${runId}&match=contains&notice=Usuni%C4%99to+sk%C5%82adnik`,
+      locationExcludes: "ingredient=",
+    }),
+  ],
+  [
+    // One hit left (A's main ingredient): its view shows on the search URL, with the notice.
+    "account A lands on the one-hit search view with the notice",
+    () => request(afterSearchDeletePath),
+    () => ({
+      status: 200,
+      bodyIncludes: `>smoke-ingredient-${runId}<`,
+      bodyExcludes: "Nie znaleziono składnika",
+    }),
+  ],
+  [
+    "account A landing page shows the delete notice",
+    () => request(afterSearchDeletePath),
+    { status: 200, bodyIncludes: "Usunięto składnik" },
+  ],
+  [
+    // The cascade, seen by the substitute's id (not through the ingredient list).
+    "deleted ingredient's substitute is gone",
+    () => request(`/ingredients/delete-substitute?substitute=${foundSubstituteId}`),
+    { status: 200, bodyIncludes: "Nie znaleziono zamiennika" },
+  ],
+  [
+    // The search finds nothing any more (the main ingredient does not contain searchFragment): the bare list.
+    "account A deletes the main ingredient from a search without hits",
+    async () => {
+      const actual = await request("/api/ingredients/delete", {
+        method: "POST",
+        form: deleteIngredientForm(mainIngredientId, { q: searchFragment, match: "contains" }),
+      });
+      afterMainDeletePath = actual.location;
+      return actual;
+    },
+    () => ({ status: 302, location: "/ingredients?notice=Usuni%C4%99to+sk%C5%82adnik", locationExcludes: "q=" }),
+  ],
+  [
+    "account A has no ingredients left",
+    () => request(afterMainDeletePath),
+    { status: 200, bodyIncludes: "Usunięto składnik" },
+  ],
+  [
+    "account A empty state after the last ingredient is deleted",
+    () => request(afterMainDeletePath),
+    { status: 200, bodyIncludes: "Nie masz jeszcze żadnych składników" },
   ],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],

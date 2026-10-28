@@ -515,32 +515,32 @@ Usunięcie to jeden DELETE po kluczu głównym. Kaskada idzie po istniejących i
 
 #### Automated
 
-- [x] 3.1 Lint przechodzi: `npm run lint`
-- [x] 3.2 Skan literałów UI przechodzi z nową stroną w `GUARDED`: `npm run lint:ui`
-- [x] 3.3 Smoke przechodzi z nowymi krokami fazy 3 i bez zmian w istniejących krokach: `BASE_URL=http://localhost:4321 npm run smoke`
-- [x] 3.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
-- [x] 3.5 Testy bazy dalej przechodzą: `npx supabase test db`
+- [x] 3.1 Lint przechodzi: `npm run lint` — 693b2fe
+- [x] 3.2 Skan literałów UI przechodzi z nową stroną w `GUARDED`: `npm run lint:ui` — 693b2fe
+- [x] 3.3 Smoke przechodzi z nowymi krokami fazy 3 i bez zmian w istniejących krokach: `BASE_URL=http://localhost:4321 npm run smoke` — 693b2fe
+- [x] 3.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check` — 693b2fe
+- [x] 3.5 Testy bazy dalej przechodzą: `npx supabase test db` — 693b2fe
 
 #### Manual
 
-- [x] 3.6 Każdy nowy krok smoke fazy 3 został raz celowo zepsuty (np. zmieniony oczekiwany komunikat) i wtedy zawiódł
-- [x] 3.7 W przeglądarce: „Usuń” z widoku bez kategorii, z kategorią i z wyników wyszukiwania prowadzi na potwierdzenie, a „Anuluj” i usunięcie wracają do tego samego widoku
-- [x] 3.8 Usunięcie najlepszego zamiennika: potwierdzenie mówi o utracie najlepszego, a po usunięciu kategoria nie ma znaczka „Najlepszy”
-- [x] 3.9 Kitchen-sink: przycisk `destructive` ma kontrast tekstu ≥ 4.5:1 i widoczny focus (pełny ring) w motywie jasnym i ciemnym (ciemny przez klasę `dark` na `<html>` w devtools, bo nic jej nie włącza; kontrast można też policzyć z tokenów: `oklch(0.985 0 0)` na `oklch(0.505 0.213 27.518)` i `oklch(0.205 0 0)` na `oklch(0.704 0.191 22.216)`); karta z trzema przyciskami zawija się bez poziomego scrolla przy 360 px
+- [x] 3.6 Każdy nowy krok smoke fazy 3 został raz celowo zepsuty (np. zmieniony oczekiwany komunikat) i wtedy zawiódł — 693b2fe
+- [x] 3.7 W przeglądarce: „Usuń” z widoku bez kategorii, z kategorią i z wyników wyszukiwania prowadzi na potwierdzenie, a „Anuluj” i usunięcie wracają do tego samego widoku — 693b2fe
+- [x] 3.8 Usunięcie najlepszego zamiennika: potwierdzenie mówi o utracie najlepszego, a po usunięciu kategoria nie ma znaczka „Najlepszy” — 693b2fe
+- [x] 3.9 Kitchen-sink: przycisk `destructive` ma kontrast tekstu ≥ 4.5:1 i widoczny focus (pełny ring) w motywie jasnym i ciemnym (ciemny przez klasę `dark` na `<html>` w devtools, bo nic jej nie włącza; kontrast można też policzyć z tokenów: `oklch(0.985 0 0)` na `oklch(0.505 0.213 27.518)` i `oklch(0.205 0 0)` na `oklch(0.704 0.191 22.216)`); karta z trzema przyciskami zawija się bez poziomego scrolla przy 360 px — 693b2fe
 
 ### Phase 4: Usuwanie składnika end-to-end
 
 #### Automated
 
-- [ ] 4.1 Lint przechodzi: `npm run lint`
-- [ ] 4.2 Skan literałów UI przechodzi z obiema stronami w `GUARDED`: `npm run lint:ui`
-- [ ] 4.3 Smoke przechodzi z nowymi krokami fazy 4 i krokami fazy 3: `BASE_URL=http://localhost:4321 npm run smoke`
-- [ ] 4.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
-- [ ] 4.5 Build przechodzi przy zatrzymanym dev: `npm run build`
-- [ ] 4.6 Testy bazy dalej przechodzą: `npx supabase test db`
+- [x] 4.1 Lint przechodzi: `npm run lint`
+- [x] 4.2 Skan literałów UI przechodzi z obiema stronami w `GUARDED`: `npm run lint:ui`
+- [x] 4.3 Smoke przechodzi z nowymi krokami fazy 4 i krokami fazy 3: `BASE_URL=http://localhost:4321 npm run smoke`
+- [x] 4.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
+- [x] 4.5 Build przechodzi przy zatrzymanym dev: `npm run build`
+- [x] 4.6 Testy bazy dalej przechodzą: `npx supabase test db`
 
 #### Manual
 
-- [ ] 4.7 Każdy nowy krok smoke fazy 4 został raz celowo zepsuty i wtedy zawiódł
-- [ ] 4.8 W przeglądarce: „Usuń składnik” z widoku zawężonego do kategorii pokazuje licznik wszystkich kategorii; po usunięciu z wyników wyszukiwania, które dalej coś znajduje, powrót trafia do wyników, a po usunięciu jedynego trafienia albo z widoku bez `q` na gołą listę z komunikatem
-- [ ] 4.9 Kitchen-sink: oba widoki potwierdzenia we wszystkich stanach z matrycy, zrzut ekranu jasnego motywu bez poziomego scrolla przy 360 px
+- [x] 4.7 Każdy nowy krok smoke fazy 4 został raz celowo zepsuty i wtedy zawiódł
+- [x] 4.8 W przeglądarce: „Usuń składnik” z widoku zawężonego do kategorii pokazuje licznik wszystkich kategorii; po usunięciu z wyników wyszukiwania, które dalej coś znajduje, powrót trafia do wyników, a po usunięciu jedynego trafienia albo z widoku bez `q` na gołą listę z komunikatem
+- [x] 4.9 Kitchen-sink: oba widoki potwierdzenia we wszystkich stanach z matrycy, zrzut ekranu jasnego motywu bez poziomego scrolla przy 360 px
