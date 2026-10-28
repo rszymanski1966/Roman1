@@ -532,15 +532,15 @@ Usunięcie to jeden DELETE po kluczu głównym. Kaskada idzie po istniejących i
 
 #### Automated
 
-- [x] 4.1 Lint przechodzi: `npm run lint`
-- [x] 4.2 Skan literałów UI przechodzi z obiema stronami w `GUARDED`: `npm run lint:ui`
-- [x] 4.3 Smoke przechodzi z nowymi krokami fazy 4 i krokami fazy 3: `BASE_URL=http://localhost:4321 npm run smoke`
-- [x] 4.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check`
-- [x] 4.5 Build przechodzi przy zatrzymanym dev: `npm run build`
-- [x] 4.6 Testy bazy dalej przechodzą: `npx supabase test db`
+- [x] 4.1 Lint przechodzi: `npm run lint` — d6ca315
+- [x] 4.2 Skan literałów UI przechodzi z obiema stronami w `GUARDED`: `npm run lint:ui` — d6ca315
+- [x] 4.3 Smoke przechodzi z nowymi krokami fazy 4 i krokami fazy 3: `BASE_URL=http://localhost:4321 npm run smoke` — d6ca315
+- [x] 4.4 Typy przechodzą przy zatrzymanym dev, uruchomione po smoke: `npx astro check` — d6ca315
+- [x] 4.5 Build przechodzi przy zatrzymanym dev: `npm run build` — d6ca315
+- [x] 4.6 Testy bazy dalej przechodzą: `npx supabase test db` — d6ca315
 
 #### Manual
 
-- [x] 4.7 Każdy nowy krok smoke fazy 4 został raz celowo zepsuty i wtedy zawiódł
-- [x] 4.8 W przeglądarce: „Usuń składnik” z widoku zawężonego do kategorii pokazuje licznik wszystkich kategorii; po usunięciu z wyników wyszukiwania, które dalej coś znajduje, powrót trafia do wyników, a po usunięciu jedynego trafienia albo z widoku bez `q` na gołą listę z komunikatem
-- [x] 4.9 Kitchen-sink: oba widoki potwierdzenia we wszystkich stanach z matrycy, zrzut ekranu jasnego motywu bez poziomego scrolla przy 360 px
+- [x] 4.7 Każdy nowy krok smoke fazy 4 został raz celowo zepsuty i wtedy zawiódł — d6ca315
+- [x] 4.8 W przeglądarce: „Usuń składnik” z widoku zawężonego do kategorii pokazuje licznik wszystkich kategorii; po usunięciu z wyników wyszukiwania, które dalej coś znajduje, powrót trafia do wyników, a po usunięciu jedynego trafienia albo z widoku bez `q` na gołą listę z komunikatem — d6ca315
+- [x] 4.9 Kitchen-sink: oba widoki potwierdzenia we wszystkich stanach z matrycy, zrzut ekranu jasnego motywu bez poziomego scrolla przy 360 px — d6ca315
