@@ -362,15 +362,15 @@ Brak migracji schematu. Pierwszy sweep usunie zaległe konta `smoke-*` i ich dan
 
 #### Automated
 
-- [ ] 1.1 `npm test` przechodzi (testy wzorca i harnessu), a teardown raportuje 0 kont wzorca i identyczny snapshot
-- [ ] 1.2 `npm run test:sweep` kończy się sukcesem i wypisuje liczbę usuniętych kont
-- [ ] 1.3 `npm run lint` przechodzi (nowe pliki objęte typowanym lintem)
-- [ ] 1.4 `npx prettier --check vitest.config.ts tests` przechodzi
+- [x] 1.1 `npm test` przechodzi (testy wzorca i harnessu), a teardown raportuje 0 kont wzorca i identyczny snapshot
+- [x] 1.2 `npm run test:sweep` kończy się sukcesem i wypisuje liczbę usuniętych kont
+- [x] 1.3 `npm run lint` przechodzi (nowe pliki objęte typowanym lintem)
+- [x] 1.4 `npx prettier --check vitest.config.ts tests` przechodzi
 
 #### Manual
 
-- [ ] 1.5 Liczności danych dev w Studio identyczne przed i po `npm test`, konta `smoke-*` usunięte
-- [ ] 1.6 Przerwany przebieg zostawia konta `vitest-*`, które usuwa następny `npm test` lub `npm run test:sweep`
+- [x] 1.5 Liczności danych dev w Studio identyczne przed i po `npm test`, konta `smoke-*` usunięte
+- [x] 1.6 Przerwany przebieg zostawia konta `vitest-*`, które usuwa następny `npm test` lub `npm run test:sweep`
 
 ### Phase 2: Strażnik dostępu do bazy
 
