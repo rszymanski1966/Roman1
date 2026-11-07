@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:ui": "node scripts/ui-literals.mjs",
+    "lint:db-access": "node scripts/db-access.mjs",
     "format": "prettier --write .",
     "smoke": "node scripts/smoke.mjs",
     "test": "vitest run --project services",
