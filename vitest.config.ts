@@ -29,6 +29,9 @@ export default defineConfig({
           include: ["tests/http/**/*.test.ts"],
           // HTTP tests share one dev server: one file at a time.
           fileParallelism: false,
+          // Vitest sets BASE_URL to Vite's base ("/") in the workers, so the server URL travels under another name
+          // (read by tests/http/client.ts). Same variable and default as scripts/smoke.mjs.
+          env: { HTTP_TEST_BASE_URL: process.env.BASE_URL ?? "http://localhost:4321" },
         },
       },
     ],

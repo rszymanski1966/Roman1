@@ -388,27 +388,27 @@ Brak migracji schematu. Pierwszy sweep usunie zaległe konta `smoke-*` i ich dan
 
 #### Automated
 
-- [x] 3.1 `npm test` przechodzi (z `tests/services/delete.test.ts`), teardown harnessu czysty
-- [x] 3.2 `npx supabase test db` przechodzi (19 asercji w `delete-entries.sql`)
-- [x] 3.3 `npm run lint` przechodzi
+- [x] 3.1 `npm test` przechodzi (z `tests/services/delete.test.ts`), teardown harnessu czysty — 53a1f67
+- [x] 3.2 `npx supabase test db` przechodzi (19 asercji w `delete-entries.sql`) — 53a1f67
+- [x] 3.3 `npm run lint` przechodzi — 53a1f67
 
 #### Manual
 
-- [x] 3.4 Tymczasowa zmiana filtra w `deleteSubstitute` daje czerwony test „usuwa dokładnie jeden wiersz”; po cofnięciu zielony
+- [x] 3.4 Tymczasowa zmiana filtra w `deleteSubstitute` daje czerwony test „usuwa dokładnie jeden wiersz”; po cofnięciu zielony — 53a1f67
 
 ### Phase 4: Izolacja endpointów przez HTTP (#2)
 
 #### Automated
 
-- [ ] 4.1 `npm run test:http` przechodzi przy działającym `npm run dev`, teardown harnessu czysty
-- [ ] 4.2 `npx supabase test db` przechodzi
-- [ ] 4.3 `npm test` nadal przechodzi
-- [ ] 4.4 `npm run lint` przechodzi
+- [x] 4.1 `npm run test:http` przechodzi przy działającym `npm run dev`, teardown harnessu czysty
+- [x] 4.2 `npx supabase test db` przechodzi
+- [x] 4.3 `npm test` nadal przechodzi
+- [x] 4.4 `npm run lint` przechodzi
 
 #### Manual
 
-- [ ] 4.5 `npm run test:http` bez działającego dev kończy się czytelnym komunikatem o braku serwera
-- [ ] 4.6 Tymczasowe dopisanie nazwy składnika do komunikatu `NOT_FOUND` daje czerwony test izolacji; po cofnięciu zielony
+- [x] 4.5 `npm run test:http` bez działającego dev kończy się czytelnym komunikatem o braku serwera
+- [x] 4.6 Tymczasowe dopisanie nazwy składnika do komunikatu `NOT_FOUND` daje czerwony test izolacji; po cofnięciu zielony
 
 ### Phase 5: Cookbook i synchronizacja dokumentów
 
