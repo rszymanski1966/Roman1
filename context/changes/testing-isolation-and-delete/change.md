@@ -3,7 +3,7 @@ change_id: testing-isolation-and-delete
 title: Testy izolacji kont i usuwania (faza 1 planu testów)
 status: implementing
 created: 2026-11-04
-updated: 2026-11-06
+updated: 2026-11-08
 archived_at: null
 ---
 

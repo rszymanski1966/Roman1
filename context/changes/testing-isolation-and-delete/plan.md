@@ -376,25 +376,25 @@ Brak migracji schematu. Pierwszy sweep usunie zaległe konta `smoke-*` i ich dan
 
 #### Automated
 
-- [x] 2.1 `npm run lint:db-access` przechodzi na obecnym repo
-- [x] 2.2 `npm test` przechodzi (z testem strażnika)
-- [x] 2.3 `npm run lint` przechodzi
+- [x] 2.1 `npm run lint:db-access` przechodzi na obecnym repo — ac22b85
+- [x] 2.2 `npm test` przechodzi (z testem strażnika) — ac22b85
+- [x] 2.3 `npm run lint` przechodzi — ac22b85
 
 #### Manual
 
-- [x] 2.4 Tymczasowe `security definer` lub `SERVICE_ROLE_KEY` daje błąd z poprawnym `plik:linia`; po cofnięciu skrypt przechodzi
+- [x] 2.4 Tymczasowe `security definer` lub `SERVICE_ROLE_KEY` daje błąd z poprawnym `plik:linia`; po cofnięciu skrypt przechodzi — ac22b85
 
 ### Phase 3: Usuwanie na poziomie serwisów (#1)
 
 #### Automated
 
-- [ ] 3.1 `npm test` przechodzi (z `tests/services/delete.test.ts`), teardown harnessu czysty
-- [ ] 3.2 `npx supabase test db` przechodzi (19 asercji w `delete-entries.sql`)
-- [ ] 3.3 `npm run lint` przechodzi
+- [x] 3.1 `npm test` przechodzi (z `tests/services/delete.test.ts`), teardown harnessu czysty
+- [x] 3.2 `npx supabase test db` przechodzi (19 asercji w `delete-entries.sql`)
+- [x] 3.3 `npm run lint` przechodzi
 
 #### Manual
 
-- [ ] 3.4 Tymczasowa zmiana filtra w `deleteSubstitute` daje czerwony test „usuwa dokładnie jeden wiersz”; po cofnięciu zielony
+- [x] 3.4 Tymczasowa zmiana filtra w `deleteSubstitute` daje czerwony test „usuwa dokładnie jeden wiersz”; po cofnięciu zielony
 
 ### Phase 4: Izolacja endpointów przez HTTP (#2)
 

@@ -8,7 +8,7 @@ begin;
 
 create extension if not exists pgtap;
 
-select plan(18);
+select plan(19);
 
 -- ---------------------------------------------------------------------------
 -- Setup as postgres (bypasses RLS): user A with "Masło" in Ciasta (two
@@ -91,6 +91,12 @@ select is(
   (select count(*)::int from public.ingredient_categories where id = '20000000-0000-0000-0000-0000000000d1'),
   1,
   'The pair of the deleted substitute stays'
+);
+
+select is(
+  (select count(*)::int from public.ingredients where id = '10000000-0000-0000-0000-0000000000d1'),
+  1,
+  'The ingredient of the deleted substitute stays'
 );
 
 select is(
