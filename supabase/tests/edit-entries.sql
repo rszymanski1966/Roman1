@@ -7,7 +7,7 @@ begin;
 
 create extension if not exists pgtap;
 
-select plan(15);
+select plan(17);
 
 -- ---------------------------------------------------------------------------
 -- Setup as postgres (bypasses RLS): user A with "Masło" and "Cukier", "Masło"
@@ -133,6 +133,22 @@ select lives_ok(
   $$update public.substitutes set name = 'Przejęty'
     where id = '30000000-0000-0000-0000-0000000000e1'$$,
   'B''s update of A''s substitute runs without error'
+);
+
+-- The services map an empty returning (maybeSingle -> null) to "not found";
+-- that rests on RLS returning no row, not on an error.
+select is_empty(
+  $$update public.ingredients set name = 'Przejęte', name_key = 'przejęte'
+    where id = '10000000-0000-0000-0000-0000000000e1'
+    returning id$$,
+  'B''s update of A''s ingredient returns no row'
+);
+
+select is_empty(
+  $$update public.substitutes set name = 'Przejęty'
+    where id = '30000000-0000-0000-0000-0000000000e1'
+    returning id$$,
+  'B''s update of A''s substitute returns no row'
 );
 
 reset role;

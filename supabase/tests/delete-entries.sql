@@ -8,7 +8,7 @@ begin;
 
 create extension if not exists pgtap;
 
-select plan(18);
+select plan(21);
 
 -- ---------------------------------------------------------------------------
 -- Setup as postgres (bypasses RLS): user A with "Masło" in Ciasta (two
@@ -54,6 +54,20 @@ select lives_ok(
   'B''s delete of A''s ingredient runs without error'
 );
 
+-- The services map an empty returning (maybeSingle -> null) to "not found";
+-- that rests on RLS returning no row, not on an error.
+select is_empty(
+  $$delete from public.substitutes where id = '30000000-0000-0000-0000-0000000000d1'
+    returning id$$,
+  'B''s delete of A''s substitute returns no row'
+);
+
+select is_empty(
+  $$delete from public.ingredients where id = '10000000-0000-0000-0000-0000000000d1'
+    returning id$$,
+  'B''s delete of A''s ingredient returns no row'
+);
+
 reset role;
 
 select is(
@@ -91,6 +105,12 @@ select is(
   (select count(*)::int from public.ingredient_categories where id = '20000000-0000-0000-0000-0000000000d1'),
   1,
   'The pair of the deleted substitute stays'
+);
+
+select is(
+  (select count(*)::int from public.ingredients where id = '10000000-0000-0000-0000-0000000000d1'),
+  1,
+  'The ingredient of the deleted substitute stays'
 );
 
 select is(

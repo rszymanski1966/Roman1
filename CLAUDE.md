@@ -24,7 +24,14 @@
 
 Scripts: @package.json
 
-- `npm run smoke` — end-to-end smoke test (home, auth redirect, signup/signin flow) against a **running** server: `BASE_URL=http://localhost:4321 npm run smoke`. There is no unit-test framework; this is the only automated check beyond lint/build.
+- `npm test` — Vitest project `services` (sweep pattern, harness, DB access guard, deletes through the services on the real local Supabase). Needs a running local stack (`npx supabase start`), no dev server.
+- `npm run test:http` — Vitest project `http` (account isolation and the delete confirmation path over HTTP). Needs the local stack **and** a running `npm run dev` (`BASE_URL` overrides `http://localhost:4321`); without the server it stops with one "run `npm run dev`" message.
+- Both Vitest runs create throwaway accounts (`vitest-<runId>-<label>@example.test`) in the local dev database. The global setup sweeps them before and after, and fails the run if one is left or the dev data hash changed. Never `supabase db reset` for tests.
+- `npm run test:sweep` — deletes leftover throwaway and smoke accounts only (after an interrupted run). Needs the local stack.
+- `npm run lint:db-access` — static guard: no service-role/secret key names in `src/`, Supabase clients created only in `src/lib/supabase.ts`, no `security definer` in migrations. Not in CI yet.
+- `npx supabase test db` — pgTAP tests in `supabase/tests/`, each file in a transaction rolled back at the end.
+- `npm run smoke` — end-to-end smoke test (home, auth redirect, signup/signin flow) against a **running** server: `BASE_URL=http://localhost:4321 npm run smoke`. Its accounts are removed by the sweep.
+- CI runs none of the tests above yet (only lint, lint:ui, build). How to add a test (integration, pgTAP, new endpoint with an id from the client): `context/foundation/test-plan.md` §6.
 
 On a fresh checkout, run `npx astro sync` before `npm run lint`. It generates the virtual-module types that type-checked ESLint needs.
 

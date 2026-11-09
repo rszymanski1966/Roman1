@@ -10,8 +10,12 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:ui": "node scripts/ui-literals.mjs",
+    "lint:db-access": "node scripts/db-access.mjs",
     "format": "prettier --write .",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "test": "vitest run --project services",
+    "test:http": "vitest run --project http --passWithNoTests",
+    "test:sweep": "node tests/harness/sweep.ts"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.10",
@@ -53,6 +57,7 @@
     "supabase": "^2.23.4",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0",
+    "vitest": "^5.1.0",
     "wrangler": "^4.145.0"
   },
   "lint-staged": {
