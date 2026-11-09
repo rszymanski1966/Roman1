@@ -414,9 +414,9 @@ Brak migracji schematu. Pierwszy sweep usunie zaległe konta `smoke-*` i ich dan
 
 #### Automated
 
-- [x] 5.1 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi
-- [x] 5.2 `npm run lint` i `npm test` przechodzą
+- [x] 5.1 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi — 91d3965
+- [x] 5.2 `npm run lint` i `npm test` przechodzą — 91d3965
 
 #### Manual
 
-- [x] 5.3 Nowa sesja agenta wskazuje §6.4 i `tests/http/isolation.test.ts` dla testu nowego endpointu
+- [x] 5.3 Nowa sesja agenta wskazuje §6.4 i `tests/http/isolation.test.ts` dla testu nowego endpointu — 91d3965
