@@ -400,23 +400,23 @@ Brak migracji schematu. Pierwszy sweep usunie zaległe konta `smoke-*` i ich dan
 
 #### Automated
 
-- [x] 4.1 `npm run test:http` przechodzi przy działającym `npm run dev`, teardown harnessu czysty
-- [x] 4.2 `npx supabase test db` przechodzi
-- [x] 4.3 `npm test` nadal przechodzi
-- [x] 4.4 `npm run lint` przechodzi
+- [x] 4.1 `npm run test:http` przechodzi przy działającym `npm run dev`, teardown harnessu czysty — a4aad8c
+- [x] 4.2 `npx supabase test db` przechodzi — a4aad8c
+- [x] 4.3 `npm test` nadal przechodzi — a4aad8c
+- [x] 4.4 `npm run lint` przechodzi — a4aad8c
 
 #### Manual
 
-- [x] 4.5 `npm run test:http` bez działającego dev kończy się czytelnym komunikatem o braku serwera
-- [x] 4.6 Tymczasowe dopisanie nazwy składnika do komunikatu `NOT_FOUND` daje czerwony test izolacji; po cofnięciu zielony
+- [x] 4.5 `npm run test:http` bez działającego dev kończy się czytelnym komunikatem o braku serwera — a4aad8c
+- [x] 4.6 Tymczasowe dopisanie nazwy składnika do komunikatu `NOT_FOUND` daje czerwony test izolacji; po cofnięciu zielony — a4aad8c
 
 ### Phase 5: Cookbook i synchronizacja dokumentów
 
 #### Automated
 
-- [ ] 5.1 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi
-- [ ] 5.2 `npm run lint` i `npm test` przechodzą
+- [x] 5.1 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi
+- [x] 5.2 `npm run lint` i `npm test` przechodzą
 
 #### Manual
 
-- [ ] 5.3 Nowa sesja agenta wskazuje §6.4 i `tests/http/isolation.test.ts` dla testu nowego endpointu
+- [x] 5.3 Nowa sesja agenta wskazuje §6.4 i `tests/http/isolation.test.ts` dla testu nowego endpointu
