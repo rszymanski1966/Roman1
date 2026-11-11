@@ -607,27 +607,27 @@ Brak migracji. Test wyścigu i kontrola nie zmieniają schematu bazy dev. Funkcj
 
 #### Automated
 
-- [x] 1.1 `npm run test:unit` przechodzi przy zatrzymanym stosie Supabase (`npx supabase stop` albo bez Dockera) i nie wypisuje komunikatów harnessu
-- [x] 1.2 `npm test` przechodzi przy działającym stosie (unit + services, harness: 0 kont testowych, dane dev bez zmian)
-- [x] 1.3 `npm run lint` przechodzi
+- [x] 1.1 `npm run test:unit` przechodzi przy zatrzymanym stosie Supabase (`npx supabase stop` albo bez Dockera) i nie wypisuje komunikatów harnessu — 65f0462
+- [x] 1.2 `npm test` przechodzi przy działającym stosie (unit + services, harness: 0 kont testowych, dane dev bez zmian) — 65f0462
+- [x] 1.3 `npm run lint` przechodzi — 65f0462
 
 #### Manual
 
-- [x] 1.4 Przegląd tabeli przykładów: każdy wiersz ma źródło, a żaden oczekiwany wynik nie jest wyliczony wywołaniem testowanej funkcji
+- [x] 1.4 Przegląd tabeli przykładów: każdy wiersz ma źródło, a żaden oczekiwany wynik nie jest wyliczony wywołaniem testowanej funkcji — 65f0462
 
 ### Phase 2: Wydzielenie trybu i widoku wyszukiwania (test-first) + URL-e powrotu
 
 #### Automated
 
-- [ ] 2.1 `npm run test:unit` przechodzi (zanim powstał `src/lib/search-view.ts`, testy widoku były czerwone — zanotowane w opisie commita)
-- [ ] 2.2 `npm test` przechodzi
-- [ ] 2.3 `npm run lint` i `npm run lint:ui` przechodzą
-- [ ] 2.4 `npm run test:http` przechodzi bez zmian w istniejących testach (przy działającym `npm run dev`)
-- [ ] 2.5 `npm run smoke` przechodzi bez zmian w oczekiwaniach smoke (`BASE_URL=http://localhost:4321`)
+- [x] 2.1 `npm run test:unit` przechodzi (zanim powstał `src/lib/search-view.ts`, testy widoku były czerwone — zanotowane w opisie commita)
+- [x] 2.2 `npm test` przechodzi
+- [x] 2.3 `npm run lint` i `npm run lint:ui` przechodzą
+- [x] 2.4 `npm run test:http` przechodzi bez zmian w istniejących testach (przy działającym `npm run dev`)
+- [x] 2.5 `npm run smoke` przechodzi bez zmian w oczekiwaniach smoke (`BASE_URL=http://localhost:4321`)
 
 #### Manual
 
-- [ ] 2.6 Na `/ingredients` w przeglądarce: wyszukiwanie z kilkoma trafieniami, z jednym trafieniem, bez trafień i z filtrem kategorii wygląda i działa jak przed zmianą
+- [x] 2.6 Na `/ingredients` w przeglądarce: wyszukiwanie z kilkoma trafieniami, z jednym trafieniem, bez trafień i z filtrem kategorii wygląda i działa jak przed zmianą
 
 ### Phase 3: Integracja serwisów — filtr, grupowanie, „najlepszy”
 
