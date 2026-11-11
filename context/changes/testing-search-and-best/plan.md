@@ -619,27 +619,27 @@ Brak migracji. Test wyścigu i kontrola nie zmieniają schematu bazy dev. Funkcj
 
 #### Automated
 
-- [x] 2.1 `npm run test:unit` przechodzi (zanim powstał `src/lib/search-view.ts`, testy widoku były czerwone — zanotowane w opisie commita)
-- [x] 2.2 `npm test` przechodzi
-- [x] 2.3 `npm run lint` i `npm run lint:ui` przechodzą
-- [x] 2.4 `npm run test:http` przechodzi bez zmian w istniejących testach (przy działającym `npm run dev`)
-- [x] 2.5 `npm run smoke` przechodzi bez zmian w oczekiwaniach smoke (`BASE_URL=http://localhost:4321`)
+- [x] 2.1 `npm run test:unit` przechodzi (zanim powstał `src/lib/search-view.ts`, testy widoku były czerwone — zanotowane w opisie commita) — 6573ca2
+- [x] 2.2 `npm test` przechodzi — 6573ca2
+- [x] 2.3 `npm run lint` i `npm run lint:ui` przechodzą — 6573ca2
+- [x] 2.4 `npm run test:http` przechodzi bez zmian w istniejących testach (przy działającym `npm run dev`) — 6573ca2
+- [x] 2.5 `npm run smoke` przechodzi bez zmian w oczekiwaniach smoke (`BASE_URL=http://localhost:4321`) — 6573ca2
 
 #### Manual
 
-- [x] 2.6 Na `/ingredients` w przeglądarce: wyszukiwanie z kilkoma trafieniami, z jednym trafieniem, bez trafień i z filtrem kategorii wygląda i działa jak przed zmianą
+- [x] 2.6 Na `/ingredients` w przeglądarce: wyszukiwanie z kilkoma trafieniami, z jednym trafieniem, bez trafień i z filtrem kategorii wygląda i działa jak przed zmianą — 6573ca2
 
 ### Phase 3: Integracja serwisów — filtr, grupowanie, „najlepszy”
 
 #### Automated
 
-- [ ] 3.1 `npm test` przechodzi (harness: 0 kont testowych po sweepie, dane dev bez zmian)
-- [ ] 3.2 `npx vitest run --project services tests/services/delete.test.ts` przechodzi bez zmian w asercjach (po wydzieleniu pomocników)
-- [ ] 3.3 `npm run lint` przechodzi
+- [x] 3.1 `npm test` przechodzi (harness: 0 kont testowych po sweepie, dane dev bez zmian)
+- [x] 3.2 `npx vitest run --project services tests/services/delete.test.ts` przechodzi bez zmian w asercjach (po wydzieleniu pomocników)
+- [x] 3.3 `npm run lint` przechodzi
 
 #### Manual
 
-- [ ] 3.4 Złamanie kontrolne: odwrócenie sortowania „najlepszy pierwszy” i pominięcie `!inner` oblewają właściwe przypadki; zmiany wycofane
+- [x] 3.4 Złamanie kontrolne: odwrócenie sortowania „najlepszy pierwszy” i pominięcie `!inner` oblewają właściwe przypadki; zmiany wycofane
 
 ### Phase 4: Test wyścigu w dwóch sesjach Postgresa
 
