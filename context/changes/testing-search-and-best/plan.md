@@ -659,21 +659,21 @@ Brak migracji. Test wyścigu i kontrola nie zmieniają schematu bazy dev. Funkcj
 
 #### Automated
 
-- [x] 5.1 `npm run test:http` przechodzi przy działającym `npm run dev` (istniejące testy bez zmian)
-- [x] 5.2 `npm run test:http` bez serwera kończy się jednym komunikatem „Uruchom `npm run dev`”
-- [x] 5.3 `npm run lint` przechodzi
+- [x] 5.1 `npm run test:http` przechodzi przy działającym `npm run dev` (istniejące testy bez zmian) — a1789b4
+- [x] 5.2 `npm run test:http` bez serwera kończy się jednym komunikatem „Uruchom `npm run dev`” — a1789b4
+- [x] 5.3 `npm run lint` przechodzi — a1789b4
 
 #### Manual
 
-- [x] 5.4 Złamanie kontrolne: zamiana kolejności `urlMode ?? cookieMode` w `resolveMatchMode` oblewa test unit i HTTP; po sprawdzeniu wycofane
+- [x] 5.4 Złamanie kontrolne: zamiana kolejności `urlMode ?? cookieMode` w `resolveMatchMode` oblewa test unit i HTTP; po sprawdzeniu wycofane — a1789b4
 
 ### Phase 6: Dokumentacja i cookbook
 
 #### Automated
 
-- [ ] 6.1 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi
-- [ ] 6.2 Każda komenda wymieniona w nowych wpisach §6.1/§6.2 istnieje w `package.json` (sprawdzenie grepem)
+- [x] 6.1 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi
+- [x] 6.2 Każda komenda wymieniona w nowych wpisach §6.1/§6.2 istnieje w `package.json` (sprawdzenie grepem)
 
 #### Manual
 
-- [ ] 6.3 Przegląd §6.1 i §6.2: osoba spoza zmiany dodałaby według nich nowy test unit i nowy test przeplotu
+- [x] 6.3 Przegląd §6.1 i §6.2: osoba spoza zmiany dodałaby według nich nowy test unit i nowy test przeplotu
