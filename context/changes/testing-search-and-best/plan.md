@@ -633,27 +633,27 @@ Brak migracji. Test wyścigu i kontrola nie zmieniają schematu bazy dev. Funkcj
 
 #### Automated
 
-- [x] 3.1 `npm test` przechodzi (harness: 0 kont testowych po sweepie, dane dev bez zmian)
-- [x] 3.2 `npx vitest run --project services tests/services/delete.test.ts` przechodzi bez zmian w asercjach (po wydzieleniu pomocników)
-- [x] 3.3 `npm run lint` przechodzi
+- [x] 3.1 `npm test` przechodzi (harness: 0 kont testowych po sweepie, dane dev bez zmian) — 69cd912
+- [x] 3.2 `npx vitest run --project services tests/services/delete.test.ts` przechodzi bez zmian w asercjach (po wydzieleniu pomocników) — 69cd912
+- [x] 3.3 `npm run lint` przechodzi — 69cd912
 
 #### Manual
 
-- [x] 3.4 Złamanie kontrolne: odwrócenie sortowania „najlepszy pierwszy” i pominięcie `!inner` oblewają właściwe przypadki; zmiany wycofane
+- [x] 3.4 Złamanie kontrolne: odwrócenie sortowania „najlepszy pierwszy” i pominięcie `!inner` oblewają właściwe przypadki; zmiany wycofane — 69cd912
 
 ### Phase 4: Test wyścigu w dwóch sesjach Postgresa
 
 #### Automated
 
-- [ ] 4.1 `npx vitest run --project services tests/services/best-concurrency.test.ts` przechodzi 5 razy z rzędu (deterministyczność; pętla w shellu)
-- [ ] 4.2 `npm test` przechodzi (harness: 0 kont testowych, dane dev bez zmian; brak wiszących połączeń)
-- [ ] 4.3 `npx supabase test db` przechodzi (strażnik regex i pgTAP bez zmian)
-- [ ] 4.4 `npm run lint` i `npm run lint:db-access` przechodzą
+- [x] 4.1 `npx vitest run --project services tests/services/best-concurrency.test.ts` przechodzi 5 razy z rzędu (deterministyczność; pętla w shellu)
+- [x] 4.2 `npm test` przechodzi (harness: 0 kont testowych, dane dev bez zmian; brak wiszących połączeń)
+- [x] 4.3 `npx supabase test db` przechodzi (strażnik regex i pgTAP bez zmian)
+- [x] 4.4 `npm run lint` i `npm run lint:db-access` przechodzą
 
 #### Manual
 
-- [ ] 4.5 Po przebiegu nie ma pozostawionych sesji testu (`idle in transaction`)
-- [ ] 4.6 Przegląd: kopia ciała w kontroli pochodzi z migracji `20261011201658` i jest opisana jako mutant, a test b nie porównuje tekstu funkcji
+- [x] 4.5 Po przebiegu nie ma pozostawionych sesji testu (`idle in transaction`)
+- [x] 4.6 Przegląd: kopia ciała w kontroli pochodzi z migracji `20261011201658` i jest opisana jako mutant, a test b nie porównuje tekstu funkcji
 
 ### Phase 5: Wąska warstwa HTTP — ciasteczko i render stanów
 
