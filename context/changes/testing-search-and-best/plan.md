@@ -671,9 +671,9 @@ Brak migracji. Test wyścigu i kontrola nie zmieniają schematu bazy dev. Funkcj
 
 #### Automated
 
-- [x] 6.1 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi
-- [x] 6.2 Każda komenda wymieniona w nowych wpisach §6.1/§6.2 istnieje w `package.json` (sprawdzenie grepem)
+- [x] 6.1 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi — 5fd0a4d
+- [x] 6.2 Każda komenda wymieniona w nowych wpisach §6.1/§6.2 istnieje w `package.json` (sprawdzenie grepem) — 5fd0a4d
 
 #### Manual
 
-- [x] 6.3 Przegląd §6.1 i §6.2: osoba spoza zmiany dodałaby według nich nowy test unit i nowy test przeplotu
+- [x] 6.3 Przegląd §6.1 i §6.2: osoba spoza zmiany dodałaby według nich nowy test unit i nowy test przeplotu — 5fd0a4d
