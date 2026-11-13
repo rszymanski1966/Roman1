@@ -645,27 +645,27 @@ Brak migracji. Test wyścigu i kontrola nie zmieniają schematu bazy dev. Funkcj
 
 #### Automated
 
-- [x] 4.1 `npx vitest run --project services tests/services/best-concurrency.test.ts` przechodzi 5 razy z rzędu (deterministyczność; pętla w shellu)
-- [x] 4.2 `npm test` przechodzi (harness: 0 kont testowych, dane dev bez zmian; brak wiszących połączeń)
-- [x] 4.3 `npx supabase test db` przechodzi (strażnik regex i pgTAP bez zmian)
-- [x] 4.4 `npm run lint` i `npm run lint:db-access` przechodzą
+- [x] 4.1 `npx vitest run --project services tests/services/best-concurrency.test.ts` przechodzi 5 razy z rzędu (deterministyczność; pętla w shellu) — 3485938
+- [x] 4.2 `npm test` przechodzi (harness: 0 kont testowych, dane dev bez zmian; brak wiszących połączeń) — 3485938
+- [x] 4.3 `npx supabase test db` przechodzi (strażnik regex i pgTAP bez zmian) — 3485938
+- [x] 4.4 `npm run lint` i `npm run lint:db-access` przechodzą — 3485938
 
 #### Manual
 
-- [x] 4.5 Po przebiegu nie ma pozostawionych sesji testu (`idle in transaction`)
-- [x] 4.6 Przegląd: kopia ciała w kontroli pochodzi z migracji `20261011201658` i jest opisana jako mutant, a test b nie porównuje tekstu funkcji
+- [x] 4.5 Po przebiegu nie ma pozostawionych sesji testu (`idle in transaction`) — 3485938
+- [x] 4.6 Przegląd: kopia ciała w kontroli pochodzi z migracji `20261011201658` i jest opisana jako mutant, a test b nie porównuje tekstu funkcji — 3485938
 
 ### Phase 5: Wąska warstwa HTTP — ciasteczko i render stanów
 
 #### Automated
 
-- [ ] 5.1 `npm run test:http` przechodzi przy działającym `npm run dev` (istniejące testy bez zmian)
-- [ ] 5.2 `npm run test:http` bez serwera kończy się jednym komunikatem „Uruchom `npm run dev`”
-- [ ] 5.3 `npm run lint` przechodzi
+- [x] 5.1 `npm run test:http` przechodzi przy działającym `npm run dev` (istniejące testy bez zmian)
+- [x] 5.2 `npm run test:http` bez serwera kończy się jednym komunikatem „Uruchom `npm run dev`”
+- [x] 5.3 `npm run lint` przechodzi
 
 #### Manual
 
-- [ ] 5.4 Złamanie kontrolne: zamiana kolejności `urlMode ?? cookieMode` w `resolveMatchMode` oblewa test unit i HTTP; po sprawdzeniu wycofane
+- [x] 5.4 Złamanie kontrolne: zamiana kolejności `urlMode ?? cookieMode` w `resolveMatchMode` oblewa test unit i HTTP; po sprawdzeniu wycofane
 
 ### Phase 6: Dokumentacja i cookbook
 

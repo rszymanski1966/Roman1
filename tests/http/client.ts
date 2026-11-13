@@ -14,6 +14,8 @@ export interface HttpResponse {
   // Same-origin redirects as path + query + hash (so they compare across BASE_URL spellings); "" without a Location.
   location: string;
   body: string;
+  // The raw Set-Cookie headers of this response (getSetCookie()), attributes included; [] when it set none.
+  setCookies: string[];
 }
 
 export type FormFields = Record<string, string>;
@@ -47,16 +49,18 @@ export class HttpSession {
       },
       body: form ? new URLSearchParams(form).toString() : undefined,
     });
-    this.storeCookies(response);
+    const setCookies = response.headers.getSetCookie();
+    this.storeCookies(setCookies);
     return {
       status: response.status,
       location: relativeLocation(response.headers.get("location")),
       body: await response.text(),
+      setCookies,
     };
   }
 
-  private storeCookies(response: Response): void {
-    for (const raw of response.headers.getSetCookie()) {
+  private storeCookies(setCookies: string[]): void {
+    for (const raw of setCookies) {
       const [pair = "", ...attributes] = raw.split(";");
       const [name = "", ...rest] = pair.split("=");
       const expired = attributes.some((attribute) => /^max-age=0$/i.test(attribute.trim()));
