@@ -1,10 +1,10 @@
 ---
 change_id: testing-search-and-best
 title: Test rollout phase 2 — name search, category filter and best-substitute rule
-status: impl_reviewed
+status: archived
 created: 2026-11-09
 updated: 2026-11-15
-archived_at: null
+archived_at: 2026-11-15T16:03:28Z
 ---
 
 ## Notes
