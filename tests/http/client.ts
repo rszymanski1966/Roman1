@@ -14,6 +14,8 @@ export interface HttpResponse {
   // Same-origin redirects as path + query + hash (so they compare across BASE_URL spellings); "" without a Location.
   location: string;
   body: string;
+  // The raw Set-Cookie headers of this response (getSetCookie()), attributes included; [] when it set none.
+  setCookies: string[];
 }
 
 export type FormFields = Record<string, string>;
@@ -47,16 +49,18 @@ export class HttpSession {
       },
       body: form ? new URLSearchParams(form).toString() : undefined,
     });
-    this.storeCookies(response);
+    const setCookies = response.headers.getSetCookie();
+    this.storeCookies(setCookies);
     return {
       status: response.status,
       location: relativeLocation(response.headers.get("location")),
       body: await response.text(),
+      setCookies,
     };
   }
 
-  private storeCookies(response: Response): void {
-    for (const raw of response.headers.getSetCookie()) {
+  private storeCookies(setCookies: string[]): void {
+    for (const raw of setCookies) {
       const [pair = "", ...attributes] = raw.split(";");
       const [name = "", ...rest] = pair.split("=");
       const expired = attributes.some((attribute) => /^max-age=0$/i.test(attribute.trim()));
@@ -89,4 +93,27 @@ export async function assertServerReachable(): Promise<void> {
   }
   await response.body?.cancel();
   if (response.status >= 500) throw new Error(`${SERVER_DOWN} (GET / zwrócił ${response.status})`);
+}
+
+/** Text and attribute values decoded the way a browser reads them (the few entities the pages emit). */
+export function decodeHtml(html: string): string {
+  // &amp; last, so an escaped entity such as &amp;quot; stays the literal text &quot;.
+  return html
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#38;/g, "&")
+    .replace(/&amp;/g, "&");
+}
+
+/** Every link of the page with an href, as its decoded href and its trimmed visible text. */
+export function links(body: string): { href: string; text: string }[] {
+  // Attribute values may contain ">" (Tailwind classes such as [&>svg]:px-3), so quoted values are skipped whole.
+  const anchors = body.matchAll(/<a\s((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/a>/g);
+  return [...anchors].flatMap((match) => {
+    const href = /(?:^|\s)href="([^"]*)"/.exec(match[1])?.[1];
+    if (href === undefined) return [];
+    return [{ href: decodeHtml(href), text: decodeHtml(match[2].replace(/<[^>]*>/g, "")).trim() }];
+  });
 }

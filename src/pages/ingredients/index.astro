@@ -9,20 +9,18 @@ import Alert from "@/components/ui/Alert.astro";
 import Card from "@/components/ui/Card.astro";
 import { buttonVariants } from "@/components/ui/button";
 import { focusRing } from "@/components/ui/focus";
+import { resolveCategory, resolveMatchMode, resolveSearchView } from "@/lib/search-view";
 import { createClient } from "@/lib/supabase";
 import {
   MATCH_MODE_COOKIE,
-  isUuid,
   listCategories,
   listIngredientIdsWithSubstitutes,
   listIngredientSubstitutes,
   listIngredients,
-  matchIngredients,
   normalizeQuery,
-  parseMatchMode,
 } from "@/lib/services/substitutes";
 import { cn } from "@/lib/utils";
-import type { Category, IngredientListItem, MatchMode, SubstituteGroup } from "@/types";
+import type { Category, IngredientListItem, SubstituteGroup } from "@/types";
 
 const MATCH_MODE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
@@ -40,11 +38,12 @@ const error = Astro.url.searchParams.get("error");
 const errorFor = Astro.url.searchParams.get("error_for") ?? "";
 
 // Match mode: URL > cookie > "contains". A valid mode from the URL is remembered for the next visit.
-const urlMode = parseMatchMode(Astro.url.searchParams.get("match"));
-const cookieMode = parseMatchMode(Astro.cookies.get(MATCH_MODE_COOKIE)?.value);
-const mode: MatchMode = urlMode ?? cookieMode ?? "contains";
-if (urlMode !== null && urlMode !== cookieMode) {
-  Astro.cookies.set(MATCH_MODE_COOKIE, urlMode, {
+const { mode, remember } = resolveMatchMode(
+  Astro.url.searchParams.get("match"),
+  Astro.cookies.get(MATCH_MODE_COOKIE)?.value,
+);
+if (remember !== null) {
+  Astro.cookies.set(MATCH_MODE_COOKIE, remember, {
     path: "/ingredients",
     httpOnly: true,
     sameSite: "lax",
@@ -53,14 +52,8 @@ if (urlMode !== null && urlMode !== cookieMode) {
   });
 }
 
-// Malformed ids are rejected before querying (Postgres would fail with 22P02); they yield the empty state.
-const categoryValid = categoryParam === "" || isUuid(categoryParam);
-// The category the view is narrowed to; null = all categories.
-const viewCategory = categoryParam !== "" && categoryValid ? categoryParam : null;
-// View precedence: ingredient > search > initial state. With an ingredient, q refills the search field and
-// decides whether the back link to the results makes sense (see backHref).
-const hasIngredientParam = ingredientParam !== "";
-const isSearch = !hasIngredientParam && query !== "";
+// The category the view is narrowed to; null = all categories (also for a malformed category, see search-view.ts).
+const { viewCategory } = resolveCategory(categoryParam);
 
 type View =
   | { kind: "initial" }
@@ -75,8 +68,8 @@ let view: View = { kind: "initial" };
 let loadError: string | null = null;
 // Kept separate from loadError so a failed lookup still shows the forms.
 let substitutesError: string | null = null;
-// Hits of the search in the URL (also counted with an ingredient, for the back link); null = not run or failed.
-let searchHits: number | null = null;
+// Whether the ingredient view links back to the search results (see resolveSearchView).
+let backToResults = false;
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 if (!supabase) {
@@ -97,38 +90,29 @@ if (!supabase) {
     categories = categoriesResult.data;
     ingredients = ingredientsResult.data;
 
-    const filterFailed = filterResult !== null && filterResult.error !== null;
-    let matches: IngredientListItem[] = [];
-    if (query !== "" && categoryValid && !filterFailed) {
-      const allowedIds = filterResult?.data ?? null;
-      matches = matchIngredients(ingredients, query, mode).filter(
-        (ingredient) => allowedIds === null || allowedIds.has(ingredient.id),
-      );
-      searchHits = matches.length;
-    }
+    const filterError = filterResult?.error ?? null;
+    const search = resolveSearchView({
+      ingredients,
+      query,
+      mode,
+      ingredientParam,
+      categoryParam,
+      allowedIds: filterResult?.data ?? null,
+      filterFailed: filterError !== null,
+    });
+    backToResults = search.backToResults;
 
     let target: IngredientListItem | null = null;
-    if (hasIngredientParam) {
-      // The name comes from the user's own list (RLS), so a foreign id is simply not found.
-      target =
-        categoryValid && isUuid(ingredientParam)
-          ? (ingredients.find((ingredient) => ingredient.id === ingredientParam) ?? null)
-          : null;
+    const decision = search.decision;
+    if (decision.kind === "ingredient") {
+      target = decision.target;
       view = { kind: "ingredient", ingredient: target, groups: [] };
-    } else if (isSearch) {
-      if (!categoryValid) {
-        view = { kind: "no-match" };
-      } else if (filterFailed) {
-        substitutesError = filterResult.error;
-      } else if (matches.length === 0) {
-        view = { kind: "no-match" };
-      } else if (matches.length === 1) {
-        // One hit: show its substitutes right away, on the search URL (no redirect).
-        target = matches[0];
-        view = { kind: "ingredient", ingredient: target, groups: [] };
-      } else {
-        view = { kind: "matches", matches };
-      }
+    } else if (decision.kind === "filter-error") {
+      substitutesError = filterError;
+    } else if (decision.kind === "matches") {
+      view = { kind: "matches", matches: decision.matches };
+    } else {
+      view = decision;
     }
 
     if (target) {
@@ -163,13 +147,8 @@ const addSubstituteHref = withParams("/ingredients/new", {
 });
 // No-match CTA: the add form with the searched name (and the chosen category).
 const addIngredientHref = withParams("/ingredients/new", { ingredient_name: query, category: viewCategory });
-// Back to the search results, only when the ingredient came from a result list: ingredient + q in the URL and
-// the same search has several hits (with one hit the link would lead back to this very ingredient).
-// If the hits could not be counted (filter query failed), the link stays.
-const backHref =
-  hasIngredientParam && query !== "" && (searchHits === null || searchHits > 1)
-    ? withParams("/ingredients", { q: query, match: mode, category: viewCategory })
-    : null;
+// Back to the search results, only when the ingredient came from a result list (rule in resolveSearchView).
+const backHref = backToResults ? withParams("/ingredients", { q: query, match: mode, category: viewCategory }) : null;
 const matchHref = (ingredientId: string) =>
   withParams("/ingredients", { ingredient: ingredientId, category: viewCategory, q: query, match: mode });
 // The rename page with this view, so saving or cancelling returns to it (also from a one-hit search, where the

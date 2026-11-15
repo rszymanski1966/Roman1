@@ -11,6 +11,9 @@ import type {
   UpdateSubstituteInput,
 } from "@/types";
 import { normalizeName, toNameKey } from "@/lib/entry-fields";
+// search-view.ts imports the pure match helpers from this module; the cycle is safe because neither module uses
+// the other's exports at load time, only inside functions.
+import { searchMatches } from "@/lib/search-view";
 
 // The name rule lives in the import-free entry-fields module, which the add form's client script also imports;
 // re-exported here so the API routes keep importing it from the service.
@@ -458,8 +461,8 @@ export async function deleteIngredient(
 }
 
 /**
- * Whether the ingredient search still finds something: the same rules as the /ingredients page (name match in
- * the mode, and with a category only ingredients that have a substitute in it).
+ * Whether the ingredient search still finds something: the same rules as the /ingredients page (searchMatches:
+ * name match in the mode, and with a category only ingredients that have a substitute in it).
  */
 export async function hasSearchHits(
   client: SupabaseClient,
@@ -473,9 +476,6 @@ export async function hasSearchHits(
   ]);
   if (ingredientsResult.error !== null) return fail();
   if (filterResult !== null && filterResult.error !== null) return fail();
-  const allowedIds = filterResult?.data ?? null;
-  const hits = matchIngredients(ingredientsResult.data, query, mode).filter(
-    (ingredient) => allowedIds === null || allowedIds.has(ingredient.id),
-  );
+  const hits = searchMatches(ingredientsResult.data, query, mode, filterResult?.data ?? null);
   return ok(hits.length > 0);
 }

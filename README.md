@@ -55,8 +55,9 @@ npm run dev
 - `npm run lint` - Run ESLint with type-checked rules
 - `npm run lint:fix` - Auto-fix ESLint issues
 - `npm run format` - Run Prettier
-- `npm test` - Run the Vitest service and harness tests against the local Supabase stack (needs `npx supabase start`)
-- `npm run test:http` - Run the Vitest HTTP tests (account isolation, delete confirmation) against a running `npm run dev`
+- `npm run test:unit` - Run the Vitest unit tests (pure search and view rules); no Supabase stack or dev server needed
+- `npm test` - Run the Vitest unit tests plus the service and harness tests against the local Supabase stack (needs `npx supabase start`; the race test connects to Postgres directly via `DB_URL` from `npx supabase status`)
+- `npm run test:http` - Run the Vitest HTTP tests (account isolation, delete confirmation, search mode cookie and states) against a running `npm run dev`
 - `npm run test:sweep` - Delete leftover throwaway test and smoke accounts from the local database
 - `npm run lint:db-access` - Check that the app reaches the database only as the signed-in user (no service-role key, no `security definer`)
 - `npx supabase test db` - Run the pgTAP database tests in `supabase/tests/` (each file rolls back its changes)

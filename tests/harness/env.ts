@@ -6,10 +6,12 @@ export interface HarnessEnv {
   apiUrl: string;
   publishableKey: string;
   secretKey: string;
+  /** Direct Postgres connection string (with the password), only for the two-session tests in tests/harness/pg-sessions.ts. */
+  dbUrl: string;
 }
 
 const STACK_DOWN =
-  "Lokalny stos Supabase nie działa albo nie zwrócił kluczy (API_URL, PUBLISHABLE_KEY, SECRET_KEY). " +
+  "Lokalny stos Supabase nie działa albo nie zwrócił kluczy (API_URL, PUBLISHABLE_KEY, SECRET_KEY, DB_URL). " +
   "Uruchom `npx supabase start` i powtórz przebieg.";
 
 let cached: HarnessEnv | undefined;
@@ -42,7 +44,8 @@ export function harnessEnv(): HarnessEnv {
   const apiUrl = values.get("API_URL");
   const publishableKey = values.get("PUBLISHABLE_KEY");
   const secretKey = values.get("SECRET_KEY");
-  if (!apiUrl || !publishableKey || !secretKey) throw new Error(STACK_DOWN);
-  cached = { apiUrl, publishableKey, secretKey };
+  const dbUrl = values.get("DB_URL");
+  if (!apiUrl || !publishableKey || !secretKey || !dbUrl) throw new Error(STACK_DOWN);
+  cached = { apiUrl, publishableKey, secretKey, dbUrl };
   return cached;
 }

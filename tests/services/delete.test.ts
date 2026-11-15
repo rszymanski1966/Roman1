@@ -4,15 +4,9 @@
 // under test; the expected set is always "before minus the fixture ids the rule names".
 import { randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
-import {
-  addSubstitute,
-  deleteIngredient,
-  deleteSubstitute,
-  listIngredientSubstitutes,
-} from "@/lib/services/substitutes";
-import { adminClient, createTestUser, runId, type TestUser } from "../harness/accounts.ts";
-
-type CategorySlug = "ciasta" | "dania-miesne" | "wegetarianskie";
+import { deleteIngredient, deleteSubstitute, listIngredientSubstitutes } from "@/lib/services/substitutes";
+import { createTestUser, runId, type TestUser } from "../harness/accounts.ts";
+import { add, idsOf, oneId, pairOf, substituteOf } from "../harness/fixtures.ts";
 
 interface AccountState {
   ingredients: string[];
@@ -36,30 +30,7 @@ interface Fixture {
   w: string;
 }
 
-let categoryIds: Record<CategorySlug, string>;
 let fixtureNo = 0;
-
-async function loadCategoryIds(): Promise<Record<CategorySlug, string>> {
-  const { data, error } = await adminClient().from("categories").select("id, slug");
-  if (error) throw new Error(`Nie udało się odczytać kategorii: ${error.message}`);
-  const rows = data as { id: string; slug: string }[];
-  const pick = (slug: CategorySlug): string => {
-    const row = rows.find((r) => r.slug === slug);
-    if (!row) throw new Error(`Brak kategorii o slugu ${slug} (seed w supabase/migrations/).`);
-    return row.id;
-  };
-  return { ciasta: pick("ciasta"), "dania-miesne": pick("dania-miesne"), wegetarianskie: pick("wegetarianskie") };
-}
-
-/** Ids of the account's rows in a table, read with the admin key (bypasses RLS), sorted. */
-async function idsOf(
-  table: "ingredients" | "ingredient_categories" | "substitutes",
-  userId: string,
-): Promise<string[]> {
-  const { data, error } = await adminClient().from(table).select("id").eq("user_id", userId);
-  if (error) throw new Error(`Nie udało się odczytać tabeli ${table}: ${error.message}`);
-  return (data as { id: string }[]).map((row) => row.id).sort();
-}
 
 async function accountState(user: TestUser): Promise<AccountState> {
   return {
@@ -72,42 +43,6 @@ async function accountState(user: TestUser): Promise<AccountState> {
 function without(ids: string[], removed: string[]): string[] {
   const gone = new Set(removed);
   return ids.filter((id) => !gone.has(id));
-}
-
-/** The one id matching the filters, read with the admin key; anything else breaks the fixture. */
-async function oneId(
-  table: "ingredients" | "ingredient_categories" | "substitutes",
-  filters: Record<string, string>,
-): Promise<string> {
-  let query = adminClient().from(table).select("id");
-  for (const [column, value] of Object.entries(filters)) query = query.eq(column, value);
-  const { data, error } = await query;
-  if (error) throw new Error(`Fixture: nie udało się odczytać tabeli ${table}: ${error.message}`);
-  const rows = data as { id: string }[];
-  if (rows.length !== 1) throw new Error(`Fixture: oczekiwano 1 wiersza w ${table}, jest ${rows.length}.`);
-  return rows[0].id;
-}
-
-// The user's path: every row is created by addSubstitute, as the add form does.
-async function add(user: TestUser, ingredientName: string, slug: CategorySlug, substituteName: string): Promise<void> {
-  const result = await addSubstitute(user.client, {
-    ingredientName,
-    categoryId: categoryIds[slug],
-    substituteName,
-    ratio: "1:1",
-    notes: null,
-    isBest: false,
-  });
-  if (result.error !== null)
-    throw new Error(`Fixture: nie udało się dodać zamiennika ${substituteName}: ${result.error}`);
-}
-
-async function pairOf(ingredientId: string, slug: CategorySlug): Promise<string> {
-  return oneId("ingredient_categories", { ingredient_id: ingredientId, category_id: categoryIds[slug] });
-}
-
-async function substituteOf(pairId: string, name: string): Promise<string> {
-  return oneId("substitutes", { ingredient_category_id: pairId, name });
 }
 
 /** A fresh fixture with names unique to this run and test, so every case starts from its own rows. */
@@ -155,7 +90,6 @@ describe("deleting entries through the services", () => {
   let other: TestUser;
 
   beforeAll(async () => {
-    categoryIds = await loadCategoryIds();
     owner = await createTestUser("delete-owner");
     other = await createTestUser("delete-other");
   });
