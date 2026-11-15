@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
 import { deleteIngredient, deleteSubstitute, listIngredientSubstitutes } from "@/lib/services/substitutes";
 import { createTestUser, runId, type TestUser } from "../harness/accounts.ts";
-import { add, idsOf, oneId, pairOf, substituteOf } from "./fixtures.ts";
+import { add, idsOf, oneId, pairOf, substituteOf } from "../harness/fixtures.ts";
 
 interface AccountState {
   ingredients: string[];

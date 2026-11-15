@@ -19,7 +19,7 @@ import {
   updateSubstitute,
 } from "@/lib/services/substitutes";
 import { adminClient, createTestUser, runId, type TestUser } from "../harness/accounts.ts";
-import { add, bestIdsOf, loadCategoryIds, oneId, pairOf, substituteOf } from "./fixtures.ts";
+import { add, bestIdsOf, loadCategoryIds, oneId, pairOf, substituteOf } from "../harness/fixtures.ts";
 
 // One ingredient: Ciasta with X, Y (no best), Dania mięsne with Z (best). All values are ids, except the names.
 interface Fixture {

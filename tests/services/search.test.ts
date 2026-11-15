@@ -16,7 +16,7 @@ import {
   listIngredientSubstitutes,
 } from "@/lib/services/substitutes";
 import { adminClient, createTestUser, runId, type TestUser } from "../harness/accounts.ts";
-import { add, loadCategoryIds, oneId, pairOf, substituteOf, type CategorySlug } from "./fixtures.ts";
+import { add, loadCategoryIds, oneId, pairOf, substituteOf, type CategorySlug } from "../harness/fixtures.ts";
 
 // Account A's fixture (ids) and account B's ingredient with the same name as A's rye flour.
 interface Fixture {

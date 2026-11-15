@@ -6,8 +6,8 @@
 // Expected texts, params and names come from there and from the fixture, never from the page's source.
 import { beforeAll, describe, expect, it } from "vitest";
 import { createTestUser, runId, type TestUser } from "../harness/accounts.ts";
-import { add, loadCategoryIds, oneId } from "../services/fixtures.ts";
-import { assertServerReachable, BASE_URL, signIn, type HttpResponse, type HttpSession } from "./client.ts";
+import { add, loadCategoryIds, oneId } from "../harness/fixtures.ts";
+import { assertServerReachable, BASE_URL, links, signIn, type HttpResponse, type HttpSession } from "./client.ts";
 
 const COOKIE = "ingredients_match";
 
@@ -47,22 +47,6 @@ function modeCookie(response: HttpResponse): { value: string; attributes: Map<st
   return { value: pair.trim().slice(COOKIE.length + 1), attributes };
 }
 
-// HTML attribute values decoded the way a browser reads them (the page escapes & in hrefs).
-function decodeHtml(text: string): string {
-  return text.replaceAll("&amp;", "&").replaceAll("&#38;", "&").replaceAll("&quot;", '"');
-}
-
-/** Every link of the page with an href, as its decoded href and its trimmed text. */
-function links(body: string): { href: string; text: string }[] {
-  // Attribute values may contain ">" (Tailwind classes such as [&>svg]:px-3), so quoted values are skipped whole.
-  const anchors = body.matchAll(/<a\s((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/a>/g);
-  return [...anchors].flatMap((match) => {
-    const href = /(?:^|\s)href="([^"]*)"/.exec(match[1])?.[1];
-    if (href === undefined) return [];
-    return [{ href: decodeHtml(href), text: decodeHtml(match[2].replace(/<[^>]*>/g, "")).trim() }];
-  });
-}
-
 function paramsOf(href: string): URLSearchParams {
   return new URL(href, BASE_URL).searchParams;
 }
@@ -99,59 +83,53 @@ beforeAll(async () => {
 }, 180_000);
 
 describe("match-mode cookie (S-03: URL > cookie > contains, a valid URL mode is remembered)", () => {
-  // The steps build on each other in one session (one cookie jar), in this order.
-  it("match=prefix sets the cookie with its attributes and finds nothing for a mid-name fragment", async () => {
-    const response = await cookieSession.get(searchPath({ q: fragment, match: "prefix" }));
-    expect(response.status).toBe(200);
+  // One test on purpose: each step builds on the cookie the previous one left in the jar, so the steps cannot run
+  // alone (-t, it.only, shuffle) and a failure names its step.
+  it("is set by a valid URL mode, applies without one, ignores an invalid one and is overwritten by another", async () => {
+    let step = "1. match=prefix sets the cookie with its attributes and finds nothing for a mid-name fragment";
+    const first = await cookieSession.get(searchPath({ q: fragment, match: "prefix" }));
+    expect(first.status, step).toBe(200);
+    const cookie = modeCookie(first);
+    expect(cookie.value, step).toBe("prefix");
+    expect(cookie.attributes.get("path"), step).toBe("/ingredients");
+    expect(cookie.attributes.has("httponly"), step).toBe(true);
+    expect(cookie.attributes.get("samesite")?.toLowerCase(), step).toBe("lax");
+    expect(cookie.attributes.get("max-age"), step).toBe("31536000");
+    // Secure exactly when the page is served over https (the dev server runs on http).
+    expect(cookie.attributes.has("secure"), step).toBe(new URL(BASE_URL).protocol === "https:");
+    expect(first.body, step).toContain(noMatchText(fragment));
 
-    const cookie = modeCookie(response);
-    expect(cookie.value).toBe("prefix");
-    expect(cookie.attributes.get("path")).toBe("/ingredients");
-    expect(cookie.attributes.has("httponly")).toBe(true);
-    expect(cookie.attributes.get("samesite")?.toLowerCase()).toBe("lax");
-    expect(cookie.attributes.get("max-age")).toBe("31536000");
-    // Secure only over https; the dev server runs on http.
-    expect(new URL(BASE_URL).protocol).toBe("http:");
-    expect(cookie.attributes.has("secure")).toBe(false);
+    step = "2. without match the next search uses the mode from the cookie (prefix: no hits)";
+    const fromCookie = await cookieSession.get(searchPath({ q: fragment }));
+    expect(fromCookie.status, step).toBe(200);
+    expect(fromCookie.body, step).toContain(noMatchText(fragment));
+    expect(fromCookie.body, step).not.toContain(LIST_HEADING);
+    expect(modeCookies(fromCookie), step).toEqual([]);
 
-    expect(response.body).toContain(noMatchText(fragment));
-  });
-
-  it("without match the next search uses the mode from the cookie (prefix: no hits)", async () => {
-    const response = await cookieSession.get(searchPath({ q: fragment }));
-    expect(response.status).toBe(200);
-    expect(response.body).toContain(noMatchText(fragment));
-    expect(response.body).not.toContain(LIST_HEADING);
-    expect(modeCookies(response)).toEqual([]);
-  });
-
-  it("an invalid match=foo sets no cookie and the mode from the cookie applies", async () => {
-    const response = await cookieSession.get(searchPath({ q: fragment, match: "foo" }));
-    expect(response.status).toBe(200);
+    step = "3. an invalid match=foo sets no cookie and the mode from the cookie applies";
+    const invalid = await cookieSession.get(searchPath({ q: fragment, match: "foo" }));
+    expect(invalid.status, step).toBe(200);
     // prefix from the cookie, not the default contains (which would list both ingredients).
-    expect(response.body).toContain(noMatchText(fragment));
-    expect(response.body).not.toContain(LIST_HEADING);
-    expect(modeCookies(response)).toEqual([]);
-  });
+    expect(invalid.body, step).toContain(noMatchText(fragment));
+    expect(invalid.body, step).not.toContain(LIST_HEADING);
+    expect(modeCookies(invalid), step).toEqual([]);
 
-  it("the same mode in the URL and in the cookie sends no Set-Cookie", async () => {
-    // The jar holds prefix from the first step.
-    const response = await cookieSession.get(searchPath({ q: fragment, match: "prefix" }));
-    expect(response.status).toBe(200);
-    expect(response.body).toContain(noMatchText(fragment));
-    expect(modeCookies(response)).toEqual([]);
-  });
+    step = "4. the same mode in the URL and in the cookie sends no Set-Cookie";
+    const same = await cookieSession.get(searchPath({ q: fragment, match: "prefix" }));
+    expect(same.status, step).toBe(200);
+    expect(same.body, step).toContain(noMatchText(fragment));
+    expect(modeCookies(same), step).toEqual([]);
 
-  it("match=contains wins over the cookie and overwrites it", async () => {
-    const response = await cookieSession.get(searchPath({ q: fragment, match: "contains" }));
-    expect(response.status).toBe(200);
-    expect(response.body).toContain(`${LIST_HEADING} (2)`);
-    expect(modeCookie(response).value).toBe("contains");
+    step = "5. match=contains wins over the cookie and overwrites it";
+    const contains = await cookieSession.get(searchPath({ q: fragment, match: "contains" }));
+    expect(contains.status, step).toBe(200);
+    expect(contains.body, step).toContain(`${LIST_HEADING} (2)`);
+    expect(modeCookie(contains).value, step).toBe("contains");
 
-    // The next search without match now uses contains from the overwritten cookie.
+    step = "6. the next search without match now uses contains from the overwritten cookie";
     const next = await cookieSession.get(searchPath({ q: fragment }));
-    expect(next.body).toContain(`${LIST_HEADING} (2)`);
-    expect(modeCookies(next)).toEqual([]);
+    expect(next.body, step).toContain(`${LIST_HEADING} (2)`);
+    expect(modeCookies(next), step).toEqual([]);
   });
 });
 

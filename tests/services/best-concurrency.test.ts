@@ -15,13 +15,13 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { Client } from "pg";
 import { adminClient, createTestUser, runId, type TestUser } from "../harness/accounts.ts";
 import {
-  closeSessions,
   openObserver,
   openUserSession,
   waitUntilBlockedBy,
+  withSessions,
   type PgSession,
 } from "../harness/pg-sessions.ts";
-import { add, bestIdsOf, oneId, pairOf, substituteOf } from "./fixtures.ts";
+import { add, bestIdsOf, oneId, pairOf, substituteOf } from "../harness/fixtures.ts";
 
 // One pair (ingredient + Ciasta) with A (best), B and C. All values are ids, except the names.
 interface Fixture {
@@ -151,25 +151,26 @@ describe("set_best_substitute under two concurrent Postgres sessions", () => {
     let observer: PgSession | undefined;
     let x: PgSession | undefined;
     let y: PgSession | undefined;
-    try {
-      observer = await openObserver();
-      x = await openUserSession(owner.id);
-      y = await ySession();
+    return withSessions(
+      () => [x, y, observer],
+      async () => {
+        observer = await openObserver();
+        x = await openUserSession(owner.id);
+        y = await ySession();
 
-      const deleted = await x.client.query("delete from public.substitutes where id = $1", [f.b]);
-      if (deleted.rowCount !== 1)
-        throw new Error(`Przeplot b: X usunął wierszy: ${deleted.rowCount ?? 0} (oczekiwano 1).`);
+        const deleted = await x.client.query("delete from public.substitutes where id = $1", [f.b]);
+        if (deleted.rowCount !== 1)
+          throw new Error(`Przeplot b: X usunął wierszy: ${deleted.rowCount ?? 0} (oczekiwano 1).`);
 
-      const marked = settle(y.client.query<BestRow>(markSql, [f.b]));
-      await waitUntilBlockedBy(observer, y.pid, x.pid, BLOCK_TIMEOUT_MS);
-      await x.client.query("commit");
-      const outcome = await marked;
-      // Y commits whatever it managed to do, so the admin observation below sees its effect (none, if it failed).
-      if (outcome.ok) await y.client.query("commit");
-      return outcome;
-    } finally {
-      await closeSessions(x, y, observer);
-    }
+        const marked = settle(y.client.query<BestRow>(markSql, [f.b]));
+        await waitUntilBlockedBy(observer, y.pid, x.pid, BLOCK_TIMEOUT_MS);
+        await x.client.query("commit");
+        const outcome = await marked;
+        // Y commits whatever it managed to do, so the admin observation below sees its effect (none, if it failed).
+        if (outcome.ok) await y.client.query("commit");
+        return outcome;
+      },
+    );
   }
 
   it("interleaving b: marking a substitute while another session deletes it is not found, and A stays the best", async () => {
@@ -189,22 +190,22 @@ describe("set_best_substitute under two concurrent Postgres sessions", () => {
     let observer: PgSession | undefined;
     let x: PgSession | undefined;
     let y: PgSession | undefined;
-    let outcome: Outcome<unknown>;
-    try {
-      observer = await openObserver();
-      x = await openUserSession(owner.id);
-      y = await openUserSession(owner.id);
+    const outcome = await withSessions(
+      () => [x, y, observer],
+      async () => {
+        observer = await openObserver();
+        x = await openUserSession(owner.id);
+        y = await openUserSession(owner.id);
 
-      const first = await x.client.query<BestRow>("select * from public.set_best_substitute($1, true)", [f.b]);
-      expect(first.rows).toEqual([{ substitute_name: f.bName, replaced_name: f.aName }]);
+        const first = await x.client.query<BestRow>("select * from public.set_best_substitute($1, true)", [f.b]);
+        expect(first.rows).toEqual([{ substitute_name: f.bName, replaced_name: f.aName }]);
 
-      const second = settle(y.client.query<BestRow>("select * from public.set_best_substitute($1, true)", [f.c]));
-      await waitUntilBlockedBy(observer, y.pid, x.pid, BLOCK_TIMEOUT_MS);
-      await x.client.query("commit");
-      outcome = await second;
-    } finally {
-      await closeSessions(x, y, observer);
-    }
+        const second = settle(y.client.query<BestRow>("select * from public.set_best_substitute($1, true)", [f.c]));
+        await waitUntilBlockedBy(observer, y.pid, x.pid, BLOCK_TIMEOUT_MS);
+        await x.client.query("commit");
+        return second;
+      },
+    );
 
     // Y re-checks A after X's commit (no longer best), then marking C collides with the committed B.
     expect(outcome).toMatchObject({ ok: false, error: { code: "23505" } });

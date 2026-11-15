@@ -94,3 +94,26 @@ export async function assertServerReachable(): Promise<void> {
   await response.body?.cancel();
   if (response.status >= 500) throw new Error(`${SERVER_DOWN} (GET / zwrócił ${response.status})`);
 }
+
+/** Text and attribute values decoded the way a browser reads them (the few entities the pages emit). */
+export function decodeHtml(html: string): string {
+  // &amp; last, so an escaped entity such as &amp;quot; stays the literal text &quot;.
+  return html
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#38;/g, "&")
+    .replace(/&amp;/g, "&");
+}
+
+/** Every link of the page with an href, as its decoded href and its trimmed visible text. */
+export function links(body: string): { href: string; text: string }[] {
+  // Attribute values may contain ">" (Tailwind classes such as [&>svg]:px-3), so quoted values are skipped whole.
+  const anchors = body.matchAll(/<a\s((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/a>/g);
+  return [...anchors].flatMap((match) => {
+    const href = /(?:^|\s)href="([^"]*)"/.exec(match[1])?.[1];
+    if (href === undefined) return [];
+    return [{ href: decodeHtml(href), text: decodeHtml(match[2].replace(/<[^>]*>/g, "")).trim() }];
+  });
+}

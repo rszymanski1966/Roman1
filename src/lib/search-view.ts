@@ -4,6 +4,10 @@ import type { IngredientListItem, MatchMode } from "@/types";
 // The rules of the /ingredients search, without I/O: which match mode applies, which ingredients a search finds
 // (name match + category filter) and which view the page shows. Shared by the page and hasSearchHits, so both
 // apply the same rules. The callers run the queries and pass their results in.
+// Known gaps (impl review F5, 2026-11-15): src/pages/api/ingredients/delete.ts still has its own copy of the mode rule
+// (form > cookie > "contains") instead of resolveMatchMode, so a change to the rule must be made there too. The
+// imports from services/substitutes are circular (it imports searchMatches from here); safe only while neither
+// module uses the other at the top level.
 
 /**
  * Match mode: URL > cookie > "contains". `remember` is the mode to save in the cookie (a valid mode from the URL

@@ -5,7 +5,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { addSubstitute } from "@/lib/services/substitutes";
 import { adminClient, createTestUser, runId, type TestUser } from "../harness/accounts.ts";
-import { assertServerReachable, signIn, type HttpSession } from "./client.ts";
+import { assertServerReachable, decodeHtml, links, signIn, type HttpSession } from "./client.ts";
 
 type CategorySlug = "ciasta" | "dania-miesne";
 
@@ -68,26 +68,11 @@ async function substitutesPerCategory(id: string): Promise<Map<string, number>> 
   return counts;
 }
 
-// The few entities the pages' text and attributes can contain.
-function decodeHtml(html: string): string {
-  return html
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
-}
-
 /** href of every link whose visible text is exactly `text`. */
 function linkHrefs(html: string, text: string): string[] {
-  const hrefs: string[] = [];
-  // Attribute values may contain ">" (Tailwind variants like has-[>svg]), so quoted values are skipped as a whole.
-  for (const match of html.matchAll(/<a\b((?:[^>"]|"[^"]*")*)>([\s\S]*?)<\/a>/g)) {
-    if (decodeHtml(match[2].replace(/<[^>]*>/g, "")).trim() !== text) continue;
-    const href = /\bhref="([^"]*)"/.exec(match[1])?.[1];
-    if (href !== undefined) hrefs.push(decodeHtml(href));
-  }
-  return hrefs;
+  return links(html)
+    .filter((link) => link.text === text)
+    .map((link) => link.href);
 }
 
 beforeAll(async () => {

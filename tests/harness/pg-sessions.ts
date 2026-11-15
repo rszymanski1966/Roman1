@@ -1,8 +1,8 @@
 // Direct Postgres sessions for the concurrency tests: two transactions acting as the signed-in user (RLS exactly as
 // in the app, through role `authenticated` and the JWT claims) and an observer that only reads pg_blocking_pids.
 // The connection string comes from harnessEnv().dbUrl and holds the password: never log it, never put it in a message.
-// Every session is closed by the caller in `finally` (closeSessions), so an interrupted test leaves no locks or
-// connections behind.
+// Every session is closed by withSessions (closeSessions), also when the test fails, so an interrupted test leaves no
+// locks or connections behind.
 import { setTimeout as sleep } from "node:timers/promises";
 import { Client } from "pg";
 import { harnessEnv } from "./env.ts";
@@ -11,7 +11,12 @@ export interface PgSession {
   client: Client;
   /** Backend pid of the session, as pg_blocking_pids and pg_stat_activity see it. */
   pid: number;
+  /** The first error the connection emitted on its own (e.g. killed while idle in transaction); closeSession rethrows it. */
+  lost?: { error: unknown };
 }
+
+// A port that accepts but never answers fails here, not at the end of the test timeout.
+const CONNECT_TIMEOUT_MS = 5_000;
 
 export interface UserSessionOptions {
   /**
@@ -22,9 +27,13 @@ export interface UserSessionOptions {
 }
 
 async function connect(): Promise<PgSession> {
-  const client = new Client({ connectionString: harnessEnv().dbUrl });
-  await client.connect();
+  const client = new Client({ connectionString: harnessEnv().dbUrl, connectionTimeoutMillis: CONNECT_TIMEOUT_MS });
   const session: PgSession = { client, pid: 0 };
+  // Without a listener, a connection dropped between queries surfaces as an unrelated "Unhandled Error" in Vitest.
+  client.on("error", (error) => {
+    session.lost ??= { error };
+  });
+  await client.connect();
   await closeOnFailure(session, async () => {
     const { rows } = await client.query<{ pid: number }>("select pg_backend_pid() as pid");
     session.pid = rows[0].pid;
@@ -114,12 +123,32 @@ export async function waitUntilBlockedBy(
   );
 }
 
-/** Rolls back whatever is still open and closes the connection (the rollback is a no-op after a commit). */
-export async function closeSession(session: PgSession): Promise<void> {
+/** The failure of an awaited step as a value, so a later step runs and the first error can stay the cause. */
+async function failureOf(step: Promise<unknown>): Promise<{ error: unknown } | undefined> {
   try {
-    await session.client.query("rollback");
-  } finally {
-    await session.client.end();
+    await step;
+    return undefined;
+  } catch (error) {
+    return { error };
+  }
+}
+
+/**
+ * Rolls back whatever is still open and closes the connection (the rollback is a no-op after a commit).
+ * Reports, in this order, the error the connection emitted on its own, the rollback error and the close error; the
+ * first one stays the cause, so a later failure never replaces the one that explains it.
+ */
+export async function closeSession(session: PgSession): Promise<void> {
+  const rollback = await failureOf(session.client.query("rollback"));
+  const end = await failureOf(session.client.end());
+  const failures = [session.lost, rollback, end].filter((failure) => failure !== undefined);
+  if (failures.length === 1) throw failures[0].error;
+  if (failures.length > 1) {
+    throw new AggregateError(
+      failures.map((failure) => failure.error),
+      "Sesja Postgresa nie zamknęła się czysto.",
+      { cause: failures[0].error },
+    );
   }
 }
 
@@ -138,4 +167,27 @@ export async function closeSessions(...sessions: (PgSession | undefined)[]): Pro
     }
   }
   if (errors.length > 0) throw new AggregateError(errors, "Nie udało się zamknąć sesji Postgresa.");
+}
+
+/**
+ * Runs body, then closes the sessions that sessions() lists (in that order, see closeSessions), even when body fails.
+ * When body and the close both fail, the body's error stays the cause: a failed close never hides why the test failed.
+ */
+export async function withSessions<T>(sessions: () => (PgSession | undefined)[], body: () => Promise<T>): Promise<T> {
+  let result: T;
+  try {
+    result = await body();
+  } catch (error) {
+    const close = await failureOf(closeSessions(...sessions()));
+    if (close) {
+      throw new AggregateError(
+        [error, close.error],
+        "Test sesji Postgresa nie powiódł się, a potem nie udało się zamknąć sesji.",
+        { cause: error },
+      );
+    }
+    throw error;
+  }
+  await closeSessions(...sessions());
+  return result;
 }

@@ -1,8 +1,8 @@
-// Shared fixture and observation helpers for the service integration tests (test-plan §6.2).
+// Shared fixture and observation helpers for the service and HTTP integration tests (test-plan §6.2, §6.4).
 // Fixtures are built on the user's path (addSubstitute as the throwaway account, as the add form does); the admin
 // client only observes rows (it bypasses RLS) and reads the categories dictionary, never acts or builds fixtures.
 import { addSubstitute } from "@/lib/services/substitutes";
-import { adminClient, type TestUser } from "../harness/accounts.ts";
+import { adminClient, type TestUser } from "./accounts.ts";
 
 export type CategorySlug = "ciasta" | "dania-miesne" | "wegetarianskie";
 
