@@ -47,6 +47,21 @@ export default defineConfig({
           env: { HTTP_TEST_BASE_URL: process.env.BASE_URL ?? "http://localhost:4321" },
         },
       },
+      {
+        extends: true,
+        test: {
+          // Migrations through the Supabase CLI on throwaway databases (tests/harness/scratch-db.ts). Its own global
+          // setup sweeps scratch databases and fingerprints dev data; it creates no accounts, so no account sweep.
+          name: "migrations",
+          include: ["tests/migrations/**/*.test.ts"],
+          globalSetup: ["tests/harness/migrations-global-setup.ts"],
+          // Scratch databases share one cluster: one file at a time.
+          fileParallelism: false,
+          // One CLI call takes a few seconds (tests/harness/migrate-cli.ts); a test or hook may make several.
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
+        },
+      },
     ],
   },
 });
