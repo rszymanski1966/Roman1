@@ -14,7 +14,35 @@ const STACK_DOWN =
   "Lokalny stos Supabase nie działa albo nie zwrócił kluczy (API_URL, PUBLISHABLE_KEY, SECRET_KEY, DB_URL). " +
   "Uruchom `npx supabase start` i powtórz przebieg.";
 
+// Under load (several test workers calling status at once) one call has been measured at up to 46 s.
+const STATUS_TIMEOUT_MS = 60_000;
+
 let cached: HarnessEnv | undefined;
+
+interface StatusError {
+  code?: string;
+  status?: number | null;
+  signal?: string | null;
+  stderr?: unknown;
+  stdout?: unknown;
+  output?: unknown;
+}
+
+/**
+ * Why `supabase status` failed (exit code or signal, a timeout, stderr), for the message. The error itself stays the
+ * cause, with its stdout blanked first: execSync puts the command's stdout (the keys) on the error as stdout/output.
+ */
+function describeStatusFailure(error: unknown): string {
+  const failure = (typeof error === "object" && error !== null ? error : {}) as StatusError;
+  if ("stdout" in failure) failure.stdout = "[ukryte: klucze]";
+  if ("output" in failure) failure.output = undefined;
+  const timedOut = failure.code === "ETIMEDOUT" || failure.signal === "SIGTERM";
+  const how = timedOut
+    ? `przekroczony limit ${STATUS_TIMEOUT_MS} ms`
+    : `kod ${failure.status ?? "brak"}, sygnał ${failure.signal ?? "brak"}, błąd ${failure.code ?? "brak"}`;
+  const stderr = typeof failure.stderr === "string" ? failure.stderr.trim() : "";
+  return `npx supabase status -o env: ${how}${stderr ? `; stderr: ${stderr}` : ""}`;
+}
 
 // Only KEY=value lines count; the CLI also prints warnings and update notices. Values may be quoted.
 function parseEnvOutput(output: string): Map<string, string> {
@@ -31,14 +59,14 @@ export function harnessEnv(): HarnessEnv {
   if (cached) return cached;
   let output: string;
   try {
-    // stderr is captured and dropped: it holds only CLI notices, and stdout is never echoed (it holds the keys).
+    // stdout is never echoed (it holds the keys); stderr holds only CLI notices and goes into the cause on failure.
     output = execSync("npx supabase status -o env", {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
-      timeout: 60_000,
+      timeout: STATUS_TIMEOUT_MS,
     });
-  } catch {
-    throw new Error(STACK_DOWN);
+  } catch (error) {
+    throw new Error(`${STACK_DOWN}\n${describeStatusFailure(error)}`, { cause: error });
   }
   const values = parseEnvOutput(output);
   const apiUrl = values.get("API_URL");

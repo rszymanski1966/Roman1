@@ -13,7 +13,7 @@
     "lint:db-access": "node scripts/db-access.mjs",
     "format": "prettier --write .",
     "smoke": "node scripts/smoke.mjs",
-    "test": "vitest run --project unit --project services --project migrations",
+    "test": "vitest run --project unit --project services && vitest run --project migrations",
     "test:unit": "vitest run --project unit",
     "test:http": "vitest run --project http --passWithNoTests",
     "test:migrations": "vitest run --project migrations",

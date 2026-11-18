@@ -324,30 +324,30 @@ Ta zmiana nie dodaje migracji. Po każdym `db push` z nową migracją: przesuną
 
 #### Automated
 
-- [x] 1.1 `npm run test:migrations` przechodzi przy działającym stosie: test dymny + global setup bez błędów, w logu „0 baz testowych po sweepie, dane deweloperskie bez zmian”
-- [x] 1.2 `npx vitest run --project services tests/harness/scratch-db.test.ts` przechodzi
-- [x] 1.3 `npm run lint` przechodzi
-- [x] 1.4 Po przebiegu `select datname from pg_database where datname like 'mig\_test\_%'` zwraca 0 wierszy
+- [x] 1.1 `npm run test:migrations` przechodzi przy działającym stosie: test dymny + global setup bez błędów, w logu „0 baz testowych po sweepie, dane deweloperskie bez zmian” — 7f30c00
+- [x] 1.2 `npx vitest run --project services tests/harness/scratch-db.test.ts` przechodzi — 7f30c00
+- [x] 1.3 `npm run lint` przechodzi — 7f30c00
+- [x] 1.4 Po przebiegu `select datname from pg_database where datname like 'mig\_test\_%'` zwraca 0 wierszy — 7f30c00
 
 #### Manual
 
-- [x] 1.5 Fakty ze spike'u (rola pod `DB_URL`, `rolcreatedb`, zachowanie `--workdir`) zapisane w notatce fazy
-- [x] 1.6 Przerwany przebieg (Ctrl+C w trakcie testu) zostawia bazę `mig_test_…`, którą usuwa kolejny `npm run test:migrations` (sweep przed przebiegiem)
-- [x] 1.7 Komunikat błędu CLI dla URL-a z fałszywym, wyróżniającym się hasłem (np. celowo zły port) nie zawiera tego hasła
+- [x] 1.5 Fakty ze spike'u (rola pod `DB_URL`, `rolcreatedb`, zachowanie `--workdir`) zapisane w notatce fazy — 7f30c00
+- [x] 1.6 Przerwany przebieg (Ctrl+C w trakcie testu) zostawia bazę `mig_test_…`, którą usuwa kolejny `npm run test:migrations` (sweep przed przebiegiem) — 7f30c00
+- [x] 1.7 Komunikat błędu CLI dla URL-a z fałszywym, wyróżniającym się hasłem (np. celowo zły port) nie zawiera tego hasła — 7f30c00
 
 ### Phase 2: Fixture, inwarianty i deklaracje
 
 #### Automated
 
-- [ ] 2.1 `npm run test:migrations` przechodzi: strażnicy, „brak migracji nowszych niż linia bazowa” (dziś), 6 mutantów wykrytych, przypadek zadeklarowany przechodzi
-- [ ] 2.2 `npm test` przechodzi (unit + services + migrations w jednym przebiegu, bez kolizji global setupów)
-- [ ] 2.3 `npm run lint` przechodzi
-- [ ] 2.4 Celowe zepsucie: tymczasowa migracja `supabase/migrations/<nowa wersja>_probe.sql` z `delete` jednego wiersza o UUID z fixture'u (`3…01`, nieobecny w dev i na produkcji) bez deklaracji → `npm run test:migrations` czerwony z różnicą w `substitutes`; po usunięciu pliku zielony
+- [x] 2.1 `npm run test:migrations` przechodzi: strażnicy, „brak migracji nowszych niż linia bazowa” (dziś), 6 mutantów wykrytych, przypadek zadeklarowany przechodzi
+- [x] 2.2 `npm test` przechodzi (unit + services + migrations w jednym przebiegu, bez kolizji global setupów)
+- [x] 2.3 `npm run lint` przechodzi
+- [x] 2.4 Celowe zepsucie: tymczasowa migracja `supabase/migrations/<nowa wersja>_probe.sql` z `delete` jednego wiersza o UUID z fixture'u (`3…01`, nieobecny w dev i na produkcji) bez deklaracji → `npm run test:migrations` czerwony z różnicą w `substitutes`; po usunięciu pliku zielony
 
 #### Manual
 
-- [ ] 2.5 Różnica zgłoszona przy celowym zepsuciu wskazuje konkretny wiersz i tabelę (czytelna bez zaglądania w kod)
-- [ ] 2.6 3 przebiegi `npm run test:migrations` z rzędu bez flaków; czas przebiegu zanotowany
+- [x] 2.5 Różnica zgłoszona przy celowym zepsuciu wskazuje konkretny wiersz i tabelę (czytelna bez zaglądania w kod)
+- [x] 2.6 3 przebiegi `npm run test:migrations` z rzędu bez flaków; czas przebiegu zanotowany
 
 ### Phase 3: Atomowość pliku migracji
 
