@@ -56,9 +56,10 @@ npm run dev
 - `npm run lint:fix` - Auto-fix ESLint issues
 - `npm run format` - Run Prettier
 - `npm run test:unit` - Run the Vitest unit tests (pure search and view rules); no Supabase stack or dev server needed
-- `npm test` - Run the Vitest unit tests plus the service and harness tests against the local Supabase stack (needs `npx supabase start`; the race test connects to Postgres directly via `DB_URL` from `npx supabase status`)
+- `npm test` - Run the Vitest unit tests plus the service and harness tests against the local Supabase stack, then the migration tests in a second run (needs `npx supabase start`; the race test and the migration tests connect to Postgres directly via `DB_URL` from `npx supabase status`)
+- `npm run test:migrations` - Run the migration tests only: every migration newer than the baseline goes through the Supabase CLI onto throwaway `mig_test_*` databases with synthetic data (needs `npx supabase start`, no dev server; about 40 s). Run it before every `npx supabase db push`, see [Database migrations](#database-migrations)
 - `npm run test:http` - Run the Vitest HTTP tests (account isolation, delete confirmation, search mode cookie and states) against a running `npm run dev`
-- `npm run test:sweep` - Delete leftover throwaway test and smoke accounts from the local database
+- `npm run test:sweep` - Delete leftover throwaway test and smoke accounts from the local database (leftover `mig_test_*` databases are dropped by the next `npm run test:migrations`)
 - `npm run lint:db-access` - Check that the app reaches the database only as the signed-in user (no service-role key, no `security definer`)
 - `npx supabase test db` - Run the pgTAP database tests in `supabase/tests/` (each file rolls back its changes)
 
@@ -121,18 +122,42 @@ The local Studio UI is available at `http://localhost:54323`.
 
 ### Database migrations
 
-The database schema lives in `supabase/migrations/`: tables with Row Level Security, plus the seeded `categories` list. To apply it to the local stack, run the command below. It drops and recreates the local database, then runs every migration.
+The database schema lives in `supabase/migrations/`: tables with Row Level Security, plus the seeded `categories` list. To apply the migrations the local database does not have yet (after a pull, or one you just wrote), run the command below. It applies only the pending migrations and keeps your local data.
 
 ```bash
-npx supabase db reset
+npx supabase migration up
 ```
 
-For a hosted Supabase project, link it once and push the migrations **before** deploying code that depends on them. CI deploys only the Worker, not the database.
+Do not use `supabase db reset` on the local stack: it drops the local database with all your data. No test or check in this project needs it.
+
+For a hosted Supabase project, link it once:
 
 ```bash
 npx supabase link --project-ref <project-ref>
-npx supabase db push
 ```
+
+Push the migrations **before** deploying code that depends on them. CI deploys only the Worker, not the database, and runs no migration check, so go through these steps by hand, in this order:
+
+1. With the local stack running (`npx supabase start`), test every migration that is not on production yet. It applies each migration newer than `BASELINE_MIGRATION` (in `tests/migrations/expectations.ts`) onto a throwaway copy of synthetic data and fails if the data changes in a way the migration did not declare. A migration that is meant to change data declares that change in that file (see `context/foundation/test-plan.md` §6.5).
+
+   ```bash
+   npm run test:migrations
+   ```
+
+2. Preview the push. It lists the migrations it would apply; they must be the ones the test listed under "migracje pod testem". If it lists an older one, the baseline is ahead of production and that migration was not tested.
+
+   ```bash
+   npx supabase db push --dry-run
+   ```
+
+3. Push, then check that every local migration is also on the remote database:
+
+   ```bash
+   npx supabase db push
+   npx supabase migration list
+   ```
+
+4. In `tests/migrations/expectations.ts`, move `BASELINE_MIGRATION` to the last pushed version and delete the declarations of the pushed versions (the test fails on a declaration that is not newer than the baseline). If the pushed migrations changed the schema of the tables in `tests/migrations/fixture.sql`, update the fixture in the same commit. Then run `npm run test:migrations` again.
 
 ### Using a cloud Supabase project instead
 

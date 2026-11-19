@@ -353,22 +353,22 @@ Ta zmiana nie dodaje migracji. Po każdym `db push` z nową migracją: przesuną
 
 #### Automated
 
-- [x] 3.1 `npm run test:migrations` przechodzi z przypadkiem atomowości
-- [x] 3.2 `npm run lint` przechodzi
+- [x] 3.1 `npm run test:migrations` przechodzi z przypadkiem atomowości — 1635024
+- [x] 3.2 `npm run lint` przechodzi — 1635024
 
 #### Manual
 
-- [x] 3.3 Zaobserwowane zachowanie CLI (atomowe / nieatomowe) potwierdzone z użytkownikiem przed zamknięciem fazy
+- [x] 3.3 Zaobserwowane zachowanie CLI (atomowe / nieatomowe) potwierdzone z użytkownikiem przed zamknięciem fazy — 1635024
 
 ### Phase 4: Bramka w dokumentacji
 
 #### Automated
 
-- [ ] 4.1 `npx prettier --check README.md context/foundation/test-plan.md` przechodzi
-- [ ] 4.2 `npm run lint` przechodzi
-- [ ] 4.3 `grep -n "db reset" README.md` nie zwraca polecenia do uruchomienia lokalnie
+- [x] 4.1 `npx prettier --check README.md context/foundation/test-plan.md` przechodzi
+- [x] 4.2 `npm run lint` przechodzi
+- [x] 4.3 `grep -n "db reset" README.md` nie zwraca polecenia do uruchomienia lokalnie
 
 #### Manual
 
-- [ ] 4.4 Ktoś, kto nie brał udziału w planowaniu, wykonuje z README kroki przed `db push` (bez samego pushu) i dochodzi do zielonego `npm run test:migrations`
-- [ ] 4.5 §6.5 odpowiada na pytanie „jak dodać migrację zmieniającą dane?” bez czytania kodu testu
+- [x] 4.4 Ktoś, kto nie brał udziału w planowaniu, wykonuje z README kroki przed `db push` (bez samego pushu) i dochodzi do zielonego `npm run test:migrations`
+- [x] 4.5 §6.5 odpowiada na pytanie „jak dodać migrację zmieniającą dane?” bez czytania kodu testu
