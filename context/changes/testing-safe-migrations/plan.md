@@ -364,11 +364,11 @@ Ta zmiana nie dodaje migracji. Po każdym `db push` z nową migracją: przesuną
 
 #### Automated
 
-- [x] 4.1 `npx prettier --check README.md context/foundation/test-plan.md` przechodzi
-- [x] 4.2 `npm run lint` przechodzi
-- [x] 4.3 `grep -n "db reset" README.md` nie zwraca polecenia do uruchomienia lokalnie
+- [x] 4.1 `npx prettier --check README.md context/foundation/test-plan.md` przechodzi — 95f71e0
+- [x] 4.2 `npm run lint` przechodzi — 95f71e0
+- [x] 4.3 `grep -n "db reset" README.md` nie zwraca polecenia do uruchomienia lokalnie — 95f71e0
 
 #### Manual
 
-- [x] 4.4 Ktoś, kto nie brał udziału w planowaniu, wykonuje z README kroki przed `db push` (bez samego pushu) i dochodzi do zielonego `npm run test:migrations`
-- [x] 4.5 §6.5 odpowiada na pytanie „jak dodać migrację zmieniającą dane?” bez czytania kodu testu
+- [x] 4.4 Ktoś, kto nie brał udziału w planowaniu, wykonuje z README kroki przed `db push` (bez samego pushu) i dochodzi do zielonego `npm run test:migrations` — 95f71e0
+- [x] 4.5 §6.5 odpowiada na pytanie „jak dodać migrację zmieniającą dane?” bez czytania kodu testu — 95f71e0
