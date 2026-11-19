@@ -339,26 +339,26 @@ Ta zmiana nie dodaje migracji. Po każdym `db push` z nową migracją: przesuną
 
 #### Automated
 
-- [x] 2.1 `npm run test:migrations` przechodzi: strażnicy, „brak migracji nowszych niż linia bazowa” (dziś), 6 mutantów wykrytych, przypadek zadeklarowany przechodzi
-- [x] 2.2 `npm test` przechodzi (unit + services + migrations w jednym przebiegu, bez kolizji global setupów)
-- [x] 2.3 `npm run lint` przechodzi
-- [x] 2.4 Celowe zepsucie: tymczasowa migracja `supabase/migrations/<nowa wersja>_probe.sql` z `delete` jednego wiersza o UUID z fixture'u (`3…01`, nieobecny w dev i na produkcji) bez deklaracji → `npm run test:migrations` czerwony z różnicą w `substitutes`; po usunięciu pliku zielony
+- [x] 2.1 `npm run test:migrations` przechodzi: strażnicy, „brak migracji nowszych niż linia bazowa” (dziś), 6 mutantów wykrytych, przypadek zadeklarowany przechodzi — 1468394
+- [x] 2.2 `npm test` przechodzi (unit + services + migrations w jednym przebiegu, bez kolizji global setupów) — 1468394
+- [x] 2.3 `npm run lint` przechodzi — 1468394
+- [x] 2.4 Celowe zepsucie: tymczasowa migracja `supabase/migrations/<nowa wersja>_probe.sql` z `delete` jednego wiersza o UUID z fixture'u (`3…01`, nieobecny w dev i na produkcji) bez deklaracji → `npm run test:migrations` czerwony z różnicą w `substitutes`; po usunięciu pliku zielony — 1468394
 
 #### Manual
 
-- [x] 2.5 Różnica zgłoszona przy celowym zepsuciu wskazuje konkretny wiersz i tabelę (czytelna bez zaglądania w kod)
-- [x] 2.6 3 przebiegi `npm run test:migrations` z rzędu bez flaków; czas przebiegu zanotowany
+- [x] 2.5 Różnica zgłoszona przy celowym zepsuciu wskazuje konkretny wiersz i tabelę (czytelna bez zaglądania w kod) — 1468394
+- [x] 2.6 3 przebiegi `npm run test:migrations` z rzędu bez flaków; czas przebiegu zanotowany — 1468394
 
 ### Phase 3: Atomowość pliku migracji
 
 #### Automated
 
-- [ ] 3.1 `npm run test:migrations` przechodzi z przypadkiem atomowości
-- [ ] 3.2 `npm run lint` przechodzi
+- [x] 3.1 `npm run test:migrations` przechodzi z przypadkiem atomowości
+- [x] 3.2 `npm run lint` przechodzi
 
 #### Manual
 
-- [ ] 3.3 Zaobserwowane zachowanie CLI (atomowe / nieatomowe) potwierdzone z użytkownikiem przed zamknięciem fazy
+- [x] 3.3 Zaobserwowane zachowanie CLI (atomowe / nieatomowe) potwierdzone z użytkownikiem przed zamknięciem fazy
 
 ### Phase 4: Bramka w dokumentacji
 

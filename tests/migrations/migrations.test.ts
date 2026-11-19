@@ -361,4 +361,34 @@ describe("data invariants across migrations", () => {
       expect(actual).not.toEqual(baseSnapshot());
     });
   });
+
+  // What production is left with when a pushed migration fails halfway through its file. Pins the behaviour of
+  // Supabase CLI 2.117.0 (`migration up --db-url`, the path `db push` takes), measured on 2026-11-19: the file runs
+  // as one transaction, so neither the data change before the error, nor the DDL, nor the version record remain.
+  // If a CLI upgrade turns this red, the CLI stopped being atomic per file: decide before changing the assertions.
+  it("a migration that fails halfway through its file leaves no trace", async () => {
+    const probeTable = "mig_test_atomic_probe";
+    const sql = [
+      `update public.categories set name = '${RENAMED_CIASTA}' where slug = 'ciasta';`,
+      `create table public.${probeTable} (id int primary key);`,
+      // A run-time error, not a syntax one: the statements above have already been executed when it fails.
+      "select 1 / 0;",
+    ].join("\n");
+
+    await withClone("atomic", async (db) => {
+      const file: MigrationInput = { version: MUTANT_VERSION, sql, name: "fails_halfway" };
+      const result = await applyMigrations(db.url, [...baselineInputs(), file]);
+      expect(result).toEqual({ ok: false, output: expect.stringContaining("division by zero") as string });
+
+      expect(await migrationSnapshot(db.client)).toEqual(baseSnapshot());
+      const table = await db.client.query<{ regclass: string | null }>("select to_regclass($1)::text as regclass", [
+        `public.${probeTable}`,
+      ]);
+      expect(table.rows[0].regclass, `tabela ${probeTable} została po nieudanej migracji`).toBeNull();
+      const recorded = await db.client.query<{ version: string }>(
+        "select version from supabase_migrations.schema_migrations order by version",
+      );
+      expect(recorded.rows.map((row) => row.version)).toEqual(baselineInputs().map((input) => input.version));
+    });
+  });
 });
