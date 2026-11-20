@@ -5,6 +5,7 @@
 // their names change on purpose (20261028120000_rename_categories.sql).
 import { isDeepStrictEqual } from "node:util";
 import type { Client } from "pg";
+import { failureOf, rethrowWith } from "./scratch-db.ts";
 
 export interface SnapshotUser {
   id: string;
@@ -159,15 +160,13 @@ export async function migrationSnapshot(client: Client): Promise<MigrationSnapsh
   try {
     snapshot = await readSnapshot(client);
   } catch (error) {
-    try {
-      await client.query("rollback");
-    } catch (rollbackError) {
-      // Both errors are in the list, the read's first (same shape as closeOnFailure in pg-sessions.ts).
-      throw new AggregateError([error, rollbackError], "Nie udało się odczytać snapshotu ani zamknąć transakcji.", {
-        cause: rollbackError,
-      });
-    }
-    throw new Error("Nie udało się odczytać snapshotu danych bazy testowej.", { cause: error });
+    // The read's error stays the cause; a rollback failure only joins it.
+    const wrapped = new Error("Nie udało się odczytać snapshotu danych bazy testowej.", { cause: error });
+    rethrowWith(
+      wrapped,
+      [await failureOf(client.query("rollback"))],
+      "Nie udało się odczytać snapshotu ani zamknąć transakcji.",
+    );
   }
   await client.query("rollback");
   return snapshot;

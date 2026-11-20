@@ -6,7 +6,11 @@ export interface HarnessEnv {
   apiUrl: string;
   publishableKey: string;
   secretKey: string;
-  /** Direct Postgres connection string (with the password), only for the two-session tests in tests/harness/pg-sessions.ts. */
+  /**
+   * Direct Postgres connection string (with the password), only for direct pg connections: the two-session tests
+   * (tests/harness/pg-sessions.ts) and the migration tests' scratch databases (tests/harness/scratch-db.ts, from
+   * which tests/harness/migrate-cli.ts gets its URLs).
+   */
   dbUrl: string;
 }
 

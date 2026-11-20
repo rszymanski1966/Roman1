@@ -14,7 +14,10 @@ export async function setup(): Promise<void> {
 }
 
 export async function teardown(): Promise<void> {
-  await sweepScratchDbs();
+  // More than 0 here means a test did not drop its own database: the sweep hides the leak, the count shows it.
+  const dropped = await sweepScratchDbs();
+  // eslint-disable-next-line no-console
+  console.log(`harness migracji: sweep po przebiegu usunął baz testowych (niezamkniętych przez testy): ${dropped}`);
   const left = await listScratchDbs();
   if (left.length > 0) {
     throw new Error(

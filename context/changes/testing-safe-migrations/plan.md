@@ -53,6 +53,8 @@ Test `tests/migrations/migrations.test.ts` w nowym projekcie Vitest `migrations`
 - **Hasło w URL-u.** `DB_URL` zawiera hasło; URL jednorazowej bazy powstaje przez podmianę nazwy bazy w `DB_URL` (percent-encoded, jak wymaga `--db-url`). Wyjście i błąd CLI trafiają do komunikatu dopiero po zamaskowaniu całego URL-a i segmentu `user:hasło@` znacznikiem; nic nie jest logowane wprost (`tests/harness/env.ts:1-2`). Nie podmieniać gołego ciągu hasła: lokalnie hasło to `postgres`, tak samo jak rola i baza, więc podmiana zniszczyłaby komunikaty (`role "postgres"`).
 - **Atomowość to fakt do zmierzenia, nie założenie.** Jeśli w fazie 3 CLI okaże się nieatomowy (stan pośredni zostaje), zatrzymać się i wrócić do użytkownika przed zmianą asercji — nie przepisywać testu pod wynik.
 
+**Addendum (2026-11-20, impl-review F5).** Plan opisuje `npm test` jako jeden przebieg (punkt „Global setup bez sweepu kont” wyżej, kontrakt `package.json` w Phase 1, kryterium 2.2). Zatwierdzona implementacja ma dwa: `vitest run --project unit --project services && vitest run --project migrations`. Global setupy faktycznie nie wyścigują się, ale równoległy projekt `migrations` wydłużał `npx supabase status` w `harnessEnv()` blisko limitu 60 s (`notes/phase-2.md`, decyzja użytkownika). Kontrakt `applyMigrations` w Phase 1 („rzuca tylko na błąd uruchomienia”) w kodzie jest szerszy: rzuca też na sygnał/limit CLI, na złe wejście (wersja, nazwa, powtórzona wersja, obcy plik w katalogu roboczym) i na URL bazy spoza wzorca `mig_test_<runId>_<etykieta>` (F1). Kod wyjścia różny od 0 pozostaje wynikiem `{ ok: false }`.
+
 ## Phase 1: Jednorazowa baza i runner CLI
 
 ### Overview

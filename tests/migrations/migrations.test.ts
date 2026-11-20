@@ -18,7 +18,14 @@ import {
   type MigrationSnapshot,
   type SnapshotKey,
 } from "../harness/migration-snapshot.ts";
-import { createScratchDb, dropScratchDb, type ScratchDb } from "../harness/scratch-db.ts";
+import {
+  closeScratchDb,
+  createScratchDb,
+  dropScratchDb,
+  failureOf,
+  rethrowWith,
+  type ScratchDb,
+} from "../harness/scratch-db.ts";
 import { BASELINE_MIGRATION, expectations, type Expectations } from "./expectations.ts";
 
 // The six migrations present when the test was written; later ones follow them in the same run.
@@ -98,20 +105,11 @@ function assertAsDeclared(version: string, actual: MigrationSnapshot, expected: 
   ).toEqual(expected);
 }
 
-/** Closes the connection, then drops the database, also when closing fails. */
-async function closeAndDrop(db: ScratchDb): Promise<void> {
-  try {
-    await db.client.end();
-  } finally {
-    await dropScratchDb(db.name);
-  }
-}
-
 describe("migrations through the Supabase CLI", () => {
   let db: ScratchDb | undefined;
 
   afterAll(async () => {
-    if (db) await closeAndDrop(db);
+    if (db) await closeScratchDb(db);
   });
 
   it("applies every migration to an empty throwaway database", async () => {
@@ -176,17 +174,14 @@ describe("data invariants across migrations", () => {
     try {
       await body(db);
     } catch (error) {
-      try {
-        await closeAndDrop(db);
-      } catch (cleanupError) {
-        // Both errors are in the list, the body's first (same shape as closeOnFailure in pg-sessions.ts).
-        throw new AggregateError([error, cleanupError], `Test na bazie ${db.name} nie przeszedł ani nie posprzątał.`, {
-          cause: cleanupError,
-        });
-      }
-      throw error;
+      // The body's error stays the cause; a cleanup failure only joins it.
+      rethrowWith(
+        error,
+        [await failureOf(closeScratchDb(db))],
+        `Test na bazie ${db.name} nie przeszedł ani nie posprzątał.`,
+      );
     }
-    await closeAndDrop(db);
+    await closeScratchDb(db);
   }
 
   beforeAll(async () => {
@@ -209,7 +204,7 @@ describe("data invariants across migrations", () => {
 
   afterAll(async () => {
     if (!base) return;
-    if (baseOpen) await closeAndDrop(base);
+    if (baseOpen) await closeScratchDb(base);
     else await dropScratchDb(base.name);
   });
 

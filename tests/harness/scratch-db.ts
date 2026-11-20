@@ -13,7 +13,10 @@ export interface ScratchDb {
   url: string;
   /** A connection to the scratch database as `postgres`. Close it (client.end()) before dropping the database. */
   client: Client;
-  /** The first error the connection emitted on its own (e.g. terminated by `drop database … with (force)`). */
+  /**
+   * The first error the connection emitted on its own (e.g. terminated by `drop database … with (force)`).
+   * closeScratchDb reports it.
+   */
   lost?: { error: unknown };
 }
 
@@ -83,7 +86,7 @@ function urlFor(database: string): string {
 }
 
 /** The failure of an awaited step as a value, so the next cleanup step still runs. */
-async function failureOf(step: Promise<unknown>): Promise<{ error: unknown } | undefined> {
+export async function failureOf(step: Promise<unknown>): Promise<{ error: unknown } | undefined> {
   try {
     await step;
     return undefined;
@@ -93,7 +96,7 @@ async function failureOf(step: Promise<unknown>): Promise<{ error: unknown } | u
 }
 
 /** Rethrows error, joined with any cleanup failures; error stays the cause. */
-function rethrowWith(error: unknown, cleanup: ({ error: unknown } | undefined)[], message: string): never {
+export function rethrowWith(error: unknown, cleanup: ({ error: unknown } | undefined)[], message: string): never {
   const failures = cleanup.filter((failure) => failure !== undefined);
   if (failures.length === 0) throw error;
   throw new AggregateError([error, ...failures.map((failure) => failure.error)], message, { cause: error });
@@ -151,6 +154,11 @@ export async function createScratchDb(label: string, options: CreateScratchDbOpt
   });
   try {
     await client.connect();
+    // urlFor swaps the database in the URL; a swap that silently failed would leave us in `postgres`.
+    const { rows } = await client.query<{ db: string }>("select current_database() as db");
+    if (rows[0]?.db !== name) {
+      throw new Error(`Połączenie z ${name} trafiło do bazy "${rows[0]?.db}".`);
+    }
     if (!template) await client.query(STUB_AUTH_SQL);
     return db;
   } catch (error) {
@@ -172,6 +180,25 @@ export async function dropScratchDb(name: string): Promise<void> {
       throw new Error(`Nie udało się usunąć bazy testowej ${name}.`, { cause: error });
     }
   });
+}
+
+/**
+ * Closes the connection, then drops the database, also when closing fails. Reports, in this order, the error the
+ * connection emitted on its own, the close error and the drop error; the first one stays the cause, so a later
+ * failure never replaces the one that explains it (same shape as closeSession in pg-sessions.ts).
+ */
+export async function closeScratchDb(db: ScratchDb): Promise<void> {
+  const end = await failureOf(db.client.end());
+  const drop = await failureOf(dropScratchDb(db.name));
+  const failures = [db.lost, end, drop].filter((failure) => failure !== undefined);
+  if (failures.length === 1) throw failures[0].error;
+  if (failures.length > 1) {
+    throw new AggregateError(
+      failures.map((failure) => failure.error),
+      `Baza testowa ${db.name} nie zamknęła się czysto.`,
+      { cause: failures[0].error },
+    );
+  }
 }
 
 /** Names of the scratch databases left in the cluster (pg_database), sorted. */

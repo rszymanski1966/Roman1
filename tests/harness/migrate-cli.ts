@@ -9,6 +9,7 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { failureOf, isSweepableDbName, rethrowWith } from "./scratch-db.ts";
 
 export interface MigrationFile {
   version: string;
@@ -116,6 +117,13 @@ function runCli(args: string[], cwd: string, mask: (text: string) => string): Pr
  * A non-zero exit code is a result ({ ok: false, output }, output masked); only a failure to run the CLI throws.
  */
 export async function applyMigrations(dbUrl: string, files: MigrationInput[]): Promise<ApplyResult> {
+  // The CLI writes to whatever dbUrl names: only a scratch database qualifies (test-plan §1).
+  const database = decodeURIComponent(new URL(dbUrl).pathname.slice(1));
+  if (!isSweepableDbName(database)) {
+    throw new Error(
+      `Baza "${database}" nie jest bazą testów migracji (mig_test_<runId>_<etykieta>): nie nakładam na nią migracji.`,
+    );
+  }
   const names = files.map(migrationFileName);
   const versions = new Set(files.map((file) => file.version));
   if (versions.size !== files.length) throw new Error("Lista migracji zawiera powtórzoną wersję.");
@@ -150,15 +158,12 @@ export async function applyMigrations(dbUrl: string, files: MigrationInput[]): P
     }
     result = run.code === 0 ? { ok: true } : { ok: false, output: `kod wyjścia ${run.code ?? "brak"}\n${output}` };
   } catch (error) {
-    try {
-      await rm(workdir, { recursive: true, force: true });
-    } catch (rmError) {
-      // Both errors are in the list, the original first (same shape as closeOnFailure in pg-sessions.ts).
-      throw new AggregateError([error, rmError], `Migracje nie zostały nałożone, a katalog ${workdir} został.`, {
-        cause: rmError,
-      });
-    }
-    throw error;
+    // The original error stays the cause; a cleanup failure only joins it.
+    rethrowWith(
+      error,
+      [await failureOf(rm(workdir, { recursive: true, force: true }))],
+      `Migracje nie zostały nałożone, a katalog ${workdir} został.`,
+    );
   }
   await rm(workdir, { recursive: true, force: true });
   return result;
