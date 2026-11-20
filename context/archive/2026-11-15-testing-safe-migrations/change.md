@@ -1,10 +1,10 @@
 ---
 change_id: testing-safe-migrations
 title: Test rollout phase 3 — migrations tested on a throwaway database with data
-status: impl_reviewed
+status: archived
 created: 2026-11-15
 updated: 2026-11-20
-archived_at: null
+archived_at: 2026-11-20T07:13:58Z
 ---
 
 ## Notes
