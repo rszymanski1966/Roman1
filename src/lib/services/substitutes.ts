@@ -23,7 +23,7 @@ export { normalizeName, toNameKey };
 // Errors are returned, not thrown; `error` is a short, user-safe message (no SQL details).
 // `code` names the kinds of error a caller reacts to (which field a duplicate is about, where "not found" returns);
 // the text is only for display and is never compared.
-export type ServiceErrorCode = "duplicate" | "not_found";
+export type ServiceErrorCode = "duplicate" | "not_found" | "invalid_category";
 export type ServiceResult<T> = { data: T; error: null } | { data: null; error: string; code?: ServiceErrorCode };
 
 const GENERIC_ERROR = "Nie udało się wykonać operacji na bazie danych.";
@@ -108,6 +108,8 @@ function duplicateSubstituteMessage(name: string): string {
  * instead of GENERIC_ERROR; any other database error stays generic.
  * With isBest the new substitute is then marked as the best one of its pair (see setBestSubstitute):
  * replacedName is the previous best that lost the mark, bestError is set when marking failed.
+ * A category id that names no category is "invalid_category", checked before any write, so the failed add leaves
+ * no orphaned ingredient behind. The caller checks the id with isUuid first.
  */
 export async function addSubstitute(
   client: SupabaseClient,
@@ -115,6 +117,15 @@ export async function addSubstitute(
 ): Promise<ServiceResult<AddSubstituteResult>> {
   const ingredientName = normalizeName(input.ingredientName);
   const nameKey = toNameKey(ingredientName);
+
+  // categories is readable by every signed-in user (a shared dictionary).
+  const category = await client
+    .from("categories")
+    .select("id")
+    .eq("id", input.categoryId)
+    .maybeSingle<{ id: string }>();
+  if (category.error) return fail();
+  if (!category.data) return fail("Wybrana kategoria jest nieprawidłowa.", "invalid_category");
 
   // user_id comes from the column default (auth.uid()); RLS WITH CHECK enforces it.
   const ingredientUpsert = await client

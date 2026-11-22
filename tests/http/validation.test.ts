@@ -7,6 +7,7 @@
 // copied from the code: only the page, the presence of `error` and, where the form marks a field, `error_field`.
 // Requests carry the server's Origin (tests/http/client.ts), so Astro's checkOrigin lets them through and the
 // handler itself answers; a foreign Origin (a 403 from Astro) is not part of this matrix.
+import { randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
 import { adminClient, createTestUser, runId, type TestUser } from "../harness/accounts.ts";
 import { add, loadCategoryIds, oneId, pairOf, substituteOf } from "../harness/fixtures.ts";
@@ -150,6 +151,15 @@ const rows: Row[] = [
     send: { form: (ids) => addFields(ids, { notes: LONG_NOTES }) },
     page: "/ingredients/new",
     errorField: "notes",
+  },
+  {
+    // A well-formed uuid that names no category (the form's select only offers real ones; devtools or a script do not).
+    name: "/api/ingredients with a category id that does not exist",
+    path: "/api/ingredients",
+    session: "user",
+    send: { form: (ids) => addFields(ids, { category_id: randomUUID() }) },
+    page: "/ingredients/new",
+    errorField: "category_id",
   },
 
   // Rename form (api/ingredients/rename.ts): without the view the list is the fallback.

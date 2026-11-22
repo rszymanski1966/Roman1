@@ -469,28 +469,28 @@ Oba liczniki muszą być 0; inaczej push wstrzymany i decyzja (poprawka danych =
 
 #### Automated
 
-- [x] 2.1 Przed poprawką `npm run test:http` jest czerwony na wierszach signin/signup z ciałem nie-formularzem (500)
-- [x] 2.2 Po poprawce `npm run test:unit` i `npm run test:http` przechodzą (stos + `npm run dev`)
-- [x] 2.3 `BASE_URL=http://localhost:4321 npm run smoke` przechodzi
-- [x] 2.4 `npm run lint`, `npm run lint:db-access` przechodzą
+- [x] 2.1 Przed poprawką `npm run test:http` jest czerwony na wierszach signin/signup z ciałem nie-formularzem (500) — 8127537
+- [x] 2.2 Po poprawce `npm run test:unit` i `npm run test:http` przechodzą (stos + `npm run dev`) — 8127537
+- [x] 2.3 `BASE_URL=http://localhost:4321 npm run smoke` przechodzi — 8127537
+- [x] 2.4 `npm run lint`, `npm run lint:db-access` przechodzą — 8127537
 
 #### Manual
 
-- [x] 2.5 `/auth/signup` z różnymi hasłami przy wyłączonym JS w przeglądarce pokazuje komunikat serwera zamiast tworzyć konto
+- [x] 2.5 `/auth/signup` z różnymi hasłami przy wyłączonym JS w przeglądarce pokazuje komunikat serwera zamiast tworzyć konto — 8127537
 
 ### Phase 3: Duplikaty i osierocone wiersze w serwisie
 
 #### Automated
 
-- [ ] 3.1 Przed poprawką `npx vitest run --project services tests/services/names.test.ts` jest czerwony tylko na przypadku nieznanej kategorii
-- [ ] 3.2 Po poprawce `npm test` przechodzi
-- [ ] 3.3 `npx vitest run --project services tests/services/names.test.ts` 5× z rzędu zielony
-- [ ] 3.4 `npm run test:http` przechodzi z nowym wierszem
-- [ ] 3.5 `npm run lint` przechodzi
+- [x] 3.1 Przed poprawką `npx vitest run --project services tests/services/names.test.ts` jest czerwony tylko na przypadku nieznanej kategorii
+- [x] 3.2 Po poprawce `npm test` przechodzi
+- [x] 3.3 `npx vitest run --project services tests/services/names.test.ts` 5× z rzędu zielony
+- [x] 3.4 `npm run test:http` przechodzi z nowym wierszem
+- [x] 3.5 `npm run lint` przechodzi
 
 #### Manual
 
-- [ ] 3.6 Formularz dodawania z podmienionym w devtools `category_id` pokazuje błąd przy polu kategorii, a lista składników nie ma nowego wpisu
+- [x] 3.6 Formularz dodawania z podmienionym w devtools `category_id` pokazuje błąd przy polu kategorii, a lista składników nie ma nowego wpisu
 
 ### Phase 4: Niezmienniki nazw w bazie
 
