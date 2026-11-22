@@ -457,26 +457,26 @@ Oba liczniki muszą być 0; inaczej push wstrzymany i decyzja (poprawka danych =
 
 #### Automated
 
-- [x] 1.1 `npm run test:unit` przechodzi z nowym plikiem
-- [x] 1.2 Celowe zepsucie `normalizeName` (np. bez scalania spacji) daje czerwony `npm run test:unit`, po cofnięciu zielony
-- [x] 1.3 `npm run lint` przechodzi
+- [x] 1.1 `npm run test:unit` przechodzi z nowym plikiem — 4e7c4a8
+- [x] 1.2 Celowe zepsucie `normalizeName` (np. bez scalania spacji) daje czerwony `npm run test:unit`, po cofnięciu zielony — 4e7c4a8
+- [x] 1.3 `npm run lint` przechodzi — 4e7c4a8
 
 #### Manual
 
-- [x] 1.4 Wpis §7 o znakach zerowej szerokości jest w test-planie i wskazuje wiersz PINNED w teście
+- [x] 1.4 Wpis §7 o znakach zerowej szerokości jest w test-planie i wskazuje wiersz PINNED w teście — 4e7c4a8
 
 ### Phase 2: Złe wejście przez HTTP + poprawka auth
 
 #### Automated
 
-- [ ] 2.1 Przed poprawką `npm run test:http` jest czerwony na wierszach signin/signup z ciałem nie-formularzem (500)
-- [ ] 2.2 Po poprawce `npm run test:unit` i `npm run test:http` przechodzą (stos + `npm run dev`)
-- [ ] 2.3 `BASE_URL=http://localhost:4321 npm run smoke` przechodzi
-- [ ] 2.4 `npm run lint`, `npm run lint:db-access` przechodzą
+- [x] 2.1 Przed poprawką `npm run test:http` jest czerwony na wierszach signin/signup z ciałem nie-formularzem (500)
+- [x] 2.2 Po poprawce `npm run test:unit` i `npm run test:http` przechodzą (stos + `npm run dev`)
+- [x] 2.3 `BASE_URL=http://localhost:4321 npm run smoke` przechodzi
+- [x] 2.4 `npm run lint`, `npm run lint:db-access` przechodzą
 
 #### Manual
 
-- [ ] 2.5 `/auth/signup` z różnymi hasłami przy wyłączonym JS w przeglądarce pokazuje komunikat serwera zamiast tworzyć konto
+- [x] 2.5 `/auth/signup` z różnymi hasłami przy wyłączonym JS w przeglądarce pokazuje komunikat serwera zamiast tworzyć konto
 
 ### Phase 3: Duplikaty i osierocone wiersze w serwisie
 

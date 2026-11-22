@@ -20,6 +20,12 @@ export interface HttpResponse {
 
 export type FormFields = Record<string, string>;
 
+/** A request body sent as is; contentType undefined = no Content-Type header at all. */
+export interface RawBody {
+  body?: string;
+  contentType?: string;
+}
+
 function relativeLocation(raw: string | null): string {
   if (!raw) return "";
   const url = new URL(raw, BASE_URL);
@@ -35,19 +41,34 @@ export class HttpSession {
   }
 
   postForm(path: string, fields: FormFields): Promise<HttpResponse> {
-    return this.request("POST", path, fields);
+    return this.request("POST", path, {
+      body: new URLSearchParams(fields).toString(),
+      contentType: "application/x-www-form-urlencoded",
+    });
   }
 
-  private async request(method: "GET" | "POST", path: string, form?: FormFields): Promise<HttpResponse> {
+  /**
+   * POST with any body and Content-Type, bypassing the HTML form: same cookies and Origin as postForm (so Astro's
+   * checkOrigin lets it through and the handler itself answers). Without contentType no Content-Type header is sent.
+   */
+  postRaw(path: string, options: RawBody = {}): Promise<HttpResponse> {
+    return this.request("POST", path, options);
+  }
+
+  private async request(method: "GET" | "POST", path: string, payload?: RawBody): Promise<HttpResponse> {
+    const contentType = payload?.contentType;
+    // fetch labels a string body text/plain by itself; bytes keep the header absent when none was asked for.
+    const body =
+      payload?.body === undefined ? undefined : contentType ? payload.body : new TextEncoder().encode(payload.body);
     const response = await fetch(BASE_URL + path, {
       method,
       redirect: "manual",
       headers: {
         Cookie: [...this.cookies.entries()].map(([name, value]) => `${name}=${value}`).join("; "),
         Origin: BASE_URL,
-        ...(form ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
+        ...(contentType ? { "Content-Type": contentType } : {}),
       },
-      body: form ? new URLSearchParams(form).toString() : undefined,
+      body,
     });
     const setCookies = response.headers.getSetCookie();
     this.storeCookies(setCookies);

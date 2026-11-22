@@ -155,7 +155,7 @@ const steps = [
   ],
   [
     "signup creates account",
-    () => request("/api/auth/signup", { method: "POST", form: { email, password } }),
+    () => request("/api/auth/signup", { method: "POST", form: { email, password, confirmPassword: password } }),
     { status: 302, location: "/auth/confirm-email" },
   ],
   [
@@ -637,7 +637,12 @@ const steps = [
   ],
   [
     "signup creates account B",
-    () => request("/api/auth/signup", { method: "POST", cookies: jarB, form: { email: emailB, password } }),
+    () =>
+      request("/api/auth/signup", {
+        method: "POST",
+        cookies: jarB,
+        form: { email: emailB, password, confirmPassword: password },
+      }),
     { status: 302, location: "/auth/confirm-email" },
   ],
   [
