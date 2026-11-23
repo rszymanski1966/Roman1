@@ -253,17 +253,17 @@ pgTAP pokazuje, że bezpośredni zapis przez PostgREST (rola `authenticated`) mo
 
 #### 2. Migracja
 
-**File**: `supabase/migrations/<YYYYMMDDHHmmss>_name_invariants.sql` (nowy)
+**File**: `supabase/migrations/20261123120000_name_invariants.sql` (nowy)
 
 **Intent**: CHECK-i: `ingredients.name_key = lower(name)`; nazwa znormalizowana (bez białych znaków na brzegach, pojedyncze spacje) w `ingredients` i `substitutes`. Tylko schemat, bez zmiany danych.
 
 **Contract**: trzy nazwane ograniczenia (`ingredients_name_key_matches_name`, `ingredients_name_normalized`, `substitutes_name_normalized`). Normalizacja w Postgresie przez regex, nie `btrim` (ten przycina tylko spacje):
 
 ```sql
-check (name = regexp_replace(regexp_replace(name, '^[\s   ﻿]+|[\s   ﻿]+$', '', 'g'), '[\s   ﻿]+', ' ', 'g'))
+check (name = regexp_replace(regexp_replace(name, '^[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+|[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+$', '', 'g'), '[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+', ' ', 'g'))
 ```
 
-Klasa jest szersza niż samo `\s`: Postgres `\s` (klasa `space` z libc) nie obejmuje twardych spacji (U+00A0, U+2007, U+202F) ani U+FEFF, które JS `\s` w `normalizeName` przycina i scala. Zbiór Postgresa pozostaje podzbiorem JS, więc dane zapisane przez aplikację zawsze spełniają CHECK.
+Klasa to dokładnie zbiór JS `\s` (i `String.prototype.trim`), zapisany jako `\uXXXX` w zwykłym literale (wymaga `standard_conforming_strings = on`), a nie Postgres `\s`. Postgres `\s` zależy od dostawcy locale: libc nie obejmuje U+00A0, U+2007 ani U+202F, a ICU (lokalnie) dodaje U+001C–U+001F i U+0085, których JS nie przycina. Wtedy nazwa, którą `normalizeName` zostawia bez zmian, padałaby na CHECK-u z 23514. Przy zbiorze JS każda nazwa zapisana przez aplikację spełnia CHECK, a nazwa spełniająca CHECK jest stałym punktem `normalizeName`, niezależnie od locale.
 
 #### 3. Zapytanie kontrolne przed pushem
 
@@ -425,18 +425,26 @@ Job `integration` dodaje kilka minut do PR (pobranie obrazów Supabase, ok. 40 s
 
 ## Migration Notes
 
-Migracja `<YYYYMMDDHHmmss>_name_invariants.sql` zmienia tylko schemat. Przed `npx supabase db push` (kolejność z README „Database migrations”) uruchom na produkcji (SQL editor):
+Migracja `20261123120000_name_invariants.sql` zmienia tylko schemat. Przed `npx supabase db push` (kolejność z README „Database migrations”) uruchom na produkcji (SQL editor):
 
 ```sql
-select current_setting('lc_ctype') as ctype,
+select (select datctype from pg_database where datname = current_database()) as ctype,
+  (select datlocprovider from pg_database where datname = current_database()) as locprovider,
+  current_setting('standard_conforming_strings') as scs,
   (select count(*) from public.ingredients
-    where name_key <> lower(name)
-       or name <> regexp_replace(regexp_replace(name, '^[\s   ﻿]+|[\s   ﻿]+$', '', 'g'), '[\s   ﻿]+', ' ', 'g')) as ingredients_bad,
+    where name_key <> lower(name)) as ingredients_key_bad,
+  (select count(*) from public.ingredients
+    where name <> regexp_replace(regexp_replace(name, '^[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+|[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+$', '', 'g'), '[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+', ' ', 'g')) as ingredients_name_bad,
   (select count(*) from public.substitutes
-    where name <> regexp_replace(regexp_replace(name, '^[\s   ﻿]+|[\s   ﻿]+$', '', 'g'), '[\s   ﻿]+', ' ', 'g')) as substitutes_bad;
+    where name <> regexp_replace(regexp_replace(name, '^[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+|[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+$', '', 'g'), '[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+', ' ', 'g')) as substitutes_name_bad;
 ```
 
-Oba liczniki muszą być 0; inaczej push wstrzymany i decyzja (poprawka danych = migracja zmieniająca dane z deklaracją w `expectations.ts`). Po pushu: `BASELINE_MIGRATION` na nową wersję (§6.5). Wycofanie: `alter table … drop constraint …` dla trzech ograniczeń.
+- Klasa białych znaków jest ta sama co w migracji (zbiór JS `\s`), nie Postgres `\s`. Na ICU `\s` obejmuje też U+001C–U+001F i U+0085, a na libc nie obejmuje U+00A0, U+2007 i U+202F.
+- Locale odczytujesz z `pg_database`. `current_setting('lc_ctype')` na PG 16+ kończy się błędem „unrecognized configuration parameter”.
+- `scs` musi być `on`, inaczej `\t` i `\uXXXX` nie dotrą do wyrażenia regularnego. Dotyczy to zapytania i samej migracji.
+- `locprovider`: `i` oznacza ICU, tak jak lokalnie, `c` oznacza libc. Przy `c` `lower()` może się różnić od `toLocaleLowerCase("pl")` dla rzadkich znaków spoza polskiego, np. greckiej końcowej sigmy. Decyduje wtedy licznik `ingredients_key_bad`.
+
+Wszystkie trzy liczniki muszą być 0. Inaczej wstrzymaj push i podejmij decyzję: poprawka danych to migracja zmieniająca dane, z deklaracją w `expectations.ts`. Po pushu przestaw `BASELINE_MIGRATION` na nową wersję (§6.5). Wycofanie to `alter table … drop constraint …` dla trzech ograniczeń (polecenia są w nagłówku migracji).
 
 ## References
 
@@ -496,22 +504,22 @@ Oba liczniki muszą być 0; inaczej push wstrzymany i decyzja (poprawka danych =
 
 #### Automated
 
-- [x] 4.1 Przed migracją `npx supabase test db` jest czerwony na asercjach `throws_ok` z `name-invariants.sql`
-- [x] 4.2 `npx supabase migration up` nakłada migrację lokalnie bez błędu
-- [x] 4.3 Po migracji `npx supabase test db` przechodzi (wszystkie pliki)
-- [x] 4.4 `npm run test:migrations` przechodzi, a log „migracje pod testem” wymienia nową migrację (bez deklaracji w `expectations.ts`)
-- [x] 4.5 `npm test` i `npm run test:http` przechodzą (aplikacja zapisuje dane spełniające CHECK-i)
-- [x] 4.6 `npm run lint:db-access` przechodzi
+- [x] 4.1 Przed migracją `npx supabase test db` jest czerwony na asercjach `throws_ok` z `name-invariants.sql` — 4bc13d7
+- [x] 4.2 `npx supabase migration up` nakłada migrację lokalnie bez błędu — 4bc13d7
+- [x] 4.3 Po migracji `npx supabase test db` przechodzi (wszystkie pliki) — 4bc13d7
+- [x] 4.4 `npm run test:migrations` przechodzi, a log „migracje pod testem” wymienia nową migrację (bez deklaracji w `expectations.ts`) — 4bc13d7
+- [x] 4.5 `npm test` i `npm run test:http` przechodzą (aplikacja zapisuje dane spełniające CHECK-i) — 4bc13d7
+- [x] 4.6 `npm run lint:db-access` przechodzi — 4bc13d7
 
 #### Manual
 
-- [x] 4.7 Dodanie, edycja i zmiana nazwy w UI na lokalnej bazie po migracji działają jak przedtem
+- [x] 4.7 Dodanie, edycja i zmiana nazwy w UI na lokalnej bazie po migracji działają jak przedtem — 4bc13d7
 
 ### Phase 5: Bramki w CI i ruleset
 
 #### Automated
 
-- [ ] 5.1 `npm run lint` przechodzi (workflow nie jest lintowany — poprawność YAML sprawdza pierwszy przebieg)
+- [x] 5.1 `npm run lint` przechodzi (workflow nie jest lintowany — poprawność YAML sprawdza pierwszy przebieg)
 - [ ] 5.2 PR z tą zmianą: joby `checks` i `integration` zielone w GitHub Actions
 - [ ] 5.3 Gałąź próbna z celowo zepsutą asercją w `tests/services/` i otwartym na niej draft PR do `main` (sam push gałęzi nie uruchamia workflow) daje czerwony `integration` i zielony `checks`; PR zamknięty, gałąź usunięta po próbie
 - [ ] 5.4 `gh api repos/rszymanski1966/Roman1/rules/branches/main` zwraca reguły `pull_request` i `required_status_checks` z `checks` i `integration`
