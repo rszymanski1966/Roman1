@@ -77,8 +77,19 @@ jobs:
             exit 1
           fi
 
+      # On success `supabase start` prints a table with the keys, before the next step can mask them: its output goes
+      # to a file. On failure the file is printed without the key lines.
       - name: Start the local Supabase stack
-        run: npx supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+        run: |
+          start_log="$RUNNER_TEMP/supabase-start.log"
+          if ! npx supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor \
+            > "$start_log" 2>&1; then
+            grep -vE 'sb_(publishable|secret)_|eyJ|postgres(ql)?://' "$start_log" | tail -n 100
+            echo "::error::npx supabase start failed"
+            exit 1
+          fi
+          grep -m1 'Started supabase' "$start_log" || echo "supabase start finished"
+          rm -f "$start_log"
 
       # The status output holds the keys: it goes to a temp file, never to the log. Every secret value is masked
       # before anything else runs.
