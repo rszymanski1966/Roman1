@@ -519,16 +519,16 @@ Wszystkie trzy liczniki muszą być 0. Inaczej wstrzymaj push i podejmij decyzj�
 
 #### Automated
 
-- [x] 5.1 `npm run lint` przechodzi (workflow nie jest lintowany — poprawność YAML sprawdza pierwszy przebieg)
-- [ ] 5.2 PR z tą zmianą: joby `checks` i `integration` zielone w GitHub Actions
-- [ ] 5.3 Gałąź próbna z celowo zepsutą asercją w `tests/services/` i otwartym na niej draft PR do `main` (sam push gałęzi nie uruchamia workflow) daje czerwony `integration` i zielony `checks`; PR zamknięty, gałąź usunięta po próbie
-- [ ] 5.4 `gh api repos/rszymanski1966/Roman1/rules/branches/main` zwraca reguły `pull_request` i `required_status_checks` z `checks` i `integration`
+- [x] 5.1 `npm run lint` przechodzi (workflow nie jest lintowany — poprawność YAML sprawdza pierwszy przebieg) — aef9042
+- [x] 5.2 PR z tą zmianą: joby `checks` i `integration` zielone w GitHub Actions — aef9042
+- [x] 5.3 Gałąź próbna z celowo zepsutą asercją w `tests/services/` i otwartym na niej draft PR do `main` (sam push gałęzi nie uruchamia workflow) daje czerwony `integration` i zielony `checks`; PR zamknięty, gałąź usunięta po próbie — aef9042
+- [x] 5.4 `gh api repos/rszymanski1966/Roman1/rules/branches/main` zwraca reguły `pull_request` i `required_status_checks` z `checks` i `integration` — aef9042
 
 #### Manual
 
-- [ ] 5.5 Na PR z czerwonym checkiem GitHub pokazuje merge jako zablokowany (z opcją obejścia dla admina)
+- [x] 5.5 Na PR z czerwonym checkiem GitHub pokazuje merge jako zablokowany (z opcją obejścia dla admina) — aef9042
 - [ ] 5.6 Push na `main` po merge'u uruchamia `deploy` dopiero po zielonych `checks` i `integration`
-- [ ] 5.7 Log `integration` nie zawiera kluczy Supabase ani `DB_URL` w jawnej postaci
+- [x] 5.7 Log `integration` nie zawiera kluczy Supabase ani `DB_URL` w jawnej postaci — aef9042
 
 ### Phase 6: Hooki agenta i dokumentacja
 
