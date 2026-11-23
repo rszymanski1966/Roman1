@@ -108,7 +108,7 @@ describe("names, duplicates and the name key through the services", () => {
     expect(result).toEqual({ data: { name: "Masło klarowane" }, error: null });
     const { data, error } = await adminClient().from("ingredients").select("name, name_key").eq("id", ingredient);
     expect(error).toBeNull();
-    expect(data).toEqual([{ name: "Masło klarowane", name_key: "masło klarowane" }]);
+    expect(data).toEqual([{ name: "Masło klarowane", name_key: "PROBE-deliberately-wrong" }]);
   });
 
   it("rejects an unknown category with invalid_category and leaves no orphaned ingredient or pair", async () => {
