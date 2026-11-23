@@ -482,30 +482,30 @@ Oba liczniki muszą być 0; inaczej push wstrzymany i decyzja (poprawka danych =
 
 #### Automated
 
-- [x] 3.1 Przed poprawką `npx vitest run --project services tests/services/names.test.ts` jest czerwony tylko na przypadku nieznanej kategorii
-- [x] 3.2 Po poprawce `npm test` przechodzi
-- [x] 3.3 `npx vitest run --project services tests/services/names.test.ts` 5× z rzędu zielony
-- [x] 3.4 `npm run test:http` przechodzi z nowym wierszem
-- [x] 3.5 `npm run lint` przechodzi
+- [x] 3.1 Przed poprawką `npx vitest run --project services tests/services/names.test.ts` jest czerwony tylko na przypadku nieznanej kategorii — c7ae732
+- [x] 3.2 Po poprawce `npm test` przechodzi — c7ae732
+- [x] 3.3 `npx vitest run --project services tests/services/names.test.ts` 5× z rzędu zielony — c7ae732
+- [x] 3.4 `npm run test:http` przechodzi z nowym wierszem — c7ae732
+- [x] 3.5 `npm run lint` przechodzi — c7ae732
 
 #### Manual
 
-- [x] 3.6 Formularz dodawania z podmienionym w devtools `category_id` pokazuje błąd przy polu kategorii, a lista składników nie ma nowego wpisu
+- [x] 3.6 Formularz dodawania z podmienionym w devtools `category_id` pokazuje błąd przy polu kategorii, a lista składników nie ma nowego wpisu — c7ae732
 
 ### Phase 4: Niezmienniki nazw w bazie
 
 #### Automated
 
-- [ ] 4.1 Przed migracją `npx supabase test db` jest czerwony na asercjach `throws_ok` z `name-invariants.sql`
-- [ ] 4.2 `npx supabase migration up` nakłada migrację lokalnie bez błędu
-- [ ] 4.3 Po migracji `npx supabase test db` przechodzi (wszystkie pliki)
-- [ ] 4.4 `npm run test:migrations` przechodzi, a log „migracje pod testem” wymienia nową migrację (bez deklaracji w `expectations.ts`)
-- [ ] 4.5 `npm test` i `npm run test:http` przechodzą (aplikacja zapisuje dane spełniające CHECK-i)
-- [ ] 4.6 `npm run lint:db-access` przechodzi
+- [x] 4.1 Przed migracją `npx supabase test db` jest czerwony na asercjach `throws_ok` z `name-invariants.sql`
+- [x] 4.2 `npx supabase migration up` nakłada migrację lokalnie bez błędu
+- [x] 4.3 Po migracji `npx supabase test db` przechodzi (wszystkie pliki)
+- [x] 4.4 `npm run test:migrations` przechodzi, a log „migracje pod testem” wymienia nową migrację (bez deklaracji w `expectations.ts`)
+- [x] 4.5 `npm test` i `npm run test:http` przechodzą (aplikacja zapisuje dane spełniające CHECK-i)
+- [x] 4.6 `npm run lint:db-access` przechodzi
 
 #### Manual
 
-- [ ] 4.7 Dodanie, edycja i zmiana nazwy w UI na lokalnej bazie po migracji działają jak przedtem
+- [x] 4.7 Dodanie, edycja i zmiana nazwy w UI na lokalnej bazie po migracji działają jak przedtem
 
 ### Phase 5: Bramki w CI i ruleset
 
