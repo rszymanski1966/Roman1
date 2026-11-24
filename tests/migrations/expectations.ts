@@ -9,7 +9,7 @@ import type { MigrationSnapshot } from "../harness/migration-snapshot.ts";
  * After `npx supabase db push`: move this to the last pushed version, delete that version's declaration below, and
  * update fixture.sql if the pushed migrations changed the schema of its tables.
  */
-export const BASELINE_MIGRATION = "20261028120000";
+export const BASELINE_MIGRATION = "20261123120000";
 
 /**
  * The expected snapshot after a migration, built from `before` and literals of fixture.sql (ids, slugs, names), e.g.
