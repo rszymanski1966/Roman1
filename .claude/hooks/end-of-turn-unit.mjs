@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import {
   clearRegistry,
+  commonDir,
   git,
   isUnitRelevant,
   plainEnv,
@@ -33,9 +34,14 @@ if (payload.stop_hook_active === true || (typeof payload.loop_count === "number"
 }
 
 const sessionCwd = typeof payload.cwd === "string" && payload.cwd ? payload.cwd : process.cwd();
+const sessionRepo = commonDir(sessionCwd);
 const roots = new Map();
 for (const candidate of [toplevel(sessionCwd), ...registeredRoots(payload.session_id)]) {
-  if (candidate && fs.existsSync(candidate)) roots.set(samePath(candidate), candidate);
+  // The registry lives in the OS temp dir, so it is not trusted: npm runs only in a checkout of the session's own
+  // repository (the same rule the per-edit hook applies before it registers a root).
+  if (!candidate || !fs.existsSync(candidate)) continue;
+  if (!sessionRepo || toplevel(candidate) === null || commonDir(candidate) !== sessionRepo) continue;
+  roots.set(samePath(candidate), candidate);
 }
 if (roots.size === 0) tellUser(`end-of-turn-unit.mjs: no git checkout at ${sessionCwd}, unit tests not run.`);
 

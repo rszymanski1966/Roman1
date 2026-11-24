@@ -59,7 +59,7 @@ npm run dev
 - `npm run test:hooks` - Prove the Claude Code hooks in `.claude/settings.json` on throwaway git repos in the OS temp dir; no Supabase stack or dev server needed (about 1 min)
 - `npm test` - Run the Vitest unit tests plus the service and harness tests against the local Supabase stack, then the migration tests in a second run (needs `npx supabase start`; the race test and the migration tests connect to Postgres directly via `DB_URL` from `npx supabase status`)
 - `npm run test:migrations` - Run the migration tests only: every migration newer than the baseline goes through the Supabase CLI onto throwaway `mig_test_*` databases with synthetic data (needs `npx supabase start`, no dev server; about 40 s). Run it before every `npx supabase db push`, see [Database migrations](#database-migrations)
-- `npm run test:http` - Run the Vitest HTTP tests (account isolation, delete confirmation, search mode cookie and states) against a running `npm run dev`
+- `npm run test:http` - Run the Vitest HTTP tests (account isolation, delete confirmation, search mode cookie and states, bad input sent past the form to every POST endpoint) against a running `npm run dev`
 - `npm run test:sweep` - Delete leftover throwaway test and smoke accounts from the local database (leftover `mig_test_*` databases are dropped by the next `npm run test:migrations`)
 - `npm run lint:db-access` - Check that the app reaches the database only as the signed-in user (no service-role key, no `security definer`)
 - `npx supabase test db` - Run the pgTAP database tests in `supabase/tests/` (each file rolls back its changes)
@@ -223,7 +223,7 @@ The `CI` workflow runs on every push and PR to `main`, in three jobs:
 
 A ruleset on `main` requires a pull request with green `checks` and `integration` before merge. Repository admins can bypass it.
 
-Locally, Claude Code runs the agent hooks from `.claude/settings.json`. After every edit of a `.ts`/`.tsx` file, they run the related `unit` tests and report a failure back to the agent. At the end of a turn, they run `npm run test:unit` and only notify you when it is red. `npm run test:hooks` proves these hooks. They don't replace CI.
+Locally, Claude Code runs the agent hooks from `.claude/settings.json`. After every edit of a `.ts`/`.tsx` file, they run the related `unit` tests and report a failure back to the agent. At the end of each turn, while the working tree has uncommitted TypeScript changes, they run `npm run test:unit` and only notify you when it is red. `npm run test:hooks` proves these hooks. They don't replace CI.
 
 Configure these repository secrets in GitHub: `SUPABASE_URL` and `SUPABASE_KEY` (build step), `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (deploy step).
 
