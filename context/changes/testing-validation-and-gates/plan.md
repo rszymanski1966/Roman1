@@ -396,6 +396,18 @@ Hooki Claude Code z szybkimi testami unit (bez stosu) oraz aktualizacja dokument
 
 **Implementation Note**: po automatycznej weryfikacji poczekaj na potwierdzenie ręcznych kroków.
 
+#### Addendum (implementation, 2026-11-24)
+
+Odstępstwa i dodatki w stosunku do kontraktu fazy 6. Opisane w commicie `156b738`, w test-planie §4/§5 i w impl-review (F7):
+
+- Hook per-edit wywołuje `node node_modules/vitest/vitest.mjs related <plik> --run --project unit --passWithNoTests` zamiast `npx --no-install vitest …`. Na Windows nie potrzeba wtedy shima `.cmd` ani powłoki. Brak instalacji nadal kończy się exit 2 z „Run `npm ci`”.
+- Test dowodowy hooków ma osobny projekt Vitest `hooks` (`npm run test:hooks`) i krok w jobie CI `checks`, a nie jest w `unit`. Każdy przypadek uruchamia Vitest, a hook `Stop` sam uruchamia `unit`.
+- Hook `Stop`:
+  - nie uruchamia testów, gdy względem `HEAD` nie zmienił się żaden plik `.ts`/`.tsx` ani `package*.json`;
+  - kończy od razu przy `stop_hook_active` albo `loop_count` (Cursor importuje `.claude/settings.json`);
+  - sprawdza także checkouty zarejestrowane przez hook per-edit w rejestrze sesji (`lib.mjs`, katalog tymczasowy). Po impl-review F3 bierze z rejestru tylko checkouty tego samego repozytorium.
+- Hook per-edit czyta też `tool_input.notebook_path`. Plik notatnika nie jest jednak `.ts`/`.tsx`, więc go pomija.
+
 ---
 
 ## Testing Strategy

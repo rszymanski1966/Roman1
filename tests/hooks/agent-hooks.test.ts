@@ -2,8 +2,9 @@
 // phase 6). Oracle: the Claude Code hook protocol (.claude/skills/10x-configure-hook/references/anthropic.md):
 // PostToolUse reaches the agent only with exit 2 + stderr; Stop here never blocks and talks to the user through a
 // `systemMessage` on stdout. Every case pipes a payload into the real script inside a throwaway git repo in the OS
-// temp dir (real git, real Vitest through a junction to this repo's node_modules), never in the developer's tree.
-// No Supabase stack, no dev server.
+// temp dir (real git, real Vitest through a junction to this repo's node_modules), never on the developer's tracked
+// files; the only write that lands in this repo is Vitest's own config cache (node_modules/.vite-temp, through the
+// junction). No Supabase stack, no dev server. One run at a time: beforeAll removes leftover dirs of killed runs.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -157,8 +158,28 @@ function hookShell(): string {
   return bash;
 }
 
+const TMP_PREFIX = "agent-hooks-";
+const JUNCTION_HOMES = ["app", "app-worktree"];
+
+// Removes one temp dir of this test. The junctions to the real node_modules go first; anything in their place that
+// is not a link stops the removal, because rmSync would otherwise recurse into the real node_modules.
+function removeTree(dir: string): void {
+  for (const home of JUNCTION_HOMES) {
+    const link = path.join(dir, home, "node_modules");
+    const stat = fs.lstatSync(link, { throwIfNoEntry: false });
+    if (!stat) continue;
+    if (!stat.isSymbolicLink()) throw new Error(`${link} is not a link: refusing to remove ${dir} recursively`);
+    fs.unlinkSync(link);
+  }
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+
 beforeAll(() => {
-  tmp = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "agent-hooks-")));
+  // A killed run (timeout, Ctrl+C) skips afterAll and leaves its dir, junctions included.
+  for (const entry of fs.readdirSync(os.tmpdir())) {
+    if (entry.startsWith(TMP_PREFIX)) removeTree(path.join(os.tmpdir(), entry));
+  }
+  tmp = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), TMP_PREFIX)));
   app = path.join(tmp, "app");
   worktree = path.join(tmp, "app-worktree");
   other = path.join(tmp, "other");
@@ -171,13 +192,7 @@ beforeAll(() => {
 }, 60_000);
 
 afterAll(() => {
-  if (!tmp) return;
-  // Junctions first, so nothing can reach this repo's node_modules through them.
-  for (const root of [app, worktree]) {
-    const link = path.join(root, "node_modules");
-    if (fs.existsSync(link) && fs.lstatSync(link).isSymbolicLink()) fs.unlinkSync(link);
-  }
-  fs.rmSync(tmp, { recursive: true, force: true });
+  if (tmp) removeTree(tmp);
 });
 
 beforeEach(() => {
@@ -326,6 +341,18 @@ describe("end of turn: end-of-turn-unit.mjs", () => {
     const message = systemMessage(run);
     expect(message).toContain(path.basename(worktree));
     expect(message).toContain("doubles a price");
+  });
+
+  it("does not run npm in a registered root of another repository (the registry is not trusted)", () => {
+    // A roots file written by someone else (shared temp dir): it names a checkout of another repository whose
+    // test:unit would fail (no node_modules), next to a clean session checkout.
+    writeFiles(other, { "src/lib/untested.ts": "export const untested = 2;\n" });
+    writeFiles(app, { "src/lib/untested.ts": "export const untested = 2;\n" });
+    writeFiles(stateDir, { [`${SESSION}.roots`]: `${other}\n` });
+
+    const run = runHook(END_OF_TURN, stopPayload());
+
+    expect(run).toMatchObject({ status: 0, stdout: "", stderr: "" });
   });
 
   it("ignores CLAUDE_PROJECT_DIR pointing at another, broken checkout", () => {
