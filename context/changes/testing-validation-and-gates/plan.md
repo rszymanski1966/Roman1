@@ -534,12 +534,12 @@ Wszystkie trzy liczniki muszą być 0. Inaczej wstrzymaj push i podejmij decyzj�
 
 #### Automated
 
-- [ ] 6.1 Test dowodowy hooków z `/10x-configure-hook` przechodzi i każdy skrypt hooka oblewa się na celowo zepsutym pliku
-- [ ] 6.2 `npm run test:unit` przechodzi
-- [ ] 6.3 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi
+- [x] 6.1 Test dowodowy hooków z `/10x-configure-hook` przechodzi i każdy skrypt hooka oblewa się na celowo zepsutym pliku
+- [x] 6.2 `npm run test:unit` przechodzi
+- [x] 6.3 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi
 - [ ] 6.4 Joby CI zielone na PR z dokumentacją
 
 #### Manual
 
-- [ ] 6.5 Edycja `src/lib/entry-fields.ts` z celowym błędem w sesji Claude Code pokazuje porażkę hooka per-edit bez uruchomionego stosu Supabase
-- [ ] 6.6 Opis bramek w test-planie, CLAUDE.md i README jest spójny z workflow
+- [x] 6.5 Edycja `src/lib/entry-fields.ts` z celowym błędem w sesji Claude Code pokazuje porażkę hooka per-edit bez uruchomionego stosu Supabase
+- [x] 6.6 Opis bramek w test-planie, CLAUDE.md i README jest spójny z workflow

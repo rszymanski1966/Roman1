@@ -15,6 +15,7 @@
     "smoke": "node scripts/smoke.mjs",
     "test": "vitest run --project unit --project services && vitest run --project migrations",
     "test:unit": "vitest run --project unit",
+    "test:hooks": "vitest run --project hooks",
     "test:http": "vitest run --project http --passWithNoTests",
     "test:migrations": "vitest run --project migrations",
     "test:sweep": "node tests/harness/sweep.ts"

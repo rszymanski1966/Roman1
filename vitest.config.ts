@@ -29,6 +29,18 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          // Proof for the Claude Code hooks (.claude/hooks/): throwaway git repos in the OS temp dir, real Vitest
+          // through a junction to node_modules. No stack, but slower than unit (each case starts a Vitest run), so
+          // not in `unit`, which the end-of-turn hook itself runs.
+          name: "hooks",
+          include: ["tests/hooks/**/*.test.ts"],
+          testTimeout: 120_000,
+          hookTimeout: 60_000,
+        },
+      },
+      {
+        extends: true,
+        test: {
           name: "services",
           include: ["tests/services/**/*.test.ts", "tests/harness/**/*.test.ts", "tests/scripts/**/*.test.ts"],
           globalSetup: harnessGlobalSetup,

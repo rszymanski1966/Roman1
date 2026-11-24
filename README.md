@@ -55,7 +55,8 @@ npm run dev
 - `npm run lint` - Run ESLint with type-checked rules
 - `npm run lint:fix` - Auto-fix ESLint issues
 - `npm run format` - Run Prettier
-- `npm run test:unit` - Run the Vitest unit tests (pure search and view rules); no Supabase stack or dev server needed
+- `npm run test:unit` - Run the Vitest unit tests (pure search, view, name and sign-in field rules); no Supabase stack or dev server needed
+- `npm run test:hooks` - Prove the Claude Code hooks in `.claude/settings.json` on throwaway git repos in the OS temp dir; no Supabase stack or dev server needed (about 1 min)
 - `npm test` - Run the Vitest unit tests plus the service and harness tests against the local Supabase stack, then the migration tests in a second run (needs `npx supabase start`; the race test and the migration tests connect to Postgres directly via `DB_URL` from `npx supabase status`)
 - `npm run test:migrations` - Run the migration tests only: every migration newer than the baseline goes through the Supabase CLI onto throwaway `mig_test_*` databases with synthetic data (needs `npx supabase start`, no dev server; about 40 s). Run it before every `npx supabase db push`, see [Database migrations](#database-migrations)
 - `npm run test:http` - Run the Vitest HTTP tests (account isolation, delete confirmation, search mode cookie and states) against a running `npm run dev`
@@ -214,7 +215,15 @@ Set `SUPABASE_URL` and `SUPABASE_KEY` as secrets in your Cloudflare dashboard or
 
 ## CI
 
-GitHub Actions runs `astro sync` → lint → build on every push and PR to `main`. Every push to `main` also deploys to Cloudflare Workers via `cloudflare/wrangler-action` (PRs only build, never deploy).
+The `CI` workflow runs on every push and PR to `main`, in three jobs:
+
+- `checks`: `astro sync` → lint → lint:ui → lint:db-access → `test:unit` → `test:hooks` → build. No Supabase stack.
+- `integration`: starts the local Supabase stack on the runner (only the services the tests need), writes `.dev.vars` from `npx supabase status` with every key masked in the log, then runs `npm test` → `npx supabase test db` → `npm run dev` in the background → `test:http` → smoke. On failure, it uploads the dev server log as an artifact. On the runner only, it raises the auth limit `sign_in_sign_ups` from 30 to 300, because one full run makes about 27 sign-ups and sign-ins. The committed `supabase/config.toml` stays at 30.
+- `deploy`: runs only on a push to `main` and only after `checks` and `integration` pass. It builds the Worker and deploys it to Cloudflare Workers via `cloudflare/wrangler-action`. PRs never deploy. CI does not push database migrations; see [Database migrations](#database-migrations).
+
+A ruleset on `main` requires a pull request with green `checks` and `integration` before merge. Repository admins can bypass it.
+
+Locally, Claude Code runs the agent hooks from `.claude/settings.json`. After every edit of a `.ts`/`.tsx` file, they run the related `unit` tests and report a failure back to the agent. At the end of a turn, they run `npm run test:unit` and only notify you when it is red. `npm run test:hooks` proves these hooks. They don't replace CI.
 
 Configure these repository secrets in GitHub: `SUPABASE_URL` and `SUPABASE_KEY` (build step), `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (deploy step).
 
