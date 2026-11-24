@@ -29,9 +29,24 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          // Proof for the Claude Code hooks (.claude/hooks/): throwaway git repos in the OS temp dir, real Vitest
+          // through a junction to node_modules. No stack, but slower than unit (each case starts a Vitest run), so
+          // not in `unit`, which the end-of-turn hook itself runs.
+          name: "hooks",
+          include: ["tests/hooks/**/*.test.ts"],
+          testTimeout: 120_000,
+          hookTimeout: 60_000,
+        },
+      },
+      {
+        extends: true,
+        test: {
           name: "services",
           include: ["tests/services/**/*.test.ts", "tests/harness/**/*.test.ts", "tests/scripts/**/*.test.ts"],
           globalSetup: harnessGlobalSetup,
+          // The first harnessEnv() in a beforeAll may wait up to 60 s for `supabase status` on a slow runner
+          // (tests/harness/env.ts): the hook must not time out before that call does.
+          hookTimeout: 90_000,
         },
       },
       {
@@ -45,6 +60,8 @@ export default defineConfig({
           // Vitest sets BASE_URL to Vite's base ("/") in the workers, so the server URL travels under another name
           // (read by tests/http/client.ts). Same variable and default as scripts/smoke.mjs.
           env: { HTTP_TEST_BASE_URL: process.env.BASE_URL ?? "http://localhost:4321" },
+          // Same reason as in services: the first harnessEnv() may take up to 60 s.
+          hookTimeout: 90_000,
         },
       },
       {

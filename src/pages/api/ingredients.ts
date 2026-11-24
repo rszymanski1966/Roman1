@@ -107,8 +107,10 @@ export const POST: APIRoute = async (context) => {
     isBest,
   });
   if (result.error !== null) {
-    // A duplicate name is about the substitute field; any other database error is about the whole form.
-    const errorField = result.code === "duplicate" ? "substitute" : undefined;
+    // A duplicate name is about the substitute field, a category that does not exist about the category field;
+    // any other database error is about the whole form.
+    const errorField =
+      result.code === "duplicate" ? "substitute" : result.code === "invalid_category" ? "category_id" : undefined;
     return context.redirect(errorRedirect(result.error, values, errorField));
   }
 
