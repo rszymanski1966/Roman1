@@ -527,19 +527,19 @@ Wszystkie trzy liczniki muszą być 0. Inaczej wstrzymaj push i podejmij decyzj�
 #### Manual
 
 - [x] 5.5 Na PR z czerwonym checkiem GitHub pokazuje merge jako zablokowany (z opcją obejścia dla admina) — aef9042
-- [ ] 5.6 Push na `main` po merge'u uruchamia `deploy` dopiero po zielonych `checks` i `integration`
+- [x] 5.6 Push na `main` po merge'u uruchamia `deploy` dopiero po zielonych `checks` i `integration` — aef9042
 - [x] 5.7 Log `integration` nie zawiera kluczy Supabase ani `DB_URL` w jawnej postaci — aef9042
 
 ### Phase 6: Hooki agenta i dokumentacja
 
 #### Automated
 
-- [x] 6.1 Test dowodowy hooków z `/10x-configure-hook` przechodzi i każdy skrypt hooka oblewa się na celowo zepsutym pliku
-- [x] 6.2 `npm run test:unit` przechodzi
-- [x] 6.3 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi
-- [ ] 6.4 Joby CI zielone na PR z dokumentacją
+- [x] 6.1 Test dowodowy hooków z `/10x-configure-hook` przechodzi i każdy skrypt hooka oblewa się na celowo zepsutym pliku — 156b738
+- [x] 6.2 `npm run test:unit` przechodzi — 156b738
+- [x] 6.3 `npx prettier --check context/foundation/test-plan.md CLAUDE.md README.md` przechodzi — 156b738
+- [x] 6.4 Joby CI zielone na PR z dokumentacją — 156b738
 
 #### Manual
 
-- [x] 6.5 Edycja `src/lib/entry-fields.ts` z celowym błędem w sesji Claude Code pokazuje porażkę hooka per-edit bez uruchomionego stosu Supabase
-- [x] 6.6 Opis bramek w test-planie, CLAUDE.md i README jest spójny z workflow
+- [x] 6.5 Edycja `src/lib/entry-fields.ts` z celowym błędem w sesji Claude Code pokazuje porażkę hooka per-edit bez uruchomionego stosu Supabase — 156b738
+- [x] 6.6 Opis bramek w test-planie, CLAUDE.md i README jest spójny z workflow — 156b738
