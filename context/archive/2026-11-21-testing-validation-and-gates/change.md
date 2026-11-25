@@ -1,10 +1,10 @@
 ---
 change_id: testing-validation-and-gates
 title: Test rollout phase 4 — input validation and CI gates
-status: impl_reviewed
+status: archived
 created: 2026-11-21
-updated: 2026-11-24
-archived_at: null
+updated: 2026-11-25
+archived_at: 2026-11-25T06:39:14Z
 ---
 
 ## Notes
