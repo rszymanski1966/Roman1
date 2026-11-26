@@ -11,6 +11,7 @@ import type {
   UpdateSubstituteInput,
 } from "@/types";
 import { normalizeName, toNameKey } from "@/lib/entry-fields";
+import { logDbError } from "@/lib/log";
 // search-view.ts imports the pure match helpers from this module; the cycle is safe because neither module uses
 // the other's exports at load time, only inside functions.
 import { searchMatches } from "@/lib/search-view";
@@ -20,7 +21,9 @@ import { searchMatches } from "@/lib/search-view";
 export { normalizeName, toNameKey };
 
 // Callers must pass a client already checked for null (see src/lib/supabase.ts).
-// Errors are returned, not thrown; `error` is a short, user-safe message (no SQL details).
+// Errors are returned, not thrown; `error` is a short, user-safe message (no SQL details). The cause of an unexpected
+// database error goes to the log through src/lib/log.ts (logDbError) before fail(); expected outcomes (23505
+// duplicates) log nothing.
 // `code` names the kinds of error a caller reacts to (which field a duplicate is about, where "not found" returns);
 // the text is only for display and is never compared.
 export type ServiceErrorCode = "duplicate" | "not_found" | "invalid_category";
@@ -78,18 +81,24 @@ export function matchIngredients(
 }
 
 export async function listCategories(client: SupabaseClient): Promise<ServiceResult<Category[]>> {
-  const { data, error } = await client
+  const result = await client
     .from("categories")
     .select("id, slug, name, sort_order")
     .order("sort_order", { ascending: true });
-  if (error) return fail();
-  return ok(data as Category[]);
+  if (result.error) {
+    logDbError("listCategories", result);
+    return fail();
+  }
+  return ok(result.data as Category[]);
 }
 
 export async function listIngredients(client: SupabaseClient): Promise<ServiceResult<IngredientListItem[]>> {
-  const { data, error } = await client.from("ingredients").select("id, name").order("name_key", { ascending: true });
-  if (error) return fail();
-  return ok(data as IngredientListItem[]);
+  const result = await client.from("ingredients").select("id, name").order("name_key", { ascending: true });
+  if (result.error) {
+    logDbError("listIngredients", result);
+    return fail();
+  }
+  return ok(result.data as IngredientListItem[]);
 }
 
 // Add and edit report a duplicate substitute name with the same text and the "duplicate" code (the endpoints
@@ -124,14 +133,20 @@ export async function addSubstitute(
     .select("id")
     .eq("id", input.categoryId)
     .maybeSingle<{ id: string }>();
-  if (category.error) return fail();
+  if (category.error) {
+    logDbError("addSubstitute.categoryLookup", category, { categoryId: input.categoryId });
+    return fail();
+  }
   if (!category.data) return fail("Wybrana kategoria jest nieprawidłowa.", "invalid_category");
 
   // user_id comes from the column default (auth.uid()); RLS WITH CHECK enforces it.
   const ingredientUpsert = await client
     .from("ingredients")
     .upsert({ name: ingredientName, name_key: nameKey }, { onConflict: "user_id,name_key", ignoreDuplicates: true });
-  if (ingredientUpsert.error) return fail();
+  if (ingredientUpsert.error) {
+    logDbError("addSubstitute.ingredientUpsert", ingredientUpsert, { categoryId: input.categoryId });
+    return fail();
+  }
 
   // SELECT RLS limits rows to the current user, so name_key is unique here.
   const ingredientRow = await client
@@ -139,7 +154,10 @@ export async function addSubstitute(
     .select("id")
     .eq("name_key", nameKey)
     .maybeSingle<{ id: string }>();
-  if (ingredientRow.error) return fail();
+  if (ingredientRow.error) {
+    logDbError("addSubstitute.ingredientSelect", ingredientRow, { categoryId: input.categoryId });
+    return fail();
+  }
   if (!ingredientRow.data) return fail();
   const ingredientId = ingredientRow.data.id;
 
@@ -149,7 +167,10 @@ export async function addSubstitute(
       { ingredient_id: ingredientId, category_id: input.categoryId },
       { onConflict: "ingredient_id,category_id", ignoreDuplicates: true },
     );
-  if (pairUpsert.error) return fail();
+  if (pairUpsert.error) {
+    logDbError("addSubstitute.pairUpsert", pairUpsert, { categoryId: input.categoryId, ingredientId });
+    return fail();
+  }
 
   const pairRow = await client
     .from("ingredient_categories")
@@ -157,7 +178,10 @@ export async function addSubstitute(
     .eq("ingredient_id", ingredientId)
     .eq("category_id", input.categoryId)
     .maybeSingle<{ id: string }>();
-  if (pairRow.error) return fail();
+  if (pairRow.error) {
+    logDbError("addSubstitute.pairSelect", pairRow, { categoryId: input.categoryId, ingredientId });
+    return fail();
+  }
   if (!pairRow.data) return fail();
   const ingredientCategoryId = pairRow.data.id;
 
@@ -175,6 +199,11 @@ export async function addSubstitute(
   if (substituteInsert.error) {
     // 23505 = unique_violation on (ingredient_category_id, name_key): the same name is already saved for this pair.
     if (substituteInsert.error.code === "23505") return fail(duplicateSubstituteMessage(substituteName), "duplicate");
+    logDbError("addSubstitute.substituteInsert", substituteInsert, {
+      categoryId: input.categoryId,
+      ingredientId,
+      ingredientCategoryId,
+    });
     return fail();
   }
 
@@ -202,12 +231,15 @@ export async function listIngredientIdsWithSubstitutes(
   categoryId: string,
 ): Promise<ServiceResult<Set<string>>> {
   // !inner drops pairs without substitutes; only ingredient_id is used from each row.
-  const { data, error } = await client
+  const result = await client
     .from("ingredient_categories")
     .select("ingredient_id, substitutes!inner(id)")
     .eq("category_id", categoryId);
-  if (error) return fail();
-  const rows = data as { ingredient_id: string }[];
+  if (result.error) {
+    logDbError("listIngredientIdsWithSubstitutes", result, { categoryId });
+    return fail();
+  }
+  const rows = result.data as { ingredient_id: string }[];
   return ok(new Set(rows.map((row) => row.ingredient_id)));
 }
 
@@ -234,11 +266,18 @@ export async function listIngredientSubstitutes(
     .select("categories(id, name, sort_order), substitutes(id, name, ratio, notes, is_best, created_at)")
     .eq("ingredient_id", ingredientId);
   if (categoryId !== null) query = query.eq("category_id", categoryId);
-  const { data, error } = await query;
-  if (error) return fail();
+  const result = await query;
+  if (result.error) {
+    logDbError(
+      "listIngredientSubstitutes",
+      result,
+      categoryId !== null ? { ingredientId, categoryId } : { ingredientId },
+    );
+    return fail();
+  }
 
   const groups: SubstituteGroup[] = [];
-  for (const row of data as IngredientSubstitutesRow[]) {
+  for (const row of result.data as IngredientSubstitutesRow[]) {
     const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
     const rows = row.substitutes ?? [];
     if (!category || rows.length === 0) continue;
@@ -283,6 +322,7 @@ export async function setBestSubstitute(
     if (error.code === "23505") {
       return fail("Najlepszy zamiennik właśnie się zmienił. Odśwież listę i spróbuj ponownie.");
     }
+    logDbError("setBestSubstitute", result, { substituteId });
     return fail();
   }
   const row = data?.[0];
@@ -328,17 +368,20 @@ export async function getSubstituteForEdit(
   client: SupabaseClient,
   substituteId: string,
 ): Promise<ServiceResult<SubstituteForEdit | null>> {
-  const { data, error } = await client
+  const result = await client
     .from("substitutes")
     .select(
       "id, name, ratio, notes, is_best, ingredient_categories(ingredient_id, ingredients(name), categories(name))",
     )
     .eq("id", substituteId)
     .maybeSingle();
-  if (error) return fail();
-  if (!data) return ok(null);
+  if (result.error) {
+    logDbError("getSubstituteForEdit", result, { substituteId });
+    return fail();
+  }
+  if (!result.data) return ok(null);
 
-  const row = data as SubstituteForEditRow;
+  const row = result.data as SubstituteForEditRow;
   const pair = first(row.ingredient_categories);
   const ingredient = pair ? first(pair.ingredients) : null;
   const category = pair ? first(pair.categories) : null;
@@ -367,7 +410,7 @@ export async function updateSubstitute(
   input: UpdateSubstituteInput,
 ): Promise<ServiceResult<{ name: string }>> {
   const name = normalizeName(input.name);
-  const { data, error } = await client
+  const result = await client
     .from("substitutes")
     .update({
       name,
@@ -377,13 +420,14 @@ export async function updateSubstitute(
     .eq("id", substituteId)
     .select("name")
     .maybeSingle<{ name: string }>();
-  if (error) {
+  if (result.error) {
     // 23505 = unique_violation on (ingredient_category_id, name_key): the same name is already saved for this pair.
-    if (error.code === "23505") return fail(duplicateSubstituteMessage(name), "duplicate");
+    if (result.error.code === "23505") return fail(duplicateSubstituteMessage(name), "duplicate");
+    logDbError("updateSubstitute", result, { substituteId });
     return fail();
   }
-  if (!data) return fail("Nie znaleziono zamiennika.", "not_found");
-  return ok({ name: data.name });
+  if (!result.data) return fail("Nie znaleziono zamiennika.", "not_found");
+  return ok({ name: result.data.name });
 }
 
 /**
@@ -395,13 +439,16 @@ export async function getIngredient(
   client: SupabaseClient,
   ingredientId: string,
 ): Promise<ServiceResult<IngredientListItem | null>> {
-  const { data, error } = await client
+  const result = await client
     .from("ingredients")
     .select("id, name")
     .eq("id", ingredientId)
     .maybeSingle<IngredientListItem>();
-  if (error) return fail();
-  return ok(data ?? null);
+  if (result.error) {
+    logDbError("getIngredient", result, { ingredientId });
+    return fail();
+  }
+  return ok(result.data ?? null);
 }
 
 /**
@@ -417,19 +464,20 @@ export async function renameIngredient(
   name: string,
 ): Promise<ServiceResult<{ name: string }>> {
   const normalized = normalizeName(name);
-  const { data, error } = await client
+  const result = await client
     .from("ingredients")
     .update({ name: normalized, name_key: toNameKey(normalized) })
     .eq("id", ingredientId)
     .select("name")
     .maybeSingle<{ name: string }>();
-  if (error) {
+  if (result.error) {
     // 23505 = unique_violation on (user_id, name_key): another ingredient of this account has the name.
-    if (error.code === "23505") return fail(`Składnik „${normalized}” jest już zapisany.`, "duplicate");
+    if (result.error.code === "23505") return fail(`Składnik „${normalized}” jest już zapisany.`, "duplicate");
+    logDbError("renameIngredient", result, { ingredientId });
     return fail();
   }
-  if (!data) return fail("Nie znaleziono składnika.", "not_found");
-  return ok({ name: data.name });
+  if (!result.data) return fail("Nie znaleziono składnika.", "not_found");
+  return ok({ name: result.data.name });
 }
 
 /**
@@ -440,15 +488,18 @@ export async function deleteSubstitute(
   client: SupabaseClient,
   substituteId: string,
 ): Promise<ServiceResult<{ name: string }>> {
-  const { data, error } = await client
+  const result = await client
     .from("substitutes")
     .delete()
     .eq("id", substituteId)
     .select("name")
     .maybeSingle<{ name: string }>();
-  if (error) return fail();
-  if (!data) return fail("Nie znaleziono zamiennika.", "not_found");
-  return ok({ name: data.name });
+  if (result.error) {
+    logDbError("deleteSubstitute", result, { substituteId });
+    return fail();
+  }
+  if (!result.data) return fail("Nie znaleziono zamiennika.", "not_found");
+  return ok({ name: result.data.name });
 }
 
 /**
@@ -460,15 +511,18 @@ export async function deleteIngredient(
   client: SupabaseClient,
   ingredientId: string,
 ): Promise<ServiceResult<{ name: string }>> {
-  const { data, error } = await client
+  const result = await client
     .from("ingredients")
     .delete()
     .eq("id", ingredientId)
     .select("name")
     .maybeSingle<{ name: string }>();
-  if (error) return fail();
-  if (!data) return fail("Nie znaleziono składnika.", "not_found");
-  return ok({ name: data.name });
+  if (result.error) {
+    logDbError("deleteIngredient", result, { ingredientId });
+    return fail();
+  }
+  if (!result.data) return fail("Nie znaleziono składnika.", "not_found");
+  return ok({ name: result.data.name });
 }
 
 /**
