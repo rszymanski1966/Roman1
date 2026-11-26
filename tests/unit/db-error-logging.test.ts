@@ -19,6 +19,7 @@ import {
   deleteSubstitute,
   getIngredient,
   getSubstituteForEdit,
+  hasSearchHits,
   listCategories,
   listIngredientIdsWithSubstitutes,
   listIngredientSubstitutes,
@@ -167,6 +168,17 @@ function errorLines(): Line[] {
         .join("\n")
         .toLocaleLowerCase("pl"),
     };
+  });
+}
+
+// console.warn lines (plan Phase 2 contract: logExpected writes one plain string, no Error).
+function warnLines(): Line[] {
+  return warnSpy.mock.calls.map((args) => {
+    expect(args).toHaveLength(1);
+    const [first] = args as unknown[];
+    expect(typeof first).toBe("string");
+    const message = first as string;
+    return { message, everything: message.toLocaleLowerCase("pl") };
   });
 }
 
@@ -363,6 +375,297 @@ describe("duplicates log nothing", () => {
     expect(result.error).not.toBeNull();
     expect(result.code).toBe(code ?? undefined);
     expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+});
+
+const NOT_FOUND_SUBSTITUTE = "Nie znaleziono zamiennika.";
+const NOT_FOUND_INGREDIENT = "Nie znaleziono składnika.";
+const BEST_ERROR = "Zamiennik zapisany, ale nie udało się oznaczyć go jako najlepszy.";
+
+// What set_best_substitute raises for a missing or foreign substitute (supabase/migrations/20261011201658_*.sql:50-53);
+// PostgREST answers a PL/pgSQL P0*** error with 500.
+const RPC_NOT_FOUND = pgError(500, "P0002", `substitute ${SUBSTITUTE_ID} not found`);
+
+describe("broken invariants", () => {
+  // plan :141-143 and :158 (an impossible empty result: one error line "[db] <op> broken invariant: …" with the ids).
+  it.each<[op: string, routes: Routes, run: (client: SupabaseClient) => Promise<unknown>, ids: string[]]>([
+    // plan :141 ingredient upsert OK, select returns no row
+    [
+      "addSubstitute.ingredientSelect",
+      { ...ADD_OK, "GET /rest/v1/ingredients": json(200, []) },
+      (c) => addSubstitute(c, ADD_INPUT),
+      [CATEGORY_ID],
+    ],
+    // plan :141 pair upsert OK, select returns no row ("analogicznie para")
+    [
+      "addSubstitute.pairSelect",
+      { ...ADD_OK, "GET /rest/v1/ingredient_categories": json(200, []) },
+      (c) => addSubstitute(c, ADD_INPUT),
+      [CATEGORY_ID, INGREDIENT_ID],
+    ],
+    // plan :142 the RPC returns an empty table
+    [
+      "setBestSubstitute",
+      { "POST /rest/v1/rpc/set_best_substitute": json(200, []) },
+      (c) => setBestSubstitute(c, SUBSTITUTE_ID, true),
+      [SUBSTITUTE_ID],
+    ],
+  ])("logs %s and returns the generic message", async (op, routes, run, ids) => {
+    const result = await run(clientWith(routes));
+
+    expect(result).toEqual(GENERIC_RESULT);
+    const line = onlyErrorLine();
+    expect(line.message).toContain(`[db] ${op} broken invariant:`);
+    for (const id of ids) expect(line.message).toContain(id);
+    expectNoUserData(line);
+  });
+
+  // plan :143 (getSubstituteForEdit: the line names the missing relation and carries the substitute id).
+  it.each<[missing: string, pair: unknown, others: string[]]>([
+    // plan :143 no pair
+    ["no pair", null, ["no ingredient", "no category"]],
+    // plan :143 no ingredient
+    [
+      "no ingredient",
+      { ingredient_id: INGREDIENT_ID, ingredients: null, categories: { name: "Ciasta" } },
+      ["no pair", "no category"],
+    ],
+    // plan :143 no category
+    [
+      "no category",
+      { ingredient_id: INGREDIENT_ID, ingredients: { name: INGREDIENT_NAME }, categories: null },
+      ["no pair", "no ingredient"],
+    ],
+  ])("logs getSubstituteForEdit when the row has %s", async (missing, pair, others) => {
+    const client = clientWith({
+      "GET /rest/v1/substitutes": json(200, [
+        {
+          id: SUBSTITUTE_ID,
+          name: SUBSTITUTE_NAME,
+          ratio: "1:1",
+          notes: "drobno zmielona",
+          is_best: false,
+          ingredient_categories: pair,
+        },
+      ]),
+    });
+
+    const result = await getSubstituteForEdit(client, SUBSTITUTE_ID);
+
+    expect(result).toEqual(GENERIC_RESULT);
+    const line = onlyErrorLine();
+    expect(line.message).toContain("[db] getSubstituteForEdit broken invariant:");
+    expect(line.message).toContain(missing);
+    for (const other of others) expect(line.message).not.toContain(other);
+    expect(line.message).toContain(SUBSTITUTE_ID);
+    expectNoUserData(line);
+  });
+});
+
+describe("group without a category", () => {
+  // plan :144 and :167 (L2: a pair with substitutes and no category is an error, not a silently skipped group).
+  it("fails listIngredientSubstitutes and logs it with ingredientId", async () => {
+    const client = clientWith({
+      "GET /rest/v1/ingredient_categories": json(200, [
+        {
+          categories: null,
+          substitutes: [
+            {
+              id: SUBSTITUTE_ID,
+              name: SUBSTITUTE_NAME,
+              ratio: "1:1",
+              notes: "drobno zmielona",
+              is_best: false,
+              created_at: "2026-11-26T10:00:00.123456+00:00",
+            },
+          ],
+        },
+      ]),
+    });
+
+    const result = await listIngredientSubstitutes(client, INGREDIENT_ID, null);
+
+    expect(result).toEqual(GENERIC_RESULT);
+    const line = onlyErrorLine();
+    expect(line.message).toContain("[db] listIngredientSubstitutes broken invariant:");
+    expect(line.message).toContain(INGREDIENT_ID);
+    expectNoUserData(line);
+  });
+
+  // Edge, may pass before the change: plan :144 and :167 (a pair without substitutes is still skipped, no log).
+  it("still skips a pair without substitutes, without a log", async () => {
+    const client = clientWith({
+      "GET /rest/v1/ingredient_categories": json(200, [{ categories: null, substitutes: [] }]),
+    });
+
+    const result = await listIngredientSubstitutes(client, INGREDIENT_ID, null);
+
+    expect(result).toEqual({ data: [], error: null });
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("expected outcomes are warnings", () => {
+  // plan :145 and :159 (0 rows and P0002: one console.warn "[db] <op>: not_found <key>=<uuid>", no console.error);
+  // the exact line is the one the plan's manual check expects (:181).
+  it.each<
+    [
+      op: string,
+      route: string,
+      reply: Reply,
+      run: (client: SupabaseClient) => Promise<unknown>,
+      text: string,
+      warn: string,
+    ]
+  >([
+    // plan :145 updateSubstitute, 0 rows
+    [
+      "updateSubstitute",
+      "PATCH /rest/v1/substitutes",
+      json(200, []),
+      (c) => updateSubstitute(c, SUBSTITUTE_ID, { name: SUBSTITUTE_NAME, ratio: "1:1", notes: null }),
+      NOT_FOUND_SUBSTITUTE,
+      `[db] updateSubstitute: not_found substituteId=${SUBSTITUTE_ID}`,
+    ],
+    // plan :145 renameIngredient, 0 rows
+    [
+      "renameIngredient",
+      "PATCH /rest/v1/ingredients",
+      json(200, []),
+      (c) => renameIngredient(c, INGREDIENT_ID, INGREDIENT_NAME),
+      NOT_FOUND_INGREDIENT,
+      `[db] renameIngredient: not_found ingredientId=${INGREDIENT_ID}`,
+    ],
+    // plan :145 and :181 deleteSubstitute, 0 rows
+    [
+      "deleteSubstitute",
+      "DELETE /rest/v1/substitutes",
+      json(200, []),
+      (c) => deleteSubstitute(c, SUBSTITUTE_ID),
+      NOT_FOUND_SUBSTITUTE,
+      `[db] deleteSubstitute: not_found substituteId=${SUBSTITUTE_ID}`,
+    ],
+    // plan :145 deleteIngredient, 0 rows
+    [
+      "deleteIngredient",
+      "DELETE /rest/v1/ingredients",
+      json(200, []),
+      (c) => deleteIngredient(c, INGREDIENT_ID),
+      NOT_FOUND_INGREDIENT,
+      `[db] deleteIngredient: not_found ingredientId=${INGREDIENT_ID}`,
+    ],
+    // plan :145 setBestSubstitute, P0002 from the RPC
+    [
+      "setBestSubstitute",
+      "POST /rest/v1/rpc/set_best_substitute",
+      RPC_NOT_FOUND,
+      (c) => setBestSubstitute(c, SUBSTITUTE_ID, true),
+      NOT_FOUND_SUBSTITUTE,
+      `[db] setBestSubstitute: not_found substituteId=${SUBSTITUTE_ID}`,
+    ],
+  ])("%s not found", async (_op, route, reply, run, text, warn) => {
+    const result = await run(clientWith({ [route]: reply }));
+
+    expect(result).toEqual({ data: null, error: text, code: "not_found" });
+    const lines = warnLines();
+    expect(lines.map((l) => l.message)).toEqual([warn]);
+    expectNoUserData(lines[0]);
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  // plan :146 and :159 (unknown category: one warn with invalid_category and categoryId; nothing is written).
+  it("addSubstitute with an unknown category", async () => {
+    const client = clientWith({ "GET /rest/v1/categories": json(200, []) });
+
+    const result = await addSubstitute(client, ADD_INPUT);
+
+    expect(result).toEqual({ data: null, error: "Wybrana kategoria jest nieprawidłowa.", code: "invalid_category" });
+    const lines = warnLines();
+    expect(lines.map((l) => l.message)).toEqual([
+      `[db] addSubstitute.categoryLookup: invalid_category categoryId=${CATEGORY_ID}`,
+    ]);
+    expectNoUserData(lines[0]);
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("partial result in addSubstitute", () => {
+  // plan :147 and :167 (insert OK, marking fails: ok with bestError as today, one addSubstitute.markBest warn with the
+  // substitute id); plan :62 (the cause is logged once, by setBestSubstitute, never again by addSubstitute).
+  const BEST_INPUT = { ...ADD_INPUT, isBest: true };
+  const PARTIAL_RESULT = {
+    data: { ingredientId: INGREDIENT_ID, categoryId: CATEGORY_ID, replacedName: null, bestError: BEST_ERROR },
+    error: null,
+  };
+  const MARK_BEST_WARN = `[db] addSubstitute.markBest: saved_without_best_mark substituteId=${SUBSTITUTE_ID}`;
+
+  it("RPC answers P0002: the not_found warn of setBestSubstitute plus one markBest warn, no error", async () => {
+    const client = clientWith({ ...ADD_OK, "POST /rest/v1/rpc/set_best_substitute": RPC_NOT_FOUND });
+
+    const result = await addSubstitute(client, BEST_INPUT);
+
+    expect(result).toEqual(PARTIAL_RESULT);
+    const lines = warnLines();
+    expect(lines.map((l) => l.message)).toEqual([
+      `[db] setBestSubstitute: not_found substituteId=${SUBSTITUTE_ID}`,
+      MARK_BEST_WARN,
+    ]);
+    for (const line of lines) expectNoUserData(line);
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it("RPC answers an unmapped code: one setBestSubstitute error line plus one markBest warn", async () => {
+    const client = clientWith({
+      ...ADD_OK,
+      "POST /rest/v1/rpc/set_best_substitute": pgError(
+        403,
+        "42501",
+        "permission denied for function set_best_substitute",
+      ),
+    });
+
+    const result = await addSubstitute(client, BEST_INPUT);
+
+    expect(result).toEqual(PARTIAL_RESULT);
+    const errors = errorLines();
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain("[db] setBestSubstitute failed:");
+    expect(errors[0].message).toContain("code=42501");
+    expect(errors[0].message).toContain(SUBSTITUTE_ID);
+    expectNoUserData(errors[0]);
+    const warns = warnLines();
+    expect(warns.map((l) => l.message)).toEqual([MARK_BEST_WARN]);
+    expectNoUserData(warns[0]);
+  });
+});
+
+describe("no second log in hasSearchHits", () => {
+  // Regression guard, may pass before the change: plan :148 and :62 (each inner query logs its own failure once;
+  // hasSearchHits only passes the generic result on).
+  it("logs listIngredients and listIngredientIdsWithSubstitutes once each, never hasSearchHits", async () => {
+    // Both GETs are retried with backoff (postgrest-js fetchWithRetry): skip the waits.
+    vi.useFakeTimers();
+    const client = clientWith({
+      "GET /rest/v1/ingredients": networkDown,
+      "GET /rest/v1/ingredient_categories": networkDown,
+    });
+    // The search text is user data too: the fixture's ingredient name as the query.
+    const pending = hasSearchHits(client, INGREDIENT_NAME, "contains", CATEGORY_ID);
+    await vi.runAllTimersAsync();
+    const result = await pending;
+
+    expect(result).toEqual(GENERIC_RESULT);
+    const lines = errorLines();
+    expect(lines).toHaveLength(2);
+    expect(lines.filter((l) => l.message.startsWith("[db] listIngredients failed:"))).toHaveLength(1);
+    expect(lines.filter((l) => l.message.startsWith("[db] listIngredientIdsWithSubstitutes failed:"))).toHaveLength(1);
+    for (const line of lines) {
+      expect(line.message).not.toContain("hasSearchHits");
+      expect(line.message).toContain("code=network");
+      expectNoUserData(line);
+    }
     expect(warnSpy).not.toHaveBeenCalled();
   });
 });

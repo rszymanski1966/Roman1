@@ -289,29 +289,29 @@ Brak migracji. Po deployu linie pojawiają się w Workers Logs pod przedrostkiem
 
 #### Automated
 
-- [x] 1.1 Nowe przypadki w `tests/unit/db-error-logging.test.ts` są czerwone przed zmianą w serwisie (poza strażnikiem duplikatów)
-- [x] 1.2 Te same przypadki zielone po zmianie: `npm run test:unit`
-- [x] 1.3 Lint bez nowych ostrzeżeń `no-console` poza `src/lib/log.ts`: `npm run lint`
-- [x] 1.4 Strażnik dostępu do bazy dalej zielony: `npm run lint:db-access`
-- [x] 1.5 Istniejące testy serwisów zielone na lokalnym stosie: `npm test`
+- [x] 1.1 Nowe przypadki w `tests/unit/db-error-logging.test.ts` są czerwone przed zmianą w serwisie (poza strażnikiem duplikatów) — 12984c8
+- [x] 1.2 Te same przypadki zielone po zmianie: `npm run test:unit` — 12984c8
+- [x] 1.3 Lint bez nowych ostrzeżeń `no-console` poza `src/lib/log.ts`: `npm run lint` — 12984c8
+- [x] 1.4 Strażnik dostępu do bazy dalej zielony: `npm run lint:db-access` — 12984c8
+- [x] 1.5 Istniejące testy serwisów zielone na lokalnym stosie: `npm test` — 12984c8
 
 #### Manual
 
-- [x] 1.6 Linia z przypadku 23514 czyta się jako diagnoza: operacja, kod, status, ograniczenie, uuid; bez nazwy
+- [x] 1.6 Linia z przypadku 23514 czyta się jako diagnoza: operacja, kod, status, ograniczenie, uuid; bez nazwy — 12984c8
 
 ### Phase 2: Złamane założenia i oczekiwane wyniki
 
 #### Automated
 
-- [ ] 2.1 Nowe przypadki czerwone przed zmianą w serwisie
-- [ ] 2.2 Zielone po zmianie: `npm run test:unit`
-- [ ] 2.3 `npm run lint`
-- [ ] 2.4 Istniejące testy serwisów zielone: `npm test`
-- [ ] 2.5 Testy HTTP zielone przy działającym `npm run dev`: `npm run test:http`
+- [x] 2.1 Nowe przypadki czerwone przed zmianą w serwisie
+- [x] 2.2 Zielone po zmianie: `npm run test:unit`
+- [x] 2.3 `npm run lint`
+- [x] 2.4 Istniejące testy serwisów zielone: `npm test`
+- [x] 2.5 Testy HTTP zielone przy działającym `npm run dev`: `npm run test:http`
 
 #### Manual
 
-- [ ] 2.6 Dwie karty, usunięcie tego samego zamiennika: „Nie znaleziono zamiennika.” i jedna linia warn w konsoli dev bez nazwy
+- [x] 2.6 Dwie karty, usunięcie tego samego zamiennika: „Nie znaleziono zamiennika.” i jedna linia warn w konsoli dev bez nazwy
 
 ### Phase 3: Dowód na prawdziwym stosie i dokumentacja
 

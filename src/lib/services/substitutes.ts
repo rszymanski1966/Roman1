@@ -11,7 +11,7 @@ import type {
   UpdateSubstituteInput,
 } from "@/types";
 import { normalizeName, toNameKey } from "@/lib/entry-fields";
-import { logDbError } from "@/lib/log";
+import { logDbError, logExpected, logInvariant } from "@/lib/log";
 // search-view.ts imports the pure match helpers from this module; the cycle is safe because neither module uses
 // the other's exports at load time, only inside functions.
 import { searchMatches } from "@/lib/search-view";
@@ -21,9 +21,11 @@ import { searchMatches } from "@/lib/search-view";
 export { normalizeName, toNameKey };
 
 // Callers must pass a client already checked for null (see src/lib/supabase.ts).
-// Errors are returned, not thrown; `error` is a short, user-safe message (no SQL details). The cause of an unexpected
-// database error goes to the log through src/lib/log.ts (logDbError) before fail(); expected outcomes (23505
-// duplicates) log nothing.
+// Errors are returned, not thrown; `error` is a short, user-safe message (no SQL details). Before fail(), the log
+// gets a line through src/lib/log.ts: the cause of an unexpected database error (logDbError) and an impossible
+// state such as an empty result after a successful write (logInvariant) as errors, "not found" and an invalid
+// category (logExpected) as warnings. Duplicates (23505) log nothing. A caller that gets a failed ServiceResult from
+// another function here does not log the same error again.
 // `code` names the kinds of error a caller reacts to (which field a duplicate is about, where "not found" returns);
 // the text is only for display and is never compared.
 export type ServiceErrorCode = "duplicate" | "not_found" | "invalid_category";
@@ -137,7 +139,10 @@ export async function addSubstitute(
     logDbError("addSubstitute.categoryLookup", category, { categoryId: input.categoryId });
     return fail();
   }
-  if (!category.data) return fail("Wybrana kategoria jest nieprawidłowa.", "invalid_category");
+  if (!category.data) {
+    logExpected("addSubstitute.categoryLookup", "invalid_category", { categoryId: input.categoryId });
+    return fail("Wybrana kategoria jest nieprawidłowa.", "invalid_category");
+  }
 
   // user_id comes from the column default (auth.uid()); RLS WITH CHECK enforces it.
   const ingredientUpsert = await client
@@ -158,7 +163,12 @@ export async function addSubstitute(
     logDbError("addSubstitute.ingredientSelect", ingredientRow, { categoryId: input.categoryId });
     return fail();
   }
-  if (!ingredientRow.data) return fail();
+  if (!ingredientRow.data) {
+    logInvariant("addSubstitute.ingredientSelect", "ingredient select returned no row after upsert", {
+      categoryId: input.categoryId,
+    });
+    return fail();
+  }
   const ingredientId = ingredientRow.data.id;
 
   const pairUpsert = await client
@@ -182,7 +192,13 @@ export async function addSubstitute(
     logDbError("addSubstitute.pairSelect", pairRow, { categoryId: input.categoryId, ingredientId });
     return fail();
   }
-  if (!pairRow.data) return fail();
+  if (!pairRow.data) {
+    logInvariant("addSubstitute.pairSelect", "pair select returned no row after upsert", {
+      categoryId: input.categoryId,
+      ingredientId,
+    });
+    return fail();
+  }
   const ingredientCategoryId = pairRow.data.id;
 
   const substituteName = normalizeName(input.substituteName);
@@ -213,8 +229,11 @@ export async function addSubstitute(
 
   // Not atomic with the insert: if marking fails, the substitute stays saved without the mark and the add
   // still counts as a success (re-submitting the form would only hit the duplicate-name conflict).
-  const best = await setBestSubstitute(client, substituteInsert.data.id, true);
+  const substituteId = substituteInsert.data.id;
+  const best = await setBestSubstitute(client, substituteId, true);
   if (best.error !== null) {
+    // setBestSubstitute already logged the cause (or its not_found); this line is the partial result itself.
+    logExpected("addSubstitute.markBest", "saved_without_best_mark", { substituteId });
     return ok({
       ingredientId,
       categoryId: input.categoryId,
@@ -255,6 +274,9 @@ interface IngredientSubstitutesRow {
  * category that has substitutes. Groups by category sort_order; in a group the best one first, then oldest first.
  * Both sorts run in JS: .order(..., { referencedTable }) would only sort the embedded rows, not the pairs.
  * Categories without substitutes are skipped; a missing pair (or foreign ids) = empty list.
+ * A pair with at least one substitute whose category does not come back is a broken row: the whole call fails
+ * (logged as a broken invariant) instead of hiding those substitutes, which the delete confirmation would then
+ * count as zero while the cascade still removes them.
  */
 export async function listIngredientSubstitutes(
   client: SupabaseClient,
@@ -267,12 +289,9 @@ export async function listIngredientSubstitutes(
     .eq("ingredient_id", ingredientId);
   if (categoryId !== null) query = query.eq("category_id", categoryId);
   const result = await query;
+  const ids = categoryId !== null ? { ingredientId, categoryId } : { ingredientId };
   if (result.error) {
-    logDbError(
-      "listIngredientSubstitutes",
-      result,
-      categoryId !== null ? { ingredientId, categoryId } : { ingredientId },
-    );
+    logDbError("listIngredientSubstitutes", result, ids);
     return fail();
   }
 
@@ -280,7 +299,11 @@ export async function listIngredientSubstitutes(
   for (const row of result.data as IngredientSubstitutesRow[]) {
     const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
     const rows = row.substitutes ?? [];
-    if (!category || rows.length === 0) continue;
+    if (rows.length === 0) continue;
+    if (!category) {
+      logInvariant("listIngredientSubstitutes", "pair with substitutes has no category", ids);
+      return fail();
+    }
     const sorted = [...rows].sort(
       (a, b) =>
         Number(b.is_best) - Number(a.is_best) ||
@@ -317,7 +340,10 @@ export async function setBestSubstitute(
   const data = result.data as { substitute_name: string; replaced_name: string | null }[] | null;
   if (error) {
     // P0002 = raised by the function when the substitute is missing or hidden by RLS (another account's row).
-    if (error.code === "P0002") return fail("Nie znaleziono zamiennika.", "not_found");
+    if (error.code === "P0002") {
+      logExpected("setBestSubstitute", "not_found", { substituteId });
+      return fail("Nie znaleziono zamiennika.", "not_found");
+    }
     // 23505 = partial unique index (one best per pair): a concurrent change, e.g. from another tab.
     if (error.code === "23505") {
       return fail("Najlepszy zamiennik właśnie się zmienił. Odśwież listę i spróbuj ponownie.");
@@ -326,7 +352,11 @@ export async function setBestSubstitute(
     return fail();
   }
   const row = data?.[0];
-  if (!row) return fail();
+  if (!row) {
+    // The function either returns its one row or raises; an empty table is a broken contract.
+    logInvariant("setBestSubstitute", "rpc returned no row", { substituteId });
+    return fail();
+  }
   return ok({ substituteName: row.substitute_name, replacedName: row.replaced_name });
 }
 
@@ -382,11 +412,22 @@ export async function getSubstituteForEdit(
   if (!result.data) return ok(null);
 
   const row = result.data as SubstituteForEditRow;
-  const pair = first(row.ingredient_categories);
-  const ingredient = pair ? first(pair.ingredients) : null;
-  const category = pair ? first(pair.categories) : null;
   // The pair, ingredient and category belong to the same account as the substitute; missing ones are a broken row.
-  if (!pair || !ingredient || !category) return fail();
+  const pair = first(row.ingredient_categories);
+  if (!pair) {
+    logInvariant("getSubstituteForEdit", "substitute has no pair", { substituteId });
+    return fail();
+  }
+  const ingredient = first(pair.ingredients);
+  if (!ingredient) {
+    logInvariant("getSubstituteForEdit", "pair has no ingredient", { substituteId });
+    return fail();
+  }
+  const category = first(pair.categories);
+  if (!category) {
+    logInvariant("getSubstituteForEdit", "pair has no category", { substituteId });
+    return fail();
+  }
   return ok({
     id: row.id,
     name: row.name,
@@ -426,7 +467,10 @@ export async function updateSubstitute(
     logDbError("updateSubstitute", result, { substituteId });
     return fail();
   }
-  if (!result.data) return fail("Nie znaleziono zamiennika.", "not_found");
+  if (!result.data) {
+    logExpected("updateSubstitute", "not_found", { substituteId });
+    return fail("Nie znaleziono zamiennika.", "not_found");
+  }
   return ok({ name: result.data.name });
 }
 
@@ -476,7 +520,10 @@ export async function renameIngredient(
     logDbError("renameIngredient", result, { ingredientId });
     return fail();
   }
-  if (!result.data) return fail("Nie znaleziono składnika.", "not_found");
+  if (!result.data) {
+    logExpected("renameIngredient", "not_found", { ingredientId });
+    return fail("Nie znaleziono składnika.", "not_found");
+  }
   return ok({ name: result.data.name });
 }
 
@@ -498,7 +545,10 @@ export async function deleteSubstitute(
     logDbError("deleteSubstitute", result, { substituteId });
     return fail();
   }
-  if (!result.data) return fail("Nie znaleziono zamiennika.", "not_found");
+  if (!result.data) {
+    logExpected("deleteSubstitute", "not_found", { substituteId });
+    return fail("Nie znaleziono zamiennika.", "not_found");
+  }
   return ok({ name: result.data.name });
 }
 
@@ -521,7 +571,10 @@ export async function deleteIngredient(
     logDbError("deleteIngredient", result, { ingredientId });
     return fail();
   }
-  if (!result.data) return fail("Nie znaleziono składnika.", "not_found");
+  if (!result.data) {
+    logExpected("deleteIngredient", "not_found", { ingredientId });
+    return fail("Nie znaleziono składnika.", "not_found");
+  }
   return ok({ name: result.data.name });
 }
 
@@ -539,6 +592,7 @@ export async function hasSearchHits(
     listIngredients(client),
     categoryId !== null ? listIngredientIdsWithSubstitutes(client, categoryId) : null,
   ]);
+  // The inner functions already logged their own failures; no second line here.
   if (ingredientsResult.error !== null) return fail();
   if (filterResult !== null && filterResult.error !== null) return fail();
   const hits = searchMatches(ingredientsResult.data, query, mode, filterResult?.data ?? null);
