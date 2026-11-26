@@ -1,7 +1,7 @@
 ---
 change_id: observability-db-error-logging
 title: Observability db error logging
-status: implementing
+status: implemented
 created: 2026-11-26
 updated: 2026-11-26
 archived_at: null

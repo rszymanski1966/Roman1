@@ -317,13 +317,13 @@ Brak migracji. Po deployu linie pojawiają się w Workers Logs pod przedrostkiem
 
 #### Automated
 
-- [x] 3.1 Nowy test services zielony: `npx vitest run --project services tests/services/db-error-logging.test.ts`
-- [x] 3.2 Pełny przebieg na lokalnym stosie: `npm test`
-- [x] 3.3 `npm run test:unit`
-- [x] 3.4 `npm run lint`
-- [x] 3.5 `npx prettier --check context/foundation/test-plan.md`
+- [x] 3.1 Nowy test services zielony: `npx vitest run --project services tests/services/db-error-logging.test.ts` — 143c61e
+- [x] 3.2 Pełny przebieg na lokalnym stosie: `npm test` — 143c61e
+- [x] 3.3 `npm run test:unit` — 143c61e
+- [x] 3.4 `npm run lint` — 143c61e
+- [x] 3.5 `npx prettier --check context/foundation/test-plan.md` — 143c61e
 
 #### Manual
 
-- [x] 3.6 Wyjątek w §6.1 jest wąski i wskazuje oba pliki referencyjne
-- [x] 3.7 Linia w `CLAUDE.md` jest jedyną zmianą tego pliku w commicie
+- [x] 3.6 Wyjątek w §6.1 jest wąski i wskazuje oba pliki referencyjne — 143c61e
+- [x] 3.7 Linia w `CLAUDE.md` jest jedyną zmianą tego pliku w commicie — 143c61e
