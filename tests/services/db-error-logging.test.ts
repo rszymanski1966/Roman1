@@ -8,8 +8,8 @@
 // body) are not confirmed here.
 // Oracle, independent of the unit fixtures: the grant in supabase/migrations/20261011201658_best_substitute.sql:79-80
 // (anon has no execute on set_best_substitute, so the call as anon is a real 42501) and the decisions of
-// context/changes/observability-db-error-logging/plan.md ("plan" below: line format :95, not_found as a warn :159 and
-// :181, duplicates log nothing :25). Expected values are literals or the uuids passed in, never built by the code under
+// context/archive/2026-11-26-observability-db-error-logging/plan.md ("plan" below: line format :95, not_found as a
+// warn :159 and :181, duplicates log nothing :25). Expected values are literals or the uuids passed in, never built by the code under
 // test. No line may contain a fixture name.
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";

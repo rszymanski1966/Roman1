@@ -3,9 +3,9 @@
 // text and postgrest-js never throws (audit context/audits/observability/2026-11-26_auth-writes-lookup.md W1, W2 step
 // names, W5 unmapped RPC codes; follow-up F2 in
 // context/archive/2026-11-21-testing-validation-and-gates/follow-ups/review-fixes.md).
-// Oracle: the decisions of context/changes/observability-db-error-logging/plan.md ("plan" below; line format :95,
-// operation names :105, which cases log :84 and :103) and the audit's §5 noise guard (duplicates log nothing). Every
-// row names its source. Expected values are literals (operation names, codes, statuses, the uuids passed in), never
+// Oracle: the decisions of context/archive/2026-11-26-observability-db-error-logging/plan.md ("plan" below; line
+// format :95, operation names :105, which cases log :84 and :103) and the audit's §5 noise guard (duplicates log
+// nothing). Every row names its source. Expected values are literals (operation names, codes, statuses, the uuids passed in), never
 // built by the code under test.
 // Exception to test-plan §6.1 ("never a Supabase client"): this file uses the real supabase-js createClient, and only
 // the transport (global.fetch) is replaced, so postgrest-js parses the responses exactly as in production. The
