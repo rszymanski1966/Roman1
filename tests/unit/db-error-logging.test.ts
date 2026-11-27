@@ -9,8 +9,10 @@
 // built by the code under test.
 // Exception to test-plan §6.1 ("never a Supabase client"): this file uses the real supabase-js createClient, and only
 // the transport (global.fetch) is replaced, so postgrest-js parses the responses exactly as in production. The
-// response shapes are confirmed against the real stack by tests/services/db-error-logging.test.ts. Stack-free:
-// nothing here imports tests/harness/.
+// general response shape (a code from Postgres, the status on the response, a non-empty message) is confirmed against
+// the real stack by tests/services/db-error-logging.test.ts for 42501, 0 rows and 23505 only; the other cases here
+// (23514, XX000, status 0, a non-JSON body) follow the postgrest-js source and are not confirmed on the stack.
+// Stack-free: nothing here imports tests/harness/.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import {
@@ -212,6 +214,32 @@ describe("network failure", () => {
     expect(line.message).toContain("status=0");
     // details carries the socket error and stack (plan :95: details never logged).
     expect(line.everything).not.toContain("econnrefused");
+  });
+});
+
+describe("error body that is not JSON", () => {
+  // impl-review F1: postgrest-js turns a non-2xx body that is not JSON into { message: body } with no code
+  // (node_modules/@supabase/postgrest-js/dist/index.mjs, the JSON.parse fallback), e.g. a gateway's HTML page.
+  // "network" is only for status 0; the whole page must not end up in the line.
+  it("logs code=none with the real status and a cut message", async () => {
+    const page = `<html><body>${"Bad gateway. ".repeat(400)}</body></html>`;
+    const client = clientWith({
+      "PATCH /rest/v1/ingredients": () =>
+        Promise.resolve(new Response(page, { status: 502, headers: { "content-type": "text/html" } })),
+    });
+
+    const result = await renameIngredient(client, INGREDIENT_ID, INGREDIENT_NAME);
+
+    expect(result).toEqual(GENERIC_RESULT);
+    const line = onlyErrorLine();
+    expect(line.message).toContain("renameIngredient");
+    expect(line.message).toContain("code=none");
+    expect(line.message).not.toContain("code=network");
+    expect(line.message).toContain("status=502");
+    expect(line.message).toContain(INGREDIENT_ID);
+    expect(line.message.length).toBeLessThan(1000);
+    expect(JSON.stringify((errorSpy.mock.calls[0][0] as Error).cause).length).toBeLessThan(1000);
+    expectNoUserData(line);
   });
 });
 

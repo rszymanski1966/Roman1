@@ -156,7 +156,7 @@ Niemożliwe nulle, grupa bez kategorii, warn dla `not_found`/`invalid_category`,
 **Contract**:
 
 - `logInvariant(op: string, reason: string, ids?: Record<string, string>): void` → `console.error(new Error("[db] <op> broken invariant: <reason> <ids>"))`; `reason` to stały tekst z kodu (np. `"pair select returned no row after upsert"`), nigdy dane.
-- `logExpected(op: string, outcome: "not_found" | "invalid_category", ids?: Record<string, string>): void` → `console.warn("[db] <op>: <outcome> <ids>")`.
+- `logExpected(op: string, outcome: "not_found" | "invalid_category", ids?: Record<string, string>): void` → `console.warn("[db] <op>: <outcome> <ids>")`. _Addendum (impl-review 2026-11-27, F4):_ implementacja dodaje trzeci wynik `saved_without_best_mark` (typ `ExpectedOutcome` w `src/lib/log.ts`), użyty przez warn `addSubstitute.markBest` z `substituteId` (§3 niżej).
 
 #### 3. Serwis
 

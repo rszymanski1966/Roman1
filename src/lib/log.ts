@@ -18,16 +18,29 @@ function idsText(ids: LogIds): string {
     .join("");
 }
 
+// Longest PostgREST `message` kept in a line. A non-JSON error body (a gateway's or Cloudflare's HTML page) becomes
+// the whole message, so it is cut here; a real PostgREST message is far shorter.
+const MAX_MESSAGE_LENGTH = 300;
+
+function cut(message: string | undefined): string | undefined {
+  return message !== undefined && message.length > MAX_MESSAGE_LENGTH
+    ? `${message.slice(0, MAX_MESSAGE_LENGTH)}…`
+    : message;
+}
+
 /**
  * One error line for a failed PostgREST call: `[db] <op> failed: code=… status=… message=…[ hint=…][ <id>=…]`.
- * An empty code is shown as "network" (postgrest-js turns a fetch rejection into status 0 with no code).
+ * The code is "network" only for status 0 (postgrest-js turns a fetch rejection into status 0 with no code); a
+ * response with no code, e.g. an HTML error page from a gateway, is shown as "none" with its real status.
  * `details` is never logged, neither in the message nor in the cause.
  */
 export function logDbError(op: string, failure: { error: PostgrestError; status: number }, ids: LogIds = {}): void {
-  const { code, message, hint } = failure.error;
+  const { code, hint } = failure.error;
   const status = failure.status;
+  const message = cut(failure.error.message);
+  const codeText = code || (status === 0 ? "network" : "none");
   const text =
-    `[db] ${op} failed: code=${code || "network"} status=${status} message=${JSON.stringify(message)}` +
+    `[db] ${op} failed: code=${codeText} status=${status} message=${JSON.stringify(message)}` +
     (hint ? ` hint=${JSON.stringify(hint)}` : "") +
     idsText(ids);
   console.error(new Error(text, { cause: { op, code, status, message, hint, ...ids } }));

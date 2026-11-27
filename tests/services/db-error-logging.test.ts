@@ -3,8 +3,9 @@
 // format against hand-written responses; if real responses carry other fields (no code, status 0, empty message), the
 // production line says nothing although every unit case is green (audit
 // context/audits/observability/2026-11-26_auth-writes-lookup.md W1, W4, W5, §5 noise guard; follow-up F2). This file
-// confirms the response shape the unit fixtures use: a code from Postgres, a 4xx status on the response, a non-empty
-// message.
+// confirms the general response shape the unit fixtures use (a code from Postgres, a 4xx status on the response, a
+// non-empty message) for 42501, 0 rows and 23505 only; the other unit cases (23514, XX000, status 0, a non-JSON
+// body) are not confirmed here.
 // Oracle, independent of the unit fixtures: the grant in supabase/migrations/20261011201658_best_substitute.sql:79-80
 // (anon has no execute on set_best_substitute, so the call as anon is a real 42501) and the decisions of
 // context/changes/observability-db-error-logging/plan.md ("plan" below: line format :95, not_found as a warn :159 and
