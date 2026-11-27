@@ -8,7 +8,7 @@
 - **API routes**: uppercase `GET`/`POST` exports. Auth routes take form posts and answer with redirects, not JSON. Errors go back as `?error=<encodeURIComponent(msg)>` on the originating page (see `@src/pages/api/auth/signin.ts`). zod is not installed yet; add it (`npm i zod`) before validating new input with it.
 - **Supabase migrations**: `supabase/migrations/` using naming format `YYYYMMDDHHmmss_short_description.sql`. Always enable RLS on new tables with granular per-operation, per-role policies. Locally apply them with `npx supabase migration up`. Before `npx supabase db push`, `npm run test:migrations` must pass; a migration that changes data declares that change in `tests/migrations/expectations.ts` (no declaration = the data must stay exactly as it was), and after the push `BASELINE_MIGRATION` there moves to the last pushed version (`context/foundation/test-plan.md` §6.5).
 - **React**: no Next.js directives ("use client" etc.). Extract hooks to `src/components/hooks/`.
-- **Services/helpers** go in `src/lib/` (or `src/lib/services/` for extracted business logic).
+- **Services/helpers** go in `src/lib/` (or `src/lib/services/` for extracted business logic). A database error in a service is logged through `src/lib/log.ts` (`logDbError`/`logInvariant`/`logExpected`) before it returns `fail()`; never log PostgREST `details`, names or other user data.
 - **Shared types** (entities, DTOs) go in `src/types.ts`.
 - **`context/archive/` is immutable**: skills must not write there. If a resolved target path starts with `context/archive/`, abort with: "This change is archived. Open a new change with `/10x-new` instead."
 
